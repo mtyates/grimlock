@@ -345,3 +345,25 @@ case class Ratio(dim: Dimension, from: Dimension, state: String = "size", suffix
   }
 }
 
+case class RatioX(dim: Dimension, from: Dimension, suffix: String = "",
+  inverse: Boolean = false) extends Transformer with PresentX {
+  type Q = Map[Position1D, Content]
+  def presentX[P <: Position with ModifyablePosition](pos: P, con: Content, m: Q) = {
+    (con.value.asDouble, m(Position1D(from.toString)).value.asDouble ) match {
+      case (Some(l), Some(r)) => Some(Left((pos.set(dim, pos.get(dim).toShortString + suffix),
+        Content(ContinuousSchema[Codex.DoubleCodex](), if (inverse) r / l else l / r))))
+      case _ => None
+    }
+  }
+}
+
+case class IndicatorX(dim: Dimension, suffix: String = ".ind") extends Transformer with PresentAndWithValue with PresentX {
+  type Q = Any
+  def present[P <: Position with ModifyablePosition](pos: P, con: Content) = {
+    Some(Left((pos.set(dim, pos.get(dim).toShortString + suffix), Content(DiscreteSchema[Codex.LongCodex](), 1))))
+  }
+  def presentX[P <: Position with ModifyablePosition](pos: P, con: Content, m: Q) = {
+    present(pos, con)
+  }
+}
+

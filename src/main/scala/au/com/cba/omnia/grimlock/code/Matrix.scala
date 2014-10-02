@@ -128,6 +128,19 @@ trait Matrix[P <: Position] {
       .map { case sum => (Position2D(dim.toString, name), Content(DiscreteSchema[Codex.LongCodex](), sum)) }
   }
 
+  def sizeX[D <: Dimension](dim: D, distinct: Boolean = false)(implicit ev: PosDimDep[P, D]): TypedPipe[(Position1D, Content)] = {
+    val coords = data.map { case (p, c) => p.get(dim) }
+    val dist = distinct match {
+      case true => coords
+      case false => coords.distinct
+    }
+
+    dist
+      .map { case _ => 1L }
+      .sum
+      .map { case sum => (Position1D(dim.toString), Content(DiscreteSchema[Codex.LongCodex](), sum)) }
+  }
+
   /**
    * Returns the shape of the [[Matrix]].
    *
@@ -271,6 +284,25 @@ trait Matrix[P <: Position] {
           Map(s -> cl.map { case (p, c) => val r: Position = slice.remainder(p); (r, c) }.toMap)
       }
       .sum(Matrix.SliceMapSemigroup)
+  }
+
+  def toMap[D <: Dimension](slice: Slice[P, D])(implicit ev: PosDimDep[P, D]): ValuePipe[Map[slice.S, P#C]] = {
+    data
+      .map {
+        case (p, c) => (p, Map(slice.selected(p) -> p.toContent(slice.remainder(p).asInstanceOf[Slice[p.S, Dimension]#R], c)))
+      }
+      .groupBy { case (p, m) => slice.selected(p) }
+      .reduce[(P, Map[slice.S, P#C])] {
+        case ((lp, lm), (rp, rm)) => (lp, lm ++ rm.map {
+          case (k, v) => k -> lp.combine(lm.get(k).asInstanceOf[Option[lp.C]], v.asInstanceOf[lp.C])
+        })
+      }
+      .map { case (_, (_, m)) => m }
+      .sum(new com.twitter.algebird.Semigroup[Map[slice.S, P#C]] {
+        def plus(l: Map[slice.S, P#C], r: Map[slice.S, P#C]): Map[slice.S, P#C] = {
+          l ++ r
+        }
+      })
   }
 
   /**
@@ -592,6 +624,15 @@ trait ModifyableMatrix[P <: Position with ModifyablePosition] { self: Matrix[P] 
     val t = ev.convert(transformers)
 
     data.flatMapWithValue(sm) { case ((p, c), smo) => Miscellaneous.mapFlatten(t.present(p, c, smo.get)) }
+  }
+
+  def transformX[T](transformer: Transformer with PresentX)(m: ValuePipe[transformer.Q]): TypedPipe[(P#S, Content)] = {
+    data.flatMapWithValue(m) { case ((p, c), smo) => Miscellaneous.mapFlatten(transformer.presentX(p, c, smo.get)) }
+  }
+  def transformY[T, R](transformer: List[Transformer with PresentX { type Q = R }], m: ValuePipe[R]): TypedPipe[(P#S, Content)] = {
+    val t = CombinationTransformerX[Transformer with PresentX, R](transformer)
+
+    data.flatMapWithValue(m) { case ((p, c), smo) => Miscellaneous.mapFlatten(t.presentX(p, c, smo.get)) }
   }
 
   /**

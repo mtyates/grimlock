@@ -20,6 +20,7 @@ import com.twitter.scalding.typed.IterablePipe
 import cascading.flow.FlowDef
 
 import grimlock._
+import grimlock.contents._
 import grimlock.contents.encoding._
 import grimlock.position.coordinate._
 
@@ -27,6 +28,10 @@ import grimlock.position.coordinate._
 trait Position {
   /** Type for positions of same (S) number of dimensions. */
   type S <: Position
+
+  type C
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C
+  def combine(l: Option[C], r: C): C
 
   /** List of [[coordinate.Coordinate]] of the position. */
   val coordinates: List[Coordinate]
@@ -196,7 +201,12 @@ trait ExpandablePosition { self: Position =>
  * @note Position0D exists so things like names(Over(1)) work.
  */
 case class Position0D() extends Position with ExpandablePosition {
+  type S = Position0D
   type M = Position1D
+
+  type C = Content
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = ???
+  def combine(l: Option[C], r: C): C = ???
 
   val coordinates = List()
 
@@ -213,6 +223,10 @@ case class Position1D(first: Coordinate) extends Position with ModifyablePositio
   type L = Position0D
   type S = Position1D
   type M = Position2D
+
+  type C = Content
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = c
+  def combine(l: Option[C], r: C): C = r
 
   val coordinates = List(first)
 
@@ -247,6 +261,15 @@ case class Position2D(first: Coordinate, second: Coordinate) extends Position wi
   type L = Position1D
   type S = Position2D
   type M = Position3D
+
+  type C = Map[Slice[S, Dimension]#R, Content]
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = Map(r -> c)
+  def combine(l: Option[C], r: C): C = {
+    l match {
+      case Some(x) => x ++ r
+      case None => r
+    }
+  }
 
   val coordinates = List(first, second)
 
@@ -283,6 +306,15 @@ case class Position3D(first: Coordinate, second: Coordinate, third: Coordinate) 
   type L = Position2D
   type S = Position3D
   type M = Position4D
+
+  type C = Map[Slice[S, Dimension]#R, Content]
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = Map(r -> c)
+  def combine(l: Option[C], r: C): C = {
+    l match {
+      case Some(x) => x ++ r
+      case None => r
+    }
+  }
 
   val coordinates = List(first, second, third)
 
@@ -323,6 +355,15 @@ case class Position4D(first: Coordinate, second: Coordinate, third: Coordinate,
   type S = Position4D
   type M = Position5D
 
+  type C = Map[Slice[S, Dimension]#R, Content]
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = Map(r -> c)
+  def combine(l: Option[C], r: C): C = {
+    l match {
+      case Some(x) => x ++ r
+      case None => r
+    }
+  }
+
   val coordinates = List(first, second, third, fourth)
 
   protected def less(cl: List[Coordinate]): L = Position3D(cl(0), cl(1), cl(2))
@@ -362,6 +403,15 @@ case class Position5D(first: Coordinate, second: Coordinate, third: Coordinate,
   fourth: Coordinate, fifth: Coordinate) extends Position with ModifyablePosition with ReduceablePosition {
   type L = Position4D
   type S = Position5D
+
+  type C = Map[Slice[S, Dimension]#R, Content]
+  def toContent(r: Slice[S, Dimension]#R, c: Content): C = Map(r -> c)
+  def combine(l: Option[C], r: C): C = {
+    l match {
+      case Some(x) => x ++ r
+      case None => r
+    }
+  }
 
   val coordinates = List(first, second, third, fourth, fifth)
 
