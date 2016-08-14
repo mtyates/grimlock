@@ -344,6 +344,91 @@ class TestCell extends TestGrimlock {
         Some(Left("Unable to split: '123:def|ghi:klm:xyz:3.14'"))
   }
 
+  "A Cell" should "parse 6D" in {
+    Cell.parse6D(":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:double:continuous:3.14") shouldBe
+      Some(Right(Cell(Position6D(123, "def", "ghi", "klm", "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6D(":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:double:continuous:3.14") shouldBe
+      Some(Left("Unable to decode: 'abc:def:ghi:klm:xyz:uvw:double:continuous:3.14'"))
+    Cell.parse6D(":", StringCodec, LongCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "def:abc:ghi:klm:xyz:uvw:double:continuous:3.14") shouldBe
+      Some(Left("Unable to decode: 'def:abc:ghi:klm:xyz:uvw:double:continuous:3.14'"))
+    Cell.parse6D(":", StringCodec, StringCodec, LongCodec, StringCodec, StringCodec, StringCodec)(
+      "def:ghi:abc:klm:xyz:uvw:double:continuous:3.14") shouldBe
+      Some(Left("Unable to decode: 'def:ghi:abc:klm:xyz:uvw:double:continuous:3.14'"))
+    Cell.parse6D(":", StringCodec, StringCodec, StringCodec, LongCodec, StringCodec, StringCodec)(
+      "def:ghi:klm:abc:xyz:uvw:double:continuous:3.14") shouldBe
+      Some(Left("Unable to decode: 'def:ghi:klm:abc:xyz:uvw:double:continuous:3.14'"))
+    Cell.parse6D(":", StringCodec, StringCodec, StringCodec, StringCodec, LongCodec, StringCodec)(
+      "def:ghi:klm:xyz:abc:uvw:double:continuous:3.14") shouldBe
+      Some(Left("Unable to decode: 'def:ghi:klm:xyz:abc:uvw:double:continuous:3.14'"))
+    Cell.parse6D(":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:double:continuous:abc") shouldBe
+      Some(Left("Unable to decode: '123:def:ghi:klm:xyz:uvw:double:continuous:abc'"))
+    Cell.parse6D(":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:double:continuous:3:14") shouldBe
+      Some(Left("Unable to decode: '123:def:ghi:klm:xyz:uvw:double:continuous:3:14'"))
+    Cell.parse6D(":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:double|continuous:3.14") shouldBe
+      Some(Left("Unable to split: '123:def:ghi:klm:xyz:uvw:double|continuous:3.14'"))
+  }
+
+  "A Cell" should "parse 6D with dictionary" in {
+    Cell.parse6DWithDictionary(dictionary, First, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D(123, "def", "ghi", "klm", "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, Second, ":", StringCodec, LongCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "def:123:ghi:klm:xyz:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D("def", 123, "ghi", "klm", "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, Third, ":", StringCodec, StringCodec, LongCodec, StringCodec, StringCodec, StringCodec)(
+      "def:ghi:123:klm:xyz:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D("def", "ghi", 123, "klm", "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, Fourth, ":", StringCodec, StringCodec, StringCodec, LongCodec, StringCodec, StringCodec)(
+      "def:ghi:klm:123:xyz:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D("def", "ghi", "klm", 123, "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, Fifth, ":", StringCodec, StringCodec, StringCodec, StringCodec, LongCodec, StringCodec)(
+      "def:ghi:klm:xyz:123:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D("def", "ghi", "klm", "xyz", 123, "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, Sixth, ":", StringCodec, StringCodec, StringCodec, StringCodec, StringCodec, LongCodec)(
+      "def:ghi:klm:xyz:uvw:123:3.14") shouldBe
+      Some(Right(Cell(Position6D("def", "ghi", "klm", "xyz", "uvw", 123), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithDictionary(dictionary, First, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Missing schema for: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithDictionary(dictionary, Second, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Missing schema for: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithDictionary(dictionary, Third, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Missing schema for: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithDictionary(dictionary, Fourth, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Missing schema for: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithDictionary(dictionary, Fifth, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Missing schema for: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithDictionary(dictionary, First, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:abc:uvw") shouldBe Some(Left("Unable to decode: '123:def:ghi:klm:xyz:abc:uvw'"))
+    Cell.parse6DWithDictionary(dictionary, First, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:3:14") shouldBe Some(Left("Unable to decode: '123:def:ghi:klm:xyz:uvw:3:14'"))
+    Cell.parse6DWithDictionary(dictionary, First, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123|def:ghi:klm:xyz:uvw:3.14") shouldBe Some(Left("Unable to split: '123|def:ghi:klm:xyz:uvw:3.14'"))
+  }
+
+  "A Cell" should "parse 6D with schema" in {
+    Cell.parse6DWithSchema(schema, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:3.14") shouldBe
+      Some(Right(Cell(Position6D(123, "def", "ghi", "klm", "xyz", "uvw"), Content(ContinuousSchema[Double](), 3.14))))
+    Cell.parse6DWithSchema(schema, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "abc:def:ghi:klm:xyz:uvw:3.14") shouldBe
+      Some(Left("Unable to decode: 'abc:def:ghi:klm:xyz:uvw:3.14'"))
+    Cell.parse6DWithSchema(schema, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:abc:uvw") shouldBe
+      Some(Left("Unable to decode: '123:def:ghi:klm:xyz:abc:uvw'"))
+    Cell.parse6DWithSchema(schema, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def:ghi:klm:xyz:uvw:3:14") shouldBe
+      Some(Left("Unable to decode: '123:def:ghi:klm:xyz:uvw:3:14'"))
+    Cell.parse6DWithSchema(schema, ":", LongCodec, StringCodec, StringCodec, StringCodec, StringCodec, StringCodec)(
+      "123:def|ghi:klm:xyz:uvw:3.14") shouldBe
+      Some(Left("Unable to split: '123:def|ghi:klm:xyz:uvw:3.14'"))
+  }
+
   val columns = List(("abc", Content.parser(DoubleCodec, ContinuousSchema[Double]())),
     ("def", Content.parser(DoubleCodec, ContinuousSchema[Double]())),
     ("ghi", Content.parser(DoubleCodec, ContinuousSchema[Double]())))

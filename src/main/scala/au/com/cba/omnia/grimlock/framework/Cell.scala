@@ -71,6 +71,13 @@ private object PosFromArgs {
 
       def apply(): Out = { case a :: b :: c :: d :: e :: HNil => Position5D(a, b, c, d, e) }
     }
+
+  implicit def position6D[A <: Value, B <: Value, C <: Value, D <: Value, E <: Value, F <: Value]: Aux[(A :: B :: C :: D :: E :: F :: HNil) => Position6D] =
+    new PosFromArgs {
+      type Out = (A :: B :: C :: D :: E :: F :: HNil) => Position6D
+
+      def apply(): Out = { case a :: b :: c :: d :: e :: f :: HNil => Position6D(a, b, c, d, e, f) }
+    }
 }
 
 private trait CellFactory[P <: Product] {
@@ -398,6 +405,70 @@ object Cell {
       line: String): Option[Either[String, Cell[Position5D]]] = {
     parseXDWithSchema[Position5D, (Codec, Codec,Codec, Codec, Codec)](5, schema, separator,
       (first, second, third, fourth, fifth), line)
+  }
+
+  /**
+    * Parse a line into a `Cell[Position5D]`.
+    *
+    * @param separator The column separator.
+    * @param first     The codec for decoding the first dimension.
+    * @param second    The codec for decoding the second dimension.
+    * @param third     The codec for decoding the third dimension.
+    * @param fourth    The codec for decoding the fourth dimension.
+    * @param fifth     The codec for decoding the fifth dimension.
+    * @param sixth     The codec for decoding the sixth dimension.
+    * @param line      The line to parse.
+    */
+  def parse6D(separator: String = "|", first: Codec = StringCodec, second: Codec = StringCodec,
+    third: Codec = StringCodec, fourth: Codec = StringCodec, fifth: Codec = StringCodec, sixth: Codec = StringCodec)(
+    line: String): Option[Either[String, Cell[Position6D]]] = {
+    parseXD[
+      Position6D,
+      (Codec, Codec, Codec, Codec, Codec, Codec)
+      ](6, separator, (first, second, third, fourth, fifth, sixth), line)
+  }
+
+  /**
+    * Parse a line into a `Cell[Position5D]` with a dictionary.
+    *
+    * @param dict      The dictionary describing the features in the data.
+    * @param dim       The dimension on which to apply the dictionary.
+    * @param separator The column separator.
+    * @param first     The codec for decoding the first dimension.
+    * @param second    The codec for decoding the second dimension.
+    * @param third     The codec for decoding the third dimension.
+    * @param fourth    The codec for decoding the fourth dimension.
+    * @param fifth     The codec for decoding the fifth dimension.
+    * @param sixth     The codec for decoding the sixth dimension.
+    * @param line      The line to parse.
+    */
+  def parse6DWithDictionary[D <: Dimension](dict: Map[String, Content.Parser], dim: D, separator: String = "|",
+    first: Codec = StringCodec, second: Codec = StringCodec, third: Codec = StringCodec, fourth: Codec = StringCodec,
+    fifth: Codec = StringCodec, sixth: Codec = StringCodec)(line: String)(
+    implicit ev: PosDimDep[Position6D, D]): Option[Either[String, Cell[Position6D]]] = {
+    parseXDWithDictionary[
+      Position6D, (Codec, Codec, Codec, Codec, Codec, Codec), D
+      ](6, dim, dict, separator, (first, second, third, fourth, fifth, sixth), line)
+  }
+
+  /**
+    * Parse a line into a `Cell[Position5D]` with a schema.
+    *
+    * @param schema    The schema for decoding the data.
+    * @param separator The column separator.
+    * @param first     The codec for decoding the first dimension.
+    * @param second    The codec for decoding the second dimension.
+    * @param third     The codec for decoding the third dimension.
+    * @param fourth    The codec for decoding the fourth dimension.
+    * @param fifth     The codec for decoding the fifth dimension.
+    * @param sixth     The codec for decoding the sixth dimension.
+    * @param line      The line to parse.
+    */
+  def parse6DWithSchema(schema: Content.Parser, separator: String = "|", first: Codec = StringCodec,
+    second: Codec = StringCodec, third: Codec = StringCodec, fourth: Codec = StringCodec, fifth: Codec = StringCodec,
+    sixth: Codec = StringCodec)(line: String): Option[Either[String, Cell[Position6D]]] = {
+    parseXDWithSchema[Position6D, (Codec, Codec,Codec, Codec, Codec, Codec)](6, schema, separator,
+      (first, second, third, fourth, fifth, sixth), line)
   }
 
   /**
