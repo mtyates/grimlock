@@ -21,8 +21,6 @@ import au.com.cba.omnia.grimlock.framework.position._
 
 import com.tdunning.math.stats.AVLTreeDigest
 
-import java.nio.ByteBuffer
-
 import scala.collection.immutable.SortedMap
 import scala.math.BigDecimal
 import scala.reflect.ClassTag
@@ -415,7 +413,7 @@ private[grimlock] object CountMap {
  */
 private[grimlock] object TDigest {
   /** Type of the underlying data. */
-  type T = Array[Byte]
+  type T = AVLTreeDigest
 
   /**
    * Create a t-digest from a double.
@@ -433,7 +431,7 @@ private[grimlock] object TDigest {
 
       t.add(d)
 
-      Some(serialise(t))
+      Some(t)
     }
   }
 
@@ -446,12 +444,9 @@ private[grimlock] object TDigest {
    * @return A reduced digest.
    */
   def reduce(l: T, r: T): T = {
-    val lt = deserialise(l)
-    val rt = deserialise(r)
+    l.add(r)
 
-    lt.add(rt)
-
-    serialise(lt)
+    l
   }
 
   /**
@@ -467,32 +462,15 @@ private[grimlock] object TDigest {
    */
   def toCells[S <: Position with ExpandablePosition, Q <: Position](t: T, probs: List[Double], pos: S,
     name: Locate.FromSelectedAndOutput[S, Double, Q], nan: Boolean)(implicit ev: PosExpDep[S, Q]): List[Cell[Q]] = {
-    val td = deserialise(t)
-
     for {
       q <- probs
       p <- name(pos, q)
 
-      result = td.quantile(q)
+      result = t.quantile(q)
 
-      if (result.isNaN && !nan)
+      if (!result.isNaN || nan)
     } yield Cell(p, Content(ContinuousSchema[Double](), result))
   }
-
-  // TDigest doesn't extend Serializable yet - so do it the hard way for now
-
-  private def serialise(td: AVLTreeDigest): Array[Byte] = {
-    val buf = ByteBuffer.allocate(td.byteSize)
-    td.asSmallBytes(buf)
-
-    val ar = new Array[Byte](buf.position)
-    buf.rewind
-    buf.get(ar)
-
-    ar
-  }
-
-  private def deserialise(a: Array[Byte]): AVLTreeDigest = AVLTreeDigest.fromBytes(ByteBuffer.wrap(a))
 }
 
 /**
