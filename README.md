@@ -7,7 +7,7 @@ grimlock
 Overview
 --------
 
-Grimlock is a library for performing data-science and machine learning related data preparation, aggregation, manipulation and querying tasks. It can be used for such tasks as:
+The grimlock library can be used for performing data-science and machine learning related data preparation, aggregation, manipulation and querying tasks. It makes it easy to perform such tasks as:
 
 * Normalisation/Standardisation/Bucketing of numeric variables;
 * Binarisation of categorical variables;
@@ -40,7 +40,7 @@ Concepts
 
 ### Data Structures
 
-The basic data structure in grimlock is a N-dimensional sparse __Matrix__ (N=1..9). Each __Cell__ in matrix consists of a __Position__ and __Content__.
+The basic data structure in grimlock is a N-dimensional sparse __Matrix__ (N=1..9). Each __Cell__ in a Matrix consists of a __Position__ and __Content__.
 
 ```
           Matrix
@@ -50,7 +50,7 @@ The basic data structure in grimlock is a N-dimensional sparse __Matrix__ (N=1..
   Cell(Position, Content)
 ```
 
-The position is, essentially, a list of N coordinates (__Value__). The content consists of a __Schema__ together with a __Value__. The value contains the actual value of the cell, while the schema defines what type of variable is in the cell, and (optionally) what it's legal values are.
+The Position is, essentially, a list of N coordinates (where each coordinate is stored in a __Value__). The Content consists of a __Schema__ together with a Value. The Value contains the data (Double, Sting, Date, etc.) of the cell, while the Schema defines the variable type of the data, and (optionally) what it's legal values are.
 
 ```
    Position              Content
@@ -71,9 +71,9 @@ Lastly, a __Codec__ can be used to parse and write the basic data types used in 
   Codec
 ```
 
-### Working with Dimensions
+### Working with dimensions
 
-Grimlock supports performing operations along all directions of the matrix. This is realised through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with a single dimension (__shapeless.Nat__), but differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is group by all dimensions *except* the dimension used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
+Performing operations along any of the dimensions of the matrix is supported through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with a single dimension (__shapeless.Nat__), but differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is grouped by all dimensions *except* the dimension used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
 
 ```
         Over(_2)          Along(_3)
