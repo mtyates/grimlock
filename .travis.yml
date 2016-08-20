@@ -12,8 +12,7 @@ install:
 - ci/sbt-ci-setup.sh
 - ci/sbt-ci-setup-version.sh
 script:
-- sbt -Dsbt.global.base=$TRAVIS_BUILD_DIR/ci '; set fork in Test := false; test; package;
-  assembly'
+- sbt -Dsbt.global.base=$TRAVIS_BUILD_DIR/ci '; set fork in Test := false; test; package; assembly'
 - ci/sbt-ci-deploy.sh maven http://commbank.artifactoryonline.com/commbank ext-releases-local
 after_script:
 - rm -rf ci
