@@ -11,6 +11,7 @@ install:
 - chmod ugo+x ci/*
 - ci/sbt-ci-setup.sh
 - ci/setup-version.sh sbt
+- cp /etc/sbt/sbtopts .sbtopts; echo "-Dsbt.global.base=$TRAVIS_BUILD_DIR/ci" >> .sbtopts
 script:
 - sbt -Dsbt.global.base=$TRAVIS_BUILD_DIR/ci '; set fork in Test := false; test; package;
   assembly'
