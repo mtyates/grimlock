@@ -7,7 +7,7 @@ cache:
   - "$HOME/.ivy2"
   - "$HOME/.m2"
 install:
-- curl https://commbank.artifactoryonline.com/commbank/binaries/ci/ci-3.3.0-20160817231550-75d3c9c.tar.gz | tar xz
+- curl https://commbank.artifactoryonline.com/commbank/binaries/ci/ci-3.2.3-20160803030038-a6a90e2.tar.gz | tar xz
 - chmod ugo+x ci/*
 - ci/sbt-ci-setup.sh
 - ci/setup-version.sh sbt
