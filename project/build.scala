@@ -26,6 +26,8 @@ object build extends Build {
     id = "all",
     base = file("."),
     settings = uniform.project("grimlock-all", "commbank.grimlock.all") ++
+      common ++
+      uniform.ghsettings ++
       Seq(assembly := file(""), publishArtifact := false),
     aggregate = Seq(core, examples)
   )
@@ -34,13 +36,10 @@ object build extends Build {
     id = "core",
     base = file("core"),
     settings = uniform.project("grimlock-core", "commbank.grimlock") ++
-      uniformDependencySettings ++
-      strictDependencySettings ++
+      common ++
       dependencies ++
       overrides ++
       uniformAssemblySettings ++
-      uniform.docSettings("https://github.com/CommBank/grimlock") ++
-      uniform.ghsettings ++
       Seq(test in assembly := {}, parallelExecution in Test := false)
    )
 
@@ -48,14 +47,16 @@ object build extends Build {
     id = "examples",
     base = file("examples"),
     settings = uniform.project("grimlock-examples", "commbank.grimlock.examples") ++
-      uniformDependencySettings ++
-      strictDependencySettings ++
-      overrides ++
+      common ++
       uniformAssemblySettings ++
       Seq(libraryDependencies ++= depend.hadoopClasspath)
   ).dependsOn(core % "test->test;compile->compile")
 
-  lazy val dependencies: List[Setting[_]] = List(libraryDependencies <++=
+  lazy val common: Seq[Setting[_]] = uniformDependencySettings ++
+    strictDependencySettings ++
+    uniform.docSettings("https://github.com/CommBank/grimlock")
+
+  lazy val dependencies: Seq[Setting[_]] = Seq(libraryDependencies <++=
     scalaVersion.apply(scalaVersion => depend.hadoopClasspath ++
       depend.scalding() ++
       depend.parquet() ++
@@ -71,7 +72,7 @@ object build extends Build {
     )
   )
 
-  lazy val overrides: List[Setting[_]] = List(
+  lazy val overrides: Seq[Setting[_]] = Seq(
     dependencyOverrides ++= Set(
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
       "org.scala-lang.modules" %% "scala-xml"                % "1.0.3",
