@@ -153,7 +153,7 @@ The examples below are executed in the Scalding REPL. Note that the Scalding REP
     * For the module `scaldingRepl`, comment out `skip in compile := !isScala210x(scalaVersion.value),`;
     * For the module `scaldingRepl`, add `grimlock` as a dependency:
         + Under the `libraryDependencies` add,
-            `"commbank.grimlock" %% "grimlock-core" % "<version-string>"`;
+            `"au.com.cba.omnia" %% "grimlock-core" % "<version-string>"`;
     * Optionally uncomment `test in assembly := {}`.
 4. Update `project/plugins.sbt` to add the 'commbank-ext' repository.
 
