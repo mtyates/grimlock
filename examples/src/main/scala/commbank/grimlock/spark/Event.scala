@@ -55,20 +55,21 @@ object ExampleEvent {
 }
 
 // Define a schema that specifies what legal values are for the example event. For this example, all events are valid.
-case object ExampleEventSchema extends StructuredSchema {
-  type S = ExampleEvent
+case object ExampleEventSchema extends StructuredSchema { self =>
+  type D = ExampleEvent
 
   val kind = Type.Structured
 
-  def validate(value: Value { type V = S }): Boolean = true
+  def validate(value: Value { type D = self.D }): Boolean = true
 }
 
 // Define a codec for dealing with the example event. Note that comparison, for this example, is simply comparison
 // on the event id.
 case object ExampleEventCodec extends StructuredCodec {
-  type C = ExampleEvent
+  type D = ExampleEvent
+  type V = StructuredValue[D, ExampleEventCodec.type]
 
-  def decode(str: String): Option[StructuredValue[C, ExampleEventCodec.type] { type V >: C }] = {
+  def decode(str: String): Option[V] = {
     val dfmt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     val parts = str.split("#")
 
@@ -87,7 +88,7 @@ case object ExampleEventCodec extends StructuredCodec {
     )
   }
 
-  def encode(value: C): String = {
+  def encode(value: D): String = {
     val dfmt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
     value.eventId + "#" +

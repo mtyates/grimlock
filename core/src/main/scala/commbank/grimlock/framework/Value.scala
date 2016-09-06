@@ -30,15 +30,15 @@ private case object LessEqual extends CompareResult
 trait Structured
 
 /** Base trait for variable values. */
-trait Value {
-  /** Type of  the value. */
-  type V
+trait Value { self =>
+  /** Type of the value. */
+  type D
 
   /** The encapsulated value. */
-  val value: V
+  val value: D
 
   /** The codec used to encode/decode this value. */
-  val codec: Codec { type C = V }
+  val codec: Codec { type D = self.D }
 
   /**
    * Check for equality with `that`.
@@ -152,7 +152,7 @@ object Value {
    *
    * @return A `Some[Value]` if successful, `None` otherwise.
    */
-  def fromShortString(str: String, cdc: Codec): Option[Value { type V = cdc.C }] = cdc.decode(str)
+  def fromShortString(str: String, cdc: Codec): Option[cdc.V] = cdc.decode(str)
 
   /** Define an ordering between 2 values. Only use with values of the same type. */
   val ordering: Ordering[Value] = new Ordering[Value] {
@@ -184,8 +184,8 @@ object Value {
  * @param value A `java.util.Date`.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class DateValue(value: Date, codec: Codec { type C = Date } = DateCodec()) extends Value {
-  type V = Date
+case class DateValue(value: Date, codec: Codec { type D = Date } = DateCodec()) extends Value {
+  type D = Date
 
   override def asDate: Option[Date] = Option(value)
 }
@@ -202,8 +202,8 @@ object DateValue {
  * @param value A `String`.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class StringValue(value: String, codec: Codec { type C = String } = StringCodec) extends Value {
-  type V = String
+case class StringValue(value: String, codec: Codec { type D = String } = StringCodec) extends Value {
+  type D = String
 
   override def asString: Option[String] = Option(value)
 }
@@ -214,8 +214,8 @@ case class StringValue(value: String, codec: Codec { type C = String } = StringC
  * @param value A `Double`.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class DoubleValue(value: Double, codec: Codec { type C = Double } = DoubleCodec) extends Value {
-  type V = Double
+case class DoubleValue(value: Double, codec: Codec { type D = Double } = DoubleCodec) extends Value {
+  type D = Double
 
   override def asDouble: Option[Double] = Option(value)
 }
@@ -226,8 +226,8 @@ case class DoubleValue(value: Double, codec: Codec { type C = Double } = DoubleC
  * @param value A `Long`.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class LongValue(value: Long, codec: Codec { type C = Long } = LongCodec) extends Value {
-  type V = Long
+case class LongValue(value: Long, codec: Codec { type D = Long } = LongCodec) extends Value {
+  type D = Long
 
   override def asDouble: Option[Double] = Option(value)
   override def asLong: Option[Long] = Option(value)
@@ -239,8 +239,8 @@ case class LongValue(value: Long, codec: Codec { type C = Long } = LongCodec) ex
  * @param value A `Boolean`.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class BooleanValue(value: Boolean, codec: Codec { type C = Boolean } = BooleanCodec) extends Value {
-  type V = Boolean
+case class BooleanValue(value: Boolean, codec: Codec { type D = Boolean } = BooleanCodec) extends Value {
+  type D = Boolean
 
   override def asDouble: Option[Double] = Option(if (value) 1 else 0)
   override def asLong: Option[Long] = Option(if (value) 1 else 0)
@@ -253,8 +253,8 @@ case class BooleanValue(value: Boolean, codec: Codec { type C = Boolean } = Bool
  * @param value An event.
  * @param codec The codec used for encoding/decoding `value`.
  */
-case class StructuredValue[U <: Structured, C <: StructuredCodec { type C = U }](value: U, codec: C) extends Value {
-  type V = U
+case class StructuredValue[U <: Structured, C <: StructuredCodec { type D = U }](value: U, codec: C) extends Value {
+  type D = U
 
   override def asStructured: Option[Structured] = Option(value)
 }
