@@ -24,15 +24,15 @@ import java.util.regex.Pattern
 import shapeless.Nat
 
 /** Contents of a cell in a matrix. */
-trait Content {
+trait Content { self =>
   /** Type of the data. */
-  type T
+  type D
 
   /** Schema (description) of the value. */
-  val schema: Schema { type S = T }
+  val schema: Schema { type D = self.D }
 
   /** The value of the variable. */
-  val value: Value { type V = T }
+  val value: Value { type D = self.D }
 
   override def toString(): String = "Content(" + schema.toString + "," + value.toString + ")"
 
@@ -64,7 +64,7 @@ object Content {
    * @param schema Schema of the variable value.
    * @param value  Value of the variable.
    */
-  def apply[T](schema: Schema { type S = T }, value: Value { type V = T }): Content = ContentImpl(schema, value)
+  def apply[T](schema: Schema { type D = T }, value: Value { type D = T }): Content = ContentImpl(schema, value)
 
   /** Standard `unapply` method for pattern matching. */
   def unapply(con: Content): Option[(Schema, Value)] = Option((con.schema, con.value))
@@ -77,7 +77,7 @@ object Content {
    *
    * @return A content parser.
    */
-  def parser[T](codec: Codec { type C = T }, schema: Schema { type S = T }): Parser = (str: String) =>
+  def parser[T](codec: Codec { type D = T }, schema: Schema { type D = T }): Parser = (str: String) =>
     codec
       .decode(str)
       .flatMap { case v => if (schema.validate(v)) Option(Content(schema, v)) else None }
@@ -91,7 +91,7 @@ object Content {
    * @return A content parser.
    */
   def parserFromComponents(codec: String, schema: String): Option[Parser] = Codec.fromShortString(codec)
-    .flatMap(c => Schema.fromShortString(schema, c).map(s => parser[c.C](c, s)))
+    .flatMap(c => Schema.fromShortString(schema, c).map(s => parser[c.D](c, s)))
 
   /**
    * Parse a content from string.
@@ -126,8 +126,8 @@ object Content {
     List(if (descriptive) t.toString else t.toShortString(separator, codec, schema))
 }
 
-private case class ContentImpl[X](schema: Schema { type S = X }, value: Value { type V = X }) extends Content {
-  type T = X
+private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { type D = T }) extends Content {
+  type D = T
 }
 
 /** Base trait that represents the contents of a matrix. */
