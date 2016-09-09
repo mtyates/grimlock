@@ -79,7 +79,7 @@ object Conditional {
     // 2/ Divide each element by the gender's count to get conditional distribution.
     heg
       .summarise(Along(_1))(Sum())
-      .transformWithValue(Fraction(extractor), gcount)
+      .transformWithValue(gcount, Fraction(extractor))
       .saveAsText(ctx, s"./demo.${output}/eye.out")
       .toUnit
 
@@ -88,7 +88,7 @@ object Conditional {
     // 2/ Divide each element by the gender's count to get conditional distribution.
     heg
       .summarise(Along(_2))(Sum())
-      .transformWithValue(Fraction(extractor), gcount)
+      .transformWithValue(gcount, Fraction(extractor))
       .saveAsText(ctx, s"./demo.${output}/hair.out")
       .toUnit
   }

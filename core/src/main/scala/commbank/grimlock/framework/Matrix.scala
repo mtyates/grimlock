@@ -47,22 +47,22 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Change the variable type of `positions` in a matrix.
    *
    * @param slice     Encapsulates the dimension(s) to change.
+   * @param tuner     The tuner for the job.
    * @param positions The position(s) within the dimension(s) to change.
    * @param schema    The schema to change to.
    * @param writer    The writer to call in case or change error.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[P]]` with the changed contents and a `U[String]` with errors.
    */
   def change[
     T <: Tuner : ChangeTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     positions: U[Position[slice.S]],
     schema: Content.Parser,
-    writer: TextWriter = Cell.toString(),
-    tuner: T
+    writer: TextWriter = Cell.toString()
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
@@ -94,8 +94,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def compact[
     T <: Tuner : CompactTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
@@ -121,8 +120,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Fill a matrix with `values` for a given `slice`.
    *
    * @param slice  Encapsulates the dimension(s) on which to fill.
-   * @param values The content to fill a matrix with.
    * @param tuner  The tuner for the job.
+   * @param values The content to fill a matrix with.
    *
    * @return A `U[Cell[P]]` where all missing values have been filled in.
    *
@@ -133,10 +132,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def fillHeterogeneous[
     T <: Tuner : FillHeterogeneousTuners
   ](
-    slice: Slice[L, P]
-  )(
-    values: U[Cell[slice.S]],
+    slice: Slice[L, P],
     tuner: T
+  )(
+    values: U[Cell[slice.S]]
   )(implicit
     ev1: ClassTag[Position[P]],
     ev2: ClassTag[Position[slice.S]],
@@ -190,8 +189,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Join two matrices.
    *
    * @param slice Encapsulates the dimension(s) along which to join.
-   * @param that  The matrix to join with.
    * @param tuner The tuner for the job.
+   * @param that  The matrix to join with.
    *
    * @return A `U[Cell[P]]` consisting of the inner-join of the two matrices.
    */
@@ -199,10 +198,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def join[
     T <: Tuner : JoinTuners
   ](
-    slice: Slice[L, P]
-  )(
-    that: U[Cell[P]],
+    slice: Slice[L, P],
     tuner: T
+  )(
+    that: U[Cell[P]]
   )(implicit
     ev1: P =:!= _1,
     ev2: ClassTag[Position[slice.S]],
@@ -237,8 +236,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def names[
     T <: Tuner : NamesTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
@@ -253,9 +251,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Compute pairwise values between all pairs of values given a slice.
    *
    * @param slice    Encapsulates the dimension(s) along which to compute values.
+   * @param tuner    The tuner for the job.
    * @param comparer Defines which element the pairwise operations should apply to.
    * @param operator The pairwise operator(s) to apply.
-   * @param tuner    The tuner for the job.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -263,11 +261,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     T <: Tuner : PairwiseTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     comparer: Comparer,
-    operator: Operator[P, Q],
-    tuner: T
+    operator: Operator[P, Q]
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -280,10 +278,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Compute pairwise values between all pairs of values given a slice with a user supplied value.
    *
    * @param slice    Encapsulates the dimension(s) along which to compute values.
-   * @param comparer Defines which element the pairwise operations should apply to.
-   * @param operator The pairwise operator(s) to apply.
-   * @param value    The user supplied value.
    * @param tuner    The tuner for the job.
+   * @param comparer Defines which element the pairwise operations should apply to.
+   * @param value    The user supplied value.
+   * @param operator The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -292,12 +290,12 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     W,
     T <: Tuner : PairwiseTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     comparer: Comparer,
-    operator: OperatorWithValue[P, Q] { type V >: W },
     value: E[W],
-    tuner: T
+    operator: OperatorWithValue[P, Q] { type V >: W }
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -310,10 +308,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Compute pairwise values between all values of this and that given a slice.
    *
    * @param slice    Encapsulates the dimension(s) along which to compute values.
+   * @param tuner    The tuner for the job.
    * @param comparer Defines which element the pairwise operations should apply to.
    * @param that     Other matrix to compute pairwise values with.
    * @param operator The pairwise operator(s) to apply.
-   * @param tuner    The tuner for the job.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -321,12 +319,12 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     T <: Tuner : PairwiseTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     comparer: Comparer,
     that: U[Cell[P]],
-    operator: Operator[P, Q],
-    tuner: T
+    operator: Operator[P, Q]
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -339,11 +337,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Compute pairwise values between all values of this and that given a slice with a user supplied value.
    *
    * @param slice    Encapsulates the dimension(s) along which to compute values.
+   * @param tuner    The tuner for the job.
    * @param comparer Defines which element the pairwise operations should apply to.
    * @param that     Other matrix to compute pairwise values with.
-   * @param operator The pairwise operator(s) to apply.
    * @param value    The user supplied value.
-   * @param tuner    The tuner for the job.
+   * @param operator The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -352,13 +350,13 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     W,
     T <: Tuner : PairwiseTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     comparer: Comparer,
     that: U[Cell[P]],
-    operator: OperatorWithValue[P, Q] { type V >: W },
     value: E[W],
-    tuner: T
+    operator: OperatorWithValue[P, Q] { type V >: W }
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -388,8 +386,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     W
   ](
-    locate: Locate.FromCellWithValue[P, Q, W],
-    value: E[W]
+    value: E[W],
+    locate: Locate.FromCellWithValue[P, Q, W]
   )(implicit
     ev: GTEq[Q, P]
   ): U[Cell[Q]]
@@ -475,20 +473,20 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Slice a matrix.
    *
    * @param slice     Encapsulates the dimension(s) to slice.
+   * @param tuner     The tuner for the job.
    * @param positions The position(s) within the dimension(s) to slice.
    * @param keep      Indicates if the `positions` should be kept or removed.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[P]]` of the remaining content.
    */
   def slice[
     T <: Tuner : SliceTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     positions: U[Position[slice.S]],
-    keep: Boolean,
-    tuner: T
+    keep: Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
@@ -501,9 +499,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Create window based derived data.
    *
    * @param slice     Encapsulates the dimension(s) to slide over.
-   * @param window    The window function(s) to apply to the content.
-   * @param ascending Indicator if the data should be sorted ascending or descending.
    * @param tuner     The tuner for the job.
+   * @param ascending Indicator if the data should be sorted ascending or descending.
+   * @param window    The window function(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the derived data.
    */
@@ -511,11 +509,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     T <: Tuner: SlideTuners
   ](
-    slice: Slice[L, P]
-  )(
-    window: Window[P, slice.S, slice.R, Q],
-    ascending: Boolean = true,
+    slice: Slice[L, P],
     tuner: T
+  )(
+    ascending: Boolean,
+    window: Window[P, slice.S, slice.R, Q]
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -528,10 +526,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Create window based derived data with a user supplied value.
    *
    * @param slice     Encapsulates the dimension(s) to slide over.
-   * @param window    The window function(s) to apply to the content.
-   * @param value     A `E` holding a user supplied value.
-   * @param ascending Indicator if the data should be sorted ascending or descending.
    * @param tuner     The tuner for the job.
+   * @param ascending Indicator if the data should be sorted ascending or descending.
+   * @param value     A `E` holding a user supplied value.
+   * @param window    The window function(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the derived data.
    */
@@ -540,12 +538,12 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     W,
     T <: Tuner : SlideTuners
   ](
-    slice: Slice[L, P]
-  )(
-    window: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W },
-    value: E[W],
-    ascendig: Boolean = true,
+    slice: Slice[L, P],
     tuner: T
+  )(
+    ascendig: Boolean,
+    value: E[W],
+    window: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W }
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -571,7 +569,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @return A `U[(I, Cell[P])]` where `I` is the partition for the corresponding tuple.
    */
-  def splitWithValue[I, W](partitioner: PartitionerWithValue[P, I] { type V >: W }, value: E[W]): U[(I, Cell[P])]
+  def splitWithValue[I, W](value: E[W], partitioner: PartitionerWithValue[P, I] { type V >: W }): U[(I, Cell[P])]
 
   /**
    * Stream this matrix through `command` and apply `script`.
@@ -613,7 +611,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @return A `U[Cell[P]]` with the sampled cells.
    */
-  def subsetWithValue[W](sampler: SamplerWithValue[P] { type V >: W }, value: E[W]): U[Cell[P]]
+  def subsetWithValue[W](value: E[W], sampler: SamplerWithValue[P] { type V >: W }): U[Cell[P]]
 
   /** Specifies tuners permitted on a call to `summarise` functions. */
   type SummariseTuners[_]
@@ -622,8 +620,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Summarise a matrix and return the aggregates.
    *
    * @param slice      Encapsulates the dimension(s) along which to aggregate.
-   * @param aggregator The aggregator(s) to apply to the data.
    * @param tuner      The tuner for the job.
+   * @param aggregator The aggregator(s) to apply to the data.
    *
    * @return A `U[Cell[Q]]` with the aggregates.
    */
@@ -631,10 +629,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     T <: Tuner : SummariseTuners
   ](
-    slice: Slice[L, P]
-  )(
-    aggregator: Aggregator[P, slice.S, Q],
+    slice: Slice[L, P],
     tuner: T
+  )(
+    aggregator: Aggregator[P, slice.S, Q]
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
@@ -646,9 +644,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Summarise a matrix, using a user supplied value, and return the aggregates.
    *
    * @param slice      Encapsulates the dimension(s) along which to aggregate.
-   * @param aggregator The aggregator(s) to apply to the data.
-   * @param value      A `E` holding a user supplied value.
    * @param tuner      The tuner for the job.
+   * @param value      A `E` holding a user supplied value.
+   * @param aggregator The aggregator(s) to apply to the data.
    *
    * @return A `U[Cell[Q]]` with the aggregates.
    */
@@ -657,11 +655,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     W,
     T <: Tuner : SummariseTuners
   ](
-    slice: Slice[L, P]
-  )(
-    aggregator: AggregatorWithValue[P, slice.S, Q] { type V >: W },
-    value: E[W],
+    slice: Slice[L, P],
     tuner: T
+  )(
+    value: E[W],
+    aggregator: AggregatorWithValue[P, slice.S, Q] { type V >: W }
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
@@ -717,8 +715,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     Q <: Nat,
     W
   ](
-    transformer: TransformerWithValue[P, Q] { type V >: W },
-    value: E[W]
+    value: E[W],
+    transformer: TransformerWithValue[P, Q] { type V >: W }
   )(implicit
     ev: GTEq[Q, P]
   ): U[Cell[Q]]
@@ -730,8 +728,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * Returns the variable type of the content(s) for a given `slice`.
    *
    * @param slice    Encapsulates the dimension(s) for this the types are to be returned.
-   * @param specific Indicates if the most specific type should be returned, or it's generalisation (default).
    * @param tuner    The tuner for the job.
+   * @param specific Indicates if the most specific type should be returned, or it's generalisation (default).
    *
    * @return A `U[(Position[slice.S], Type)]` of the distinct position(s) together with their type.
    *
@@ -740,10 +738,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def types[
     T <: Tuner : TypesTuners
   ](
-    slice: Slice[L, P]
-  )(
-    specific: Boolean = false,
+    slice: Slice[L, P],
     tuner: T
+  )(
+    specific: Boolean
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -775,8 +773,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def uniqueByPosition[
     T <: Tuner : UniqueTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
@@ -800,19 +797,19 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * corresponding predicates.
    *
    * @param slice      Encapsulates the dimension(s) to query.
+   * @param tuner      The tuner for the job.
    * @param predicates The position(s) within the dimension(s) to query together with the predicates used to
    *                   filter the contents.
-   * @param tuner      The tuner for the job.
    *
    * @return A `U[Position[P]]` of the positions for which the content matches predicates.
    */
   def whichByPosition[
     T <: Tuner : WhichTuners
   ](
-    slice: Slice[L, P]
-  )(
-    predicates: List[(U[Position[slice.S]], Cell.Predicate[P])],
+    slice: Slice[L, P],
     tuner: T
+  )(
+    predicates: List[(U[Position[slice.S]], Cell.Predicate[P])]
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: ClassTag[Position[P]],
@@ -939,9 +936,10 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     T <: Tuner : SquashTuners
   ](
     dim: D,
-    squasher: SquasherWithValue[P] { type V >: W },
-    value: E[W],
     tuner: T
+  )(
+    value: E[W],
+    squasher: SquasherWithValue[P] { type V >: W }
   )(implicit
     ev1: LTEq[D, P],
     ev2: ClassTag[Position[L]],

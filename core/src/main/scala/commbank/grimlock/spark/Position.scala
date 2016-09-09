@@ -44,8 +44,7 @@ case class Positions[L <: Nat, P <: Nat](data: RDD[Position[P]]) extends FwPosit
   def names[
     T <: Tuner : NamesTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T = Default()
   )(implicit
     ev1: slice.S =:!= _0,

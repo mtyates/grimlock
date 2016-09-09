@@ -39,9 +39,9 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Compute histogram.
    *
    * @param slice     Encapsulates the dimension(s) to compute histogram on.
+   * @param tuner     The tuner for the job.
    * @param position  Function for extracting the position of the histogram.
    * @param filter    Indicator if numerical values shoud be filtered or not.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the histogram.
    *
@@ -51,11 +51,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     Q <: Nat,
     T <: Tuner : HistogramTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     position: Locate.FromSelectedAndContent[slice.S, Q],
-    filter: Boolean = true,
-    tuner: T
+    filter: Boolean = true
   )(implicit
     ev1: ClassTag[Position[Q]],
     ev2: GT[Q, slice.S],
@@ -69,12 +69,12 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Compute sample quantiles.
    *
    * @param slice     Encapsulates the dimension(s) to compute quantiles on.
+   * @param tuner     The tuner for the job.
    * @param probs     List of probabilities; values must lie in (0, 1).
    * @param quantiser Function that determines the quantile indices into the order statistics.
    * @param name      Function for extracting the position of the quantile.
    * @param filter    Indicator if categorical values should be filtered or not.
    * @param nan       Indicator if NaN quantiles should be output or not.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the quantiles.
    *
@@ -84,14 +84,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     Q <: Nat,
     T <: Tuner : QuantileTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     probs: List[Double],
     quantiser: Quantile.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
-    nan: Boolean = false,
-    tuner: T
+    nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -106,12 +106,12 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Compute quantiles using a count Map.
    *
    * @param slice     Encapsulates the dimension(s) to compute quantiles on.
+   * @param tuner     The tuner for the job.
    * @param probs     List of probabilities; values must lie in (0, 1).
    * @param quantiser Function that determines the quantile indices into the order statistics.
    * @param name      Function for extracting the position of the quantile.
    * @param filter    Indicator if categorical values should be filtered or not.
    * @param nan       Indicator if NaN quantiles should be output or not.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the quantiles.
    *
@@ -121,14 +121,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     Q <: Nat,
     T <: Tuner : CountMapQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     probs: List[Double],
     quantiser: Quantile.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
-    nan: Boolean = false,
-    tuner: T
+    nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -143,12 +143,12 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Compute approximate quantiles using a t-digest.
    *
    * @param slice       Encapsulates the dimension(s) to compute quantiles on.
+   * @param tuner       The tuner for the job.
    * @param probs       The quantile probabilities to compute.
    * @param compression The t-digest compression parameter.
    * @param name        Names each quantile output.
    * @param filter      Indicator if categorical values should be filtered or not.
    * @param nan         Indicator if NaN quantiles should be output or not.
-   * @param tuner       The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the approximate quantiles.
    *
@@ -158,14 +158,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     Q <: Nat,
     T <: Tuner : TDigestQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     probs: List[Double],
     compression: Double,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
-    nan: Boolean = false,
-    tuner: T
+    nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -180,11 +180,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Compute `count` uniformly spaced approximate quantiles using an online streaming parallel histogram.
    *
    * @param slice       Encapsulates the dimension(s) to compute quantiles on.
+   * @param tuner       The tuner for the job.
    * @param count       The number of quantiles to compute.
    * @param name        Names each quantile output.
    * @param filter      Indicator if categorical values should be filtered or not.
    * @param nan         Not used.
-   * @param tuner       The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the approximate quantiles.
    *
@@ -194,13 +194,13 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     Q <: Nat,
     T <: Tuner : UniformQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T
   )(
     count: Long,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
-    nan: Boolean = false,
-    tuner: T
+    nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],

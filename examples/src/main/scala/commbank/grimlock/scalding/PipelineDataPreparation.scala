@@ -115,7 +115,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
   // Compute summary statisics on the histogram.
   val summary = histogram
-    .summariseWithValue(Over(_1))(sstats, counts)
+    .summariseWithValue(Over(_1))(counts, sstats)
 
   // Combine all statistics and write result to file
   val stats = (descriptive ++ histogram ++ summary)
@@ -125,7 +125,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
   // fewer instances. These are removed first to prevent indicator features from being created.
   val rem1 = stats
     .which(cell => (cell.position(_2) equ "count") && (cell.content.value leq 2))
-    .names(Over(_1))()
+    .names(Over(_1))
 
   // Also remove constant features (standard deviation is 0, or 1 category). These are removed after indicators have
   // been created.
@@ -134,13 +134,13 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
       ((cell.position(_2) equ "sd") && (cell.content.value equ 0)) ||
       ((cell.position(_2) equ "num.cat") && (cell.content.value equ 1))
     )
-    .names(Over(_1))()
+    .names(Over(_1))
 
   // Finally remove categoricals for which an individual category has only 1 value. These are removed after binarized
   // features have been created.
   val rem3 = stats
     .which(cell => (cell.position(_2) like ".*=.*".r) && (cell.content.value equ 1))
-    .names(Over(_2))()
+    .names(Over(_2))
 
   // Define type of statistics map.
   type S = Map[Position[_1], Map[Position[_1], Content]]
@@ -175,7 +175,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
     val csb = d
       .slice(Over(_2))(rem2, false)
-      .transformWithValue(transforms, stats.compact(Over(_1))())
+      .transformWithValue(stats.compact(Over(_1)), transforms)
       .slice(Over(_2))(rem3, false)
 
     (ind ++ csb)
