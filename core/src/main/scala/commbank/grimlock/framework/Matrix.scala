@@ -924,8 +924,8 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * Squash a dimension of a matrix with a user supplied value.
    *
    * @param dim      The dimension to squash.
-   * @param squasher The squasher that reduces two cells.
    * @param value    The user supplied value.
+   * @param squasher The squasher that reduces two cells.
    * @param tuner    The tuner for the job.
    *
    * @return A `U[Cell[L]]` with the dimension `dim` removed.
@@ -936,10 +936,9 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     T <: Tuner : SquashTuners
   ](
     dim: D,
-    tuner: T
-  )(
     value: E[W],
-    squasher: SquasherWithValue[P] { type V >: W }
+    squasher: SquasherWithValue[P] { type V >: W },
+    tuner: T
   )(implicit
     ev1: LTEq[D, P],
     ev2: ClassTag[Position[L]],

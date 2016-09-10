@@ -1039,10 +1039,9 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     T <: Tuner : SquashTuners
   ](
     dim: D,
-    tuner: T = Default()
-  )(
     value: E[W],
-    squasher: SquasherWithValue[P] { type V >: W}
+    squasher: SquasherWithValue[P] { type V >: W},
+    tuner: T = Default()
   )(implicit
     ev1: LTEq[D, P],
     ev2: ClassTag[Position[L]],

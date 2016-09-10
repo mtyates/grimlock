@@ -625,175 +625,175 @@ class TestScaldingPositions extends TestPositions {
 
   "A Positions of Position1D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result1
   }
 
   "A Positions of Position2D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result2
   }
 
   it should "return its _2 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result3
   }
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result4
   }
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result5
   }
 
   "A Positions of Position3D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result6
   }
 
   it should "return its _2 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result7
   }
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_3))(Default())
+      .names(Over(_3), Default())
       .toList.sorted shouldBe result8
   }
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result9
   }
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result10
   }
 
   it should "return its _3 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_3))(Default())
+      .names(Along(_3), Default())
       .toList.sorted shouldBe result11
   }
 
   "A Positions of Position4D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result12
   }
 
   it should "return its _2 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result13
   }
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_3))(Default())
+      .names(Over(_3), Default())
       .toList.sorted shouldBe result14
   }
 
   it should "return its _4 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_4))(Default())
+      .names(Over(_4), Default())
       .toList.sorted shouldBe result15
   }
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result16
   }
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result17
   }
 
   it should "return its _3 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_3))(Default())
+      .names(Along(_3), Default())
       .toList.sorted shouldBe result18
   }
 
   it should "return its _4 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_4))(Default())
+      .names(Along(_4), Default())
       .toList.sorted shouldBe result19
   }
 
   "A Positions of Position5D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result20
   }
 
   it should "return its _2 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result21
   }
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_3))(Default())
+      .names(Over(_3), Default())
       .toList.sorted shouldBe result22
   }
 
   it should "return its _4 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_4))(Default())
+      .names(Over(_4), Default())
       .toList.sorted shouldBe result23
   }
 
   it should "return its _5 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_5))(Default())
+      .names(Over(_5), Default())
       .toList.sorted shouldBe result24
   }
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result25
   }
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result26
   }
 
   it should "return its _3 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_3))(Default())
+      .names(Along(_3), Default())
       .toList.sorted shouldBe result27
   }
 
   it should "return its _4 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_4))(Default())
+      .names(Along(_4), Default())
       .toList.sorted shouldBe result28
   }
 
   it should "return its _5 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_5))(Default())
+      .names(Along(_5), Default())
       .toList.sorted shouldBe result29
   }
 }
@@ -802,175 +802,175 @@ class TestSparkPositions extends TestPositions {
 
   "A Positions of Position1D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s) })
-      .names(Over(_1))(Default())
+      .names(Over(_1), Default())
       .toList.sorted shouldBe result1
   }
 
   "A Positions of Position2D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_1))(Default(Reducers(12)))
+      .names(Over(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result2
   }
 
   it should "return its _2 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result3
   }
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_1))(Default(Reducers(12)))
+      .names(Along(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result4
   }
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result5
   }
 
   "A Positions of Position3D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_1))(Default(Reducers(12)))
+      .names(Over(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result6
   }
 
   it should "return its _2 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result7
   }
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_3))(Default(Reducers(12)))
+      .names(Over(_3), Default(Reducers(12)))
       .toList.sorted shouldBe result8
   }
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result9
   }
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_2))(Default(Reducers(12)))
+      .names(Along(_2), Default(Reducers(12)))
       .toList.sorted shouldBe result10
   }
 
   it should "return its _3 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_3))(Default())
+      .names(Along(_3), Default())
       .toList.sorted shouldBe result11
   }
 
   "A Positions of Position4D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_1))(Default(Reducers(12)))
+      .names(Over(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result12
   }
 
   it should "return its _2 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result13
   }
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_3))(Default(Reducers(12)))
+      .names(Over(_3), Default(Reducers(12)))
       .toList.sorted shouldBe result14
   }
 
   it should "return its _4 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_4))(Default())
+      .names(Over(_4), Default())
       .toList.sorted shouldBe result15
   }
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_1))(Default(Reducers(12)))
+      .names(Along(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result16
   }
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_2))(Default())
+      .names(Along(_2), Default())
       .toList.sorted shouldBe result17
   }
 
   it should "return its _3 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_3))(Default(Reducers(12)))
+      .names(Along(_3), Default(Reducers(12)))
       .toList.sorted shouldBe result18
   }
 
   it should "return its _4 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_4))(Default())
+      .names(Along(_4), Default())
       .toList.sorted shouldBe result19
   }
 
   "A Positions of Position5D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_1))(Default(Reducers(12)))
+      .names(Over(_1), Default(Reducers(12)))
       .toList.sorted shouldBe result20
   }
 
   it should "return its _2 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_2))(Default())
+      .names(Over(_2), Default())
       .toList.sorted shouldBe result21
   }
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_3))(Default(Reducers(12)))
+      .names(Over(_3), Default(Reducers(12)))
       .toList.sorted shouldBe result22
   }
 
   it should "return its _4 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_4))(Default())
+      .names(Over(_4), Default())
       .toList.sorted shouldBe result23
   }
 
   it should "return its _5 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_5))(Default(Reducers(12)))
+      .names(Over(_5), Default(Reducers(12)))
       .toList.sorted shouldBe result24
   }
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_1))(Default())
+      .names(Along(_1), Default())
       .toList.sorted shouldBe result25
   }
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_2))(Default(Reducers(12)))
+      .names(Along(_2), Default(Reducers(12)))
       .toList.sorted shouldBe result26
   }
 
   it should "return its _3 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_3))(Default())
+      .names(Along(_3), Default())
       .toList.sorted shouldBe result27
   }
 
   it should "return its _4 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_4))(Default(Reducers(12)))
+      .names(Along(_4), Default(Reducers(12)))
       .toList.sorted shouldBe result28
   }
 
   it should "return its _5 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_5))(Default())
+      .names(Along(_5), Default())
       .toList.sorted shouldBe result29
   }
 }
