@@ -20,7 +20,6 @@ import commbank.grimlock.framework.content._
 //import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.transform._
 
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
@@ -142,20 +141,8 @@ object PipelineDataPreparation {
       .which(cell => (cell.position(_2) like ".*=.*".r) && (cell.content.value equ 1))
       .names(Over(_2))
 
-    // Define type of statistics map.
-    type S = Map[Position[_1], Map[Position[_1], Content]]
-
     // Define extract object to get data out of statistics map.
     def extractStat(key: String) = ExtractWithDimensionAndKey[_2, Content](_2, key).andThenPresent(_.value.asDouble)
-
-    // List of transformations to apply to each partition.
-    val transforms: List[TransformerWithValue[_2, _2] { type V >: S }] = List(
-      Clamp(
-        extractStat("min"),
-        extractStat("max")
-      ).andThenWithValue(Standardise(extractStat("mean"), extractStat("sd"))),
-      Binarise(Locate.RenameDimensionWithContent(_2))
-    )
 
     // For each partition:
     //  1/  Remove sparse features;
@@ -175,7 +162,12 @@ object PipelineDataPreparation {
 
       val csb = d
         .slice(Over(_2))(rem2, false)
-        .transformWithValue(stats.compact(Over(_1)), transforms)
+        .transformWithValue(
+          stats.compact(Over(_1)),
+          Clamp(extractStat("min"), extractStat("max"))
+            .andThenWithValue(Standardise(extractStat("mean"), extractStat("sd"))),
+          Binarise(Locate.RenameDimensionWithContent(_2))
+        )
         .slice(Over(_2))(rem3, false)
 
       (ind ++ csb)

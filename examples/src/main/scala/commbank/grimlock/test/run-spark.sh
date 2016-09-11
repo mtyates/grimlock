@@ -48,26 +48,26 @@ then
       rm -rf demo.spark/*
     fi
 
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.BasicOperations $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Conditional $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.PipelineDataPreparation $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Scoring $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.DataAnalysis $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.LabelWeighting $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.InstanceCentricTfIdf $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.MutualInformation $JAR local ../data
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.DerivedData $JAR local ../data
     cp ../data/gbm.R ../data/rf.R ../data/lr.R .
-    $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+    $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Ensemble $JAR local ../data
 
     if [ -d "demo.spark.old" ]
@@ -93,7 +93,7 @@ then
 
     for i in $(seq 1 ${NUM_TEST})
     do
-      $BASE_DIR/../spark-1.5.0/bin/spark-submit --master local \
+      $BASE_DIR/../spark-1.6.2/bin/spark-submit --master local \
         --class commbank.grimlock.test.TestSpark${i} $JAR local .
     done
 

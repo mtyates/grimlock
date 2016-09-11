@@ -250,10 +250,10 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Compute pairwise values between all pairs of values given a slice.
    *
-   * @param slice    Encapsulates the dimension(s) along which to compute values.
-   * @param tuner    The tuner for the job.
-   * @param comparer Defines which element the pairwise operations should apply to.
-   * @param operator The pairwise operator(s) to apply.
+   * @param slice     Encapsulates the dimension(s) along which to compute values.
+   * @param tuner     The tuner for the job.
+   * @param comparer  Defines which element the pairwise operations should apply to.
+   * @param operators The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -265,7 +265,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     tuner: T
   )(
     comparer: Comparer,
-    operator: Operator[P, Q]
+    operators: Operator[P, Q]*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -277,11 +277,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Compute pairwise values between all pairs of values given a slice with a user supplied value.
    *
-   * @param slice    Encapsulates the dimension(s) along which to compute values.
-   * @param tuner    The tuner for the job.
-   * @param comparer Defines which element the pairwise operations should apply to.
-   * @param value    The user supplied value.
-   * @param operator The pairwise operator(s) to apply.
+   * @param slice     Encapsulates the dimension(s) along which to compute values.
+   * @param tuner     The tuner for the job.
+   * @param comparer  Defines which element the pairwise operations should apply to.
+   * @param value     The user supplied value.
+   * @param operators The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -295,7 +295,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(
     comparer: Comparer,
     value: E[W],
-    operator: OperatorWithValue[P, Q] { type V >: W }
+    operators: OperatorWithValue[P, Q] { type V >: W }*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -307,11 +307,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Compute pairwise values between all values of this and that given a slice.
    *
-   * @param slice    Encapsulates the dimension(s) along which to compute values.
-   * @param tuner    The tuner for the job.
-   * @param comparer Defines which element the pairwise operations should apply to.
-   * @param that     Other matrix to compute pairwise values with.
-   * @param operator The pairwise operator(s) to apply.
+   * @param slice     Encapsulates the dimension(s) along which to compute values.
+   * @param tuner     The tuner for the job.
+   * @param comparer  Defines which element the pairwise operations should apply to.
+   * @param that      Other matrix to compute pairwise values with.
+   * @param operators The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -324,7 +324,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(
     comparer: Comparer,
     that: U[Cell[P]],
-    operator: Operator[P, Q]
+    operators: Operator[P, Q]*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -336,12 +336,12 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Compute pairwise values between all values of this and that given a slice with a user supplied value.
    *
-   * @param slice    Encapsulates the dimension(s) along which to compute values.
-   * @param tuner    The tuner for the job.
-   * @param comparer Defines which element the pairwise operations should apply to.
-   * @param that     Other matrix to compute pairwise values with.
-   * @param value    The user supplied value.
-   * @param operator The pairwise operator(s) to apply.
+   * @param slice     Encapsulates the dimension(s) along which to compute values.
+   * @param tuner     The tuner for the job.
+   * @param comparer  Defines which element the pairwise operations should apply to.
+   * @param that      Other matrix to compute pairwise values with.
+   * @param value     The user supplied value.
+   * @param operators The pairwise operator(s) to apply.
    *
    * @return A `U[Cell[Q]]` where the content contains the pairwise values.
    */
@@ -356,7 +356,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     comparer: Comparer,
     that: U[Cell[P]],
     value: E[W],
-    operator: OperatorWithValue[P, Q] { type V >: W }
+    operators: OperatorWithValue[P, Q] { type V >: W }*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
@@ -377,8 +377,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Relocate the coordinates of the cells using user a suplied value.
    *
-   * @param locate Function that relocates coordinates.
    * @param value  A `E` holding a user supplied value.
+   * @param locate Function that relocates coordinates.
    *
    * @return A `U[Cell[Q]]` where the cells have been relocated.
    */
@@ -450,6 +450,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param dim      The dimension for which to get the size.
    * @param distinct Indicates if each coordinate in dimension `dim` occurs only once. If this is the case, then
    *                 enabling this flag has better run-time performance.
+   * @param tuner    The tuner for the job.
    *
    * @return A `U[Cell[_1]]`. The position consists of a string value with the name of the dimension
    *         (`dim.toString`). The content has the actual size in it as a discrete variable.
@@ -501,7 +502,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param slice     Encapsulates the dimension(s) to slide over.
    * @param tuner     The tuner for the job.
    * @param ascending Indicator if the data should be sorted ascending or descending.
-   * @param window    The window function(s) to apply to the content.
+   * @param windows   The window function(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the derived data.
    */
@@ -513,7 +514,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     tuner: T
   )(
     ascending: Boolean,
-    window: Window[P, slice.S, slice.R, Q]
+    windows: Window[P, slice.S, slice.R, Q]*
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -529,7 +530,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param tuner     The tuner for the job.
    * @param ascending Indicator if the data should be sorted ascending or descending.
    * @param value     A `E` holding a user supplied value.
-   * @param window    The window function(s) to apply to the content.
+   * @param windows   The window function(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the derived data.
    */
@@ -543,7 +544,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(
     ascendig: Boolean,
     value: E[W],
-    window: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W }
+    windows: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W }*
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -555,21 +556,21 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Partition a matrix according to `partitioner`.
    *
-   * @param partitioner Assigns each position to zero, one or more partition(s).
+   * @param partitioners Assigns each position to zero, one or more partition(s).
    *
    * @return A `U[(I, Cell[P])]` where `I` is the partition for the corresponding tuple.
    */
-  def split[I](partitioner: Partitioner[P, I]): U[(I, Cell[P])]
+  def split[I](partitioners: Partitioner[P, I]*): U[(I, Cell[P])]
 
   /**
    * Partition a matrix according to `partitioner` using a user supplied value.
    *
-   * @param partitioner Assigns each position to zero, one or more partition(s).
-   * @param value       A `E` holding a user supplied value.
+   * @param value        A `E` holding a user supplied value.
+   * @param partitioners Assigns each position to zero, one or more partition(s).
    *
    * @return A `U[(I, Cell[P])]` where `I` is the partition for the corresponding tuple.
    */
-  def splitWithValue[I, W](value: E[W], partitioner: PartitionerWithValue[P, I] { type V >: W }): U[(I, Cell[P])]
+  def splitWithValue[I, W](value: E[W], partitioners: PartitionerWithValue[P, I] { type V >: W }*): U[(I, Cell[P])]
 
   /**
    * Stream this matrix through `command` and apply `script`.
@@ -596,22 +597,22 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Sample a matrix according to some `sampler`. It keeps only those cells for which `sampler` returns true.
    *
-   * @param sampler Sampling function(s).
+   * @param samplers Sampling function(s).
    *
    * @return A `U[Cell[P]]` with the sampled cells.
    */
-  def subset(sampler: Sampler[P]): U[Cell[P]]
+  def subset(samplers: Sampler[P]*): U[Cell[P]]
 
   /**
    * Sample a matrix according to some `sampler` using a user supplied value. It keeps only those cells for which
    * `sampler` returns true.
    *
-   * @param sampler Sampling function(s).
-   * @param value   A `E` holding a user supplied value.
+   * @param value    A `E` holding a user supplied value.
+   * @param samplers Sampling function(s).
    *
    * @return A `U[Cell[P]]` with the sampled cells.
    */
-  def subsetWithValue[W](value: E[W], sampler: SamplerWithValue[P] { type V >: W }): U[Cell[P]]
+  def subsetWithValue[W](value: E[W], samplers: SamplerWithValue[P] { type V >: W }*): U[Cell[P]]
 
   /** Specifies tuners permitted on a call to `summarise` functions. */
   type SummariseTuners[_]
@@ -697,17 +698,17 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Transform the content of a matrix.
    *
-   * @param transformer The transformer(s) to apply to the content.
+   * @param transformers The transformer(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the transformed cells.
    */
-  def transform[Q <: Nat](transformer: Transformer[P, Q])(implicit ev: GTEq[Q, P]): U[Cell[Q]]
+  def transform[Q <: Nat](transformers: Transformer[P, Q]*)(implicit ev: GTEq[Q, P]): U[Cell[Q]]
 
   /**
    * Transform the content of a matrix using a user supplied value.
    *
-   * @param transformer The transformer(s) to apply to the content.
-   * @param value       A `E` holding a user supplied value.
+   * @param value        A `E` holding a user supplied value.
+   * @param transformers The transformer(s) to apply to the content.
    *
    * @return A `U[Cell[Q]]` with the transformed cells.
    */
@@ -716,7 +717,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     W
   ](
     value: E[W],
-    transformer: TransformerWithValue[P, Q] { type V >: W }
+    transformers: TransformerWithValue[P, Q] { type V >: W }*
   )(implicit
     ev: GTEq[Q, P]
   ): U[Cell[Q]]

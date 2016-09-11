@@ -420,15 +420,18 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     tuner: T = Default()
   )(
     comparer: Comparer,
-    operator: Operator[P, Q]
+    operators: Operator[P, Q]*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = pairwiseTuples(slice, comparer, data, data, tuner)
-    .flatMap { case (lc, rc) => operator.compute(lc, rc) }
+  ): U[Cell[Q]] = {
+    val operator: Operator[P, Q] = if (operators.size == 1) operators.head else operators.toList
+
+    pairwiseTuples(slice, comparer, data, data, tuner).flatMap { case (lc, rc) => operator.compute(lc, rc) }
+  }
 
   def pairwiseWithValue[
     Q <: Nat,
@@ -440,15 +443,20 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   )(
     comparer: Comparer,
     value: E[W],
-    operator: OperatorWithValue[P, Q] { type V >: W}
+    operators: OperatorWithValue[P, Q] { type V >: W}*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = pairwiseTuples(slice, comparer, data, data, tuner)
-    .flatMapWithValue(value) { case ((lc, rc), vo) => operator.computeWithValue(lc, rc, vo.get) }
+  ): U[Cell[Q]] = {
+    val operator: OperatorWithValue[P, Q] { type V >: W } =
+      if (operators.size == 1) operators.head else operators.toList
+
+    pairwiseTuples(slice, comparer, data, data, tuner)
+      .flatMapWithValue(value) { case ((lc, rc), vo) => operator.computeWithValue(lc, rc, vo.get) }
+  }
 
   def pairwiseBetween[
     Q <: Nat,
@@ -459,15 +467,18 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   )(
     comparer: Comparer,
     that: U[Cell[P]],
-    operator: Operator[P, Q]
+    operators: Operator[P, Q]*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = pairwiseTuples(slice, comparer, data, that, tuner)
-    .flatMap { case (lc, rc) => operator.compute(lc, rc) }
+  ): U[Cell[Q]] = {
+    val operator: Operator[P, Q] = if (operators.size == 1) operators.head else operators.toList
+
+    pairwiseTuples(slice, comparer, data, that, tuner).flatMap { case (lc, rc) => operator.compute(lc, rc) }
+  }
 
   def pairwiseBetweenWithValue[
     Q <: Nat,
@@ -480,15 +491,20 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     comparer: Comparer,
     that: U[Cell[P]],
     value: E[W],
-    operator: OperatorWithValue[P, Q] { type V >: W }
+    operators: OperatorWithValue[P, Q] { type V >: W }*
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = pairwiseTuples(slice, comparer, data, that, tuner)
-    .flatMapWithValue(value) { case ((lc, rc), vo) => operator.computeWithValue(lc, rc, vo.get) }
+  ): U[Cell[Q]] = {
+    val operator: OperatorWithValue[P, Q] { type V >: W } =
+      if (operators.size == 1) operators.head else operators.toList
+
+    pairwiseTuples(slice, comparer, data, that, tuner)
+      .flatMapWithValue(value) { case ((lc, rc), vo) => operator.computeWithValue(lc, rc, vo.get) }
+  }
 
   def relocate[Q <: Nat](locate: Locate.FromCell[P, Q])(implicit ev: GTEq[Q, P]): U[Cell[Q]] = data
     .flatMap(c => locate(c).map(Cell(_, c.content)))
@@ -588,7 +604,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     tuner: T = Default()
   )(
     ascending: Boolean,
-    window: Window[P, slice.S, slice.R, Q]
+    windows: Window[P, slice.S, slice.R, Q]*
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -596,6 +612,8 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
+    val window: Window[P, slice.S, slice.R, Q] = if (windows.size == 1) windows.head else windows.toList
+
     val (partitions, reducers) = tuner.parameters match {
       case Sequence(rp @ Redistribute(_), rr @ Reducers(_)) => (rp, rr)
       case rp @ Redistribute(_) => (rp, NoParameters())
@@ -629,7 +647,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   )(
     ascending: Boolean,
     value: E[W],
-    window: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W }
+    windows: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W }*
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
@@ -637,6 +655,9 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev4: ClassTag[Position[slice.R]],
     ev5: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
+    val window: WindowWithValue[P, slice.S, slice.R, Q] { type V >: W } =
+      if (windows.size == 1) windows.head else windows.toList
+
     val (partitions, reducers) = tuner.parameters match {
       case Sequence(rp @ Redistribute(_), rr @ Reducers(_)) => (rp, rr)
       case rp @ Redistribute(_) => (rp, NoParameters())
@@ -662,17 +683,24 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
       }
   }
 
-  def split[I](partitioner: Partitioner[P, I]): U[(I, Cell[P])] = data
-    .flatMap(c => partitioner.assign(c).map(q => (q, c)))
+  def split[I](partitioners: Partitioner[P, I]*): U[(I, Cell[P])] = {
+    val partitioner: Partitioner[P, I] = if (partitioners.size == 1) partitioners.head else partitioners.toList
+
+    data.flatMap(c => partitioner.assign(c).map(q => (q, c)))
+  }
 
   def splitWithValue[
     I,
     W
   ](
     value: E[W],
-    partitioner: PartitionerWithValue[P, I] { type V >: W }
-  ): U[(I, Cell[P])] = data
-    .flatMapWithValue(value) { case (c, vo) => partitioner.assignWithValue(c, vo.get).map(q => (q, c)) }
+    partitioners: PartitionerWithValue[P, I] { type V >: W }*
+  ): U[(I, Cell[P])] = {
+    val partitioner: PartitionerWithValue[P, I] { type V >: W } =
+      if (partitioners.size == 1) partitioners.head else partitioners.toList
+
+    data.flatMapWithValue(value) { case (c, vo) => partitioner.assignWithValue(c, vo.get).map(q => (q, c)) }
+  }
 
   def stream[
     Q <: Nat
@@ -743,10 +771,17 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     (result.collect { case Right(c) => c }, result.collect { case Left(e) => e })
   }
 
-  def subset(sampler: Sampler[P]): U[Cell[P]] = data.filter { case c => sampler.select(c) }
+  def subset(samplers: Sampler[P]*): U[Cell[P]] = {
+    val sampler: Sampler[P] = if (samplers.size == 1) samplers.head else samplers.toList
 
-  def subsetWithValue[W](value: E[W], sampler: SamplerWithValue[P] { type V >: W }): U[Cell[P]] = data
-    .filterWithValue(value) { case (c, vo) => sampler.selectWithValue(c, vo.get) }
+    data.filter { case c => sampler.select(c) }
+  }
+
+  def subsetWithValue[W](value: E[W], samplers: SamplerWithValue[P] { type V >: W }*): U[Cell[P]] = {
+    val sampler: SamplerWithValue[P] { type V >: W } = if (samplers.size == 1) samplers.head else samplers.toList
+
+    data.filterWithValue(value) { case (c, vo) => sampler.selectWithValue(c, vo.get) }
+  }
 
   type SummariseTuners[T] = TP2[T]
   def summarise[
@@ -800,18 +835,26 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   def toVector(melt: (List[Value]) => Value): U[Cell[_1]] = data
     .map { case Cell(p, c) => Cell(Position(melt(p.coordinates)), c) }
 
-  def transform[Q <: Nat](transformer: Transformer[P, Q])(implicit ev: GTEq[Q, P]): U[Cell[Q]] = data
-    .flatMap(c => transformer.present(c))
+  def transform[Q <: Nat](transformers: Transformer[P, Q]*)(implicit ev: GTEq[Q, P]): U[Cell[Q]] = {
+    val transformer: Transformer[P, Q] = if (transformers.size == 1) transformers.head else transformers.toList
+
+    data.flatMap(c => transformer.present(c))
+  }
 
   def transformWithValue[
     Q <: Nat,
     W
   ](
     value: E[W],
-    transformer: TransformerWithValue[P, Q] { type V >: W }
+    transformers: TransformerWithValue[P, Q] { type V >: W }*
   )(implicit
     ev: GTEq[Q, P]
-  ): U[Cell[Q]] = data.flatMapWithValue(value) { case (c, vo) => transformer.presentWithValue(c, vo.get) }
+  ): U[Cell[Q]] = {
+    val transformer: TransformerWithValue[P, Q] { type V >: W } =
+      if (transformers.size == 1) transformers.head else transformers.toList
+
+    data.flatMapWithValue(value) { case (c, vo) => transformer.presentWithValue(c, vo.get) }
+  }
 
   type TypesTuners[T] = TP2[T]
   def types[
