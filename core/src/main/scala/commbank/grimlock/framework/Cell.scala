@@ -26,133 +26,57 @@ import org.apache.hadoop.io.Writable
 
 import scala.util.Try
 
-import shapeless.{ ::, DepFn0, Generic, HList, HNil, Nat, Poly1, Poly2 }
+import shapeless.{ Nat, Sized }
 import shapeless.nat.{ _1, _2, _3, _4, _5, _6 }
-import shapeless.ops.hlist.{ ConstMapper, LeftFolder, Mapper, Prepend, ZipApply }
 import shapeless.ops.nat.{ LTEq, ToInt }
-import shapeless.ops.traversable.FromTraversable
+import shapeless.syntax.sized._
 
-private trait PosFromArgs extends DepFn0 with Serializable
+private trait CellContentDecoder {
+  val parts: Int
 
-private object PosFromArgs {
-  type Aux[Out0] = PosFromArgs { type Out = Out0 }
-
-  def apply(implicit p: PosFromArgs): Aux[p.Out] = p
-
-  implicit def position1D[A <: Value]: Aux[(A :: HNil) => Position[_1]] = new PosFromArgs {
-    type Out = (A :: HNil) => Position[_1]
-
-    def apply(): Out = { case a :: HNil => Position(a) }
-  }
-
-  implicit def position2D[A <: Value, B <: Value]: Aux[(A :: B :: HNil) => Position[_2]] = new PosFromArgs {
-    type Out = (A :: B :: HNil) => Position[_2]
-
-    def apply(): Out = { case a :: b :: HNil => Position(a, b) }
-  }
-
-  implicit def position3D[
-    A <: Value,
-    B <: Value,
-    C <: Value
-  ]: Aux[(A :: B :: C :: HNil) => Position[_3]] = new PosFromArgs {
-    type Out = (A :: B :: C :: HNil) => Position[_3]
-
-    def apply(): Out = { case a :: b :: c :: HNil => Position(a, b, c) }
-  }
-
-  implicit def position4D[
-    A <: Value,
-    B <: Value,
-    C <: Value,
-    D <: Value
-  ]: Aux[(A :: B :: C :: D :: HNil) => Position[_4]] = new PosFromArgs {
-    type Out = (A :: B :: C :: D :: HNil) => Position[_4]
-
-    def apply(): Out = { case a :: b :: c :: d :: HNil => Position(a, b, c, d) }
-  }
-
-  implicit def position5D[
-    A <: Value,
-    B <: Value,
-    C <: Value,
-    D <: Value,
-    E <: Value
-  ]: Aux[(A :: B :: C :: D :: E :: HNil) => Position[_5]] = new PosFromArgs {
-    type Out = (A :: B :: C :: D :: E :: HNil) => Position[_5]
-
-    def apply(): Out = { case a :: b :: c :: d :: e :: HNil => Position(a, b, c, d, e) }
-  }
-
-  implicit def position6D[
-    A <: Value,
-    B <: Value,
-    C <: Value,
-    D <: Value,
-    E <: Value,
-    F <: Value
-  ]: Aux[(A :: B :: C :: D :: E :: F :: HNil) => Position[_6]] = new PosFromArgs {
-    type Out = (A :: B :: C :: D :: E :: F :: HNil) => Position[_6]
-
-    def apply(): Out = { case a :: b :: c :: d :: e :: f :: HNil => Position(a, b, c, d, e, f) }
-  }
+  def decode(pos: Array[String]): Option[(Array[String]) => Option[Content]]
 }
 
-private trait CellFactory[P <: Product] {
-  type Out
+private case class DecodeFromParts(separator: String) extends CellContentDecoder {
+  val parts = 3
 
-  def apply(cds: P, pos: Array[String], value: String, decoder: Content.Parser): Out
-}
-
-private object CellFactory {
-  type Aux[P <: Product, Out0] = CellFactory[P] { type Out = Out0 }
-
-  object toFns extends Poly1 {
-    implicit def default[C <: Codec]: Case.Aux[C, String => Option[Value]] = at[C](
-      (c: C) => (s: String) => c.decode(s)
-    )
-  }
-
-  object Sequence extends Poly2 {
-    implicit def caseSome[
-      L <: HList,
-      T
-    ](implicit
-      prep: Prepend[L, T :: HNil]
-    ) = at[Option[L], Option[T]] { case (a, v) =>
-      for {
-        acc <- a
-        value <- v
-      } yield (acc :+ value)
+  def decode(pos: Array[String]) = Option(
+    (con: Array[String]) => con match {
+      case Array(c, s, v) => Content.fromShortString(c + separator + s + separator + v, separator)
+      case _ => None
     }
-  }
+  )
+}
 
-  implicit def makeCell[
-    R <: Nat,
-    P <: Product,
-    L <: HList,
-    CO <: HList,
-    MC <: HList,
-    AO <: HList,
-    FO <: HList
-  ](implicit
-    gen: Generic.Aux[P, L],
-    cm: ConstMapper.Aux[String, L, CO],
-    tr: FromTraversable[CO],
-    ma: Mapper.Aux[toFns.type, L, MC],
-    za: ZipApply.Aux[MC, CO, AO],
-    f: LeftFolder.Aux[AO, Option[HNil.type], Sequence.type, Option[FO]],
-    p: PosFromArgs.Aux[FO => Position[R]]
-  ): Aux[P, Option[Cell[R]]] = new CellFactory[P] {
-    type Out = Option[Cell[R]]
+private case class DecodeWithSchema(schema: Content.Parser) extends CellContentDecoder {
+  val parts = 1
 
-    def apply(cds: P, pos: Array[String], value: String, decoder: Content.Parser): Out = for {
-      rawPositionsHList <- tr(pos)
-      positionOptions = gen.to(cds) map toFns zipApply rawPositionsHList
-      optionPositions <- (positionOptions.foldLeft(Option(HNil))(Sequence))
-      position = p()(optionPositions)
-      content <- decoder(value)
-    } yield Cell(position, content)
+  def decode(pos: Array[String]) = Option(
+    (con: Array[String]) => con match {
+      case Array(v) => schema(v)
+      case _ => None
+    }
+  )
+}
+
+private case class DecodeWithDictionary[D <: Nat : ToInt](
+  dict: Map[String, Content.Parser]
+) extends CellContentDecoder {
+  val parts = 1
+  val idx = Nat.toInt[D]
+
+  def decode(pos: Array[String]) = {
+    val decoder = for {
+      key <- Try(pos(if (idx == 0) pos.length - 1 else idx - 1)).toOption
+      dec <- dict.get(key)
+    } yield dec
+
+    decoder.map(dec =>
+      (con: Array[String]) => con match {
+        case Array(v) => dec(v)
+        case _ => None
+      }
+    )
   }
 }
 
@@ -212,7 +136,7 @@ object Cell {
     separator: String = "|",
     first: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_1]]] = line =>
-    parseXD[_1, Tuple1[Codec]](separator, Tuple1(first), line)
+    parseXD(line, separator, Sized.wrap(List(first)), DecodeFromParts(separator))
 
   /**
    * Parse a line data into a `Cell[_1]` with a dictionary.
@@ -226,7 +150,7 @@ object Cell {
     separator: String = "|",
     first: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_1]]] = line =>
-    parseXDWithDictionary[_1, Tuple1[Codec], _1](dict, separator, Tuple1(first), line)
+    parseXD(line, separator, Sized.wrap(List(first)), DecodeWithDictionary[_1](dict))
 
   /**
    * Parse a line into a `Cell[_1]` with a schema.
@@ -240,7 +164,7 @@ object Cell {
     separator: String = "|",
     first: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_1]]] = line =>
-    parseXDWithSchema[_1, Tuple1[Codec]](schema, separator, Tuple1(first), line)
+    parseXD(line, separator, Sized.wrap(List(first)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `Cell[_2]`.
@@ -254,7 +178,7 @@ object Cell {
     first: Codec = StringCodec,
     second: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_2]]] = line =>
-    parseXD[_2, (Codec, Codec)](separator, (first, second), line)
+    parseXD(line, separator, Sized.wrap(List(first, second)), DecodeFromParts(separator))
 
   /**
    * Parse a line into a `Cell[_2]` with a dictionary.
@@ -275,7 +199,7 @@ object Cell {
     ev1: LTEq[dim.N, _2],
     ev2: ToInt[dim.N]
   ): (String) => TraversableOnce[Either[String, Cell[_2]]] = line =>
-    parseXDWithDictionary[_2, (Codec, Codec), dim.N](dict, separator, (first, second), line)
+    parseXD(line, separator, Sized.wrap(List(first, second)), DecodeWithDictionary[dim.N](dict))
 
   /**
    * Parse a line into a `Cell[_2]` with a schema.
@@ -291,7 +215,7 @@ object Cell {
     first: Codec = StringCodec,
     second: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_2]]] = line =>
-    parseXDWithSchema[_2, (Codec, Codec)](schema, separator, (first, second), line)
+    parseXD(line, separator, Sized.wrap(List(first, second)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `Cell[_3]`.
@@ -307,7 +231,7 @@ object Cell {
     second: Codec = StringCodec,
     third: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_3]]] = line =>
-    parseXD[_3, (Codec, Codec, Codec)](separator, (first, second, third), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third)), DecodeFromParts(separator))
 
   /**
    * Parse a line into a `Cell[_3]` with a dictionary.
@@ -330,7 +254,7 @@ object Cell {
     ev1: LTEq[dim.N, _3],
     ev2: ToInt[dim.N]
   ): (String) => TraversableOnce[Either[String, Cell[_3]]] = line =>
-    parseXDWithDictionary[_3, (Codec, Codec, Codec), dim.N](dict, separator, (first, second, third), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third)), DecodeWithDictionary[dim.N](dict))
 
   /**
    * Parse a line into a `Cell[_3]` with a schema.
@@ -348,7 +272,7 @@ object Cell {
     second: Codec = StringCodec,
     third: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_3]]] = line =>
-    parseXDWithSchema[_3, (Codec, Codec, Codec)](schema, separator, (first, second, third), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `Cell[_4]`.
@@ -366,7 +290,7 @@ object Cell {
     third: Codec = StringCodec,
     fourth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_4]]] = line =>
-    parseXD[_4, (Codec, Codec, Codec, Codec)](separator, (first, second, third, fourth), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth)), DecodeFromParts(separator))
 
   /**
    * Parse a line into a `Cell[_4]` with a dictionary.
@@ -391,16 +315,7 @@ object Cell {
     ev1: LTEq[dim.N, _4],
     ev2: ToInt[dim.N]
   ): (String) => TraversableOnce[Either[String, Cell[_4]]] = line =>
-    parseXDWithDictionary[
-      _4,
-      (Codec, Codec, Codec, Codec),
-      dim.N
-    ](
-      dict,
-      separator,
-      (first, second, third, fourth),
-      line
-    )
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth)), DecodeWithDictionary[dim.N](dict))
 
   /**
    * Parse a line into a `Cell[_4]` with a schema.
@@ -420,7 +335,7 @@ object Cell {
     third: Codec = StringCodec,
     fourth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_4]]] = line =>
-    parseXDWithSchema[_4, (Codec, Codec, Codec, Codec)](schema, separator, (first, second, third, fourth), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `Cell[_5]`.
@@ -440,7 +355,7 @@ object Cell {
     fourth: Codec = StringCodec,
     fifth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_5]]] = line =>
-    parseXD[_5, (Codec, Codec, Codec, Codec, Codec)](separator, (first, second, third, fourth, fifth), line)
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth)), DecodeFromParts(separator))
 
   /**
    * Parse a line into a `Cell[_5]` with a dictionary.
@@ -467,16 +382,7 @@ object Cell {
     ev1: LTEq[dim.N, _5],
     ev2: ToInt[dim.N]
   ): (String) => TraversableOnce[Either[String, Cell[_5]]] = line =>
-    parseXDWithDictionary[
-      _5,
-      (Codec, Codec, Codec, Codec, Codec),
-      dim.N
-    ](
-      dict,
-      separator,
-      (first, second, third, fourth, fifth),
-      line
-    )
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth)), DecodeWithDictionary[dim.N](dict))
 
   /**
    * Parse a line into a `Cell[_5]` with a schema.
@@ -498,15 +404,7 @@ object Cell {
     fourth: Codec = StringCodec,
     fifth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_5]]] = line =>
-    parseXDWithSchema[
-      _5,
-      (Codec, Codec, Codec, Codec, Codec)
-    ](
-      schema,
-      separator,
-      (first, second, third, fourth, fifth),
-      line
-    )
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `Cell[_6]`.
@@ -528,14 +426,7 @@ object Cell {
     fifth: Codec = StringCodec,
     sixth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_6]]] = line =>
-    parseXD[
-      _6,
-      (Codec, Codec, Codec, Codec, Codec, Codec)
-    ](
-      separator,
-      (first, second, third, fourth, fifth, sixth),
-      line
-    )
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth, sixth)), DecodeFromParts(separator))
 
   /**
    * Parse a line into a `Cell[_6]` with a dictionary.
@@ -564,15 +455,11 @@ object Cell {
     ev1: LTEq[dim.N, _6],
     ev2: ToInt[dim.N]
   ): (String) => TraversableOnce[Either[String, Cell[_6]]] = line =>
-    parseXDWithDictionary[
-      _6,
-      (Codec, Codec, Codec, Codec, Codec, Codec),
-      dim.N
-    ](
-      dict,
+    parseXD(
+      line,
       separator,
-      (first, second, third, fourth, fifth, sixth),
-      line
+      Sized.wrap(List(first, second, third, fourth, fifth, sixth)),
+      DecodeWithDictionary[dim.N](dict)
     )
 
   /**
@@ -597,15 +484,7 @@ object Cell {
     fifth: Codec = StringCodec,
     sixth: Codec = StringCodec
   ): (String) => TraversableOnce[Either[String, Cell[_6]]] = line =>
-    parseXDWithSchema[
-      _6,
-      (Codec, Codec, Codec, Codec, Codec, Codec)
-    ](
-      schema,
-      separator,
-      (first, second, third, fourth, fifth, sixth),
-      line
-    )
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth, sixth)), DecodeWithSchema(schema))
 
   /**
    * Parse a line into a `List[Cell[_2]]` with column definitions.
@@ -655,90 +534,30 @@ object Cell {
     List(if (descriptive) t.toString else t.toShortString(separator, codec, schema))
 
   private def parseXD[
-    Q <: Nat : ToInt,
-    P <: Product
+    Q <: Nat : ToInt
   ](
+    line: String,
     separator: String,
-    codecs: P,
-    line: String
-  )(implicit
-    mc: CellFactory.Aux[P, Option[Cell[Q]]]
+    codecs: Sized[List[Codec], Q],
+    decoder: CellContentDecoder
   ): TraversableOnce[Either[String, Cell[Q]]] = {
     val split = Nat.toInt[Q]
 
-    line.trim.split(Pattern.quote(separator), split + 3).splitAt(split) match {
-      case (pos, Array(c, s, v)) => mc(
-          codecs,
-          pos,
-          v,
-          (v: String) => Content.fromShortString(c + separator + s + separator + v, separator)
-        )
-        .map(Right(_))
-        .orElse(Option(Left("Unable to decode: '" + line + "'")))
-      case _ => List(Left("Unable to split: '" + line + "'"))
-    }
-  }
+    val (pos, con) = line.trim.split(Pattern.quote(separator), split + decoder.parts).splitAt(split)
 
-  private def parseXDWithSchema[
-    Q <: Nat : ToInt,
-    P <: Product
-  ](
-    schema: Content.Parser,
-    separator: String,
-    codecs: P,
-    line: String
-  )(implicit
-    mc: CellFactory.Aux[P, Option[Cell[Q]]]
-  ): TraversableOnce[Either[String, Cell[Q]]] = {
-    val split = Nat.toInt[Q]
+    if (pos.size != split || con.size != decoder.parts)
+      List(Left("Unable to split: '" + line + "'"))
+    else
+      decoder.decode(pos) match {
+        case Some(dec) =>
+          val cell = for {
+            p <- codecs.zip(pos).flatMap { case (c, p) => c.decode(p) }.sized[Q]
+            c <- dec(con)
+          } yield Right(Cell(Position(p), c))
 
-    line.trim.split(Pattern.quote(separator), split + 1).splitAt(split) match {
-      case (pos, Array(v)) => mc(
-          codecs,
-          pos,
-          v,
-          schema
-        )
-        .map(Right(_))
-        .orElse(Option(Left("Unable to decode: '" + line + "'")))
-      case _ => List(Left("Unable to split: '" + line + "'"))
-    }
-  }
-
-  private def parseXDWithDictionary[
-    Q <: Nat : ToInt,
-    P <: Product,
-    D <: Nat : ToInt
-  ](
-    dict: Map[String, Content.Parser],
-    separator: String,
-    codecs: P,
-    line: String
-  )(implicit
-    mc: CellFactory.Aux[P, Option[Cell[Q]]]
-  ): TraversableOnce[Either[String, Cell[Q]]] = {
-    val split = Nat.toInt[Q]
-    val idx = Nat.toInt[D]
-
-    def getD(positions: Array[String]): Option[Content.Parser] = for {
-      pos <- Try(positions(if (idx == 0) positions.length - 1 else idx - 1)).toOption
-      decoder <- dict.get(pos)
-    } yield decoder
-
-    line.trim.split(Pattern.quote(separator), split + 1).splitAt(split) match {
-      case (pos, Array(v)) => getD(pos) match {
-        case Some(decoder) => mc(
-            codecs,
-            pos,
-            v,
-            decoder
-          )
-          .map(Right(_))
-          .orElse(Option(Left("Unable to decode: '" + line + "'")))
-        case _ => List(Left("Missing schema for: '" + line + "'"))
+          cell.orElse(Option(Left("Unable to decode: '" + line + "'")))
+        case _ =>  List(Left("Missing schema for: '" + line + "'"))
       }
-      case _ => List(Left("Unable to split: '" + line + "'"))
-    }
   }
 }
 

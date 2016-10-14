@@ -205,6 +205,9 @@ object Position {
     nineth: Value
   ): Position[_9] = PositionImpl(List(first, second, third, fourth, fifth, sixth, seventh, eighth, nineth))
 
+  /** Constructor for P dimensional position. */
+  def apply[P <: Nat](coordinates: Sized[List[Value], P]): Position[P] = PositionImpl(coordinates.unsized)
+
   /** Standard `unapplySeq` method for pattern matching. */
   def unapplySeq[P <: Nat](pos: Position[P]): Option[Seq[Value]] = Option(pos.coordinates)
 
