@@ -194,15 +194,13 @@ When at the Scalding REPL console, the first step is to import grimlock's functi
 // Entering paste mode (ctrl-D to finish)
 
 import commbank.grimlock.framework._
-import commbank.grimlock.framework.aggregate._
-import commbank.grimlock.framework.content._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.scalding.environment._
 import commbank.grimlock.scalding.environment.Context._
 import commbank.grimlock.scalding.Matrix._
 
-import shapeless.nat.{ _0, _1, _2 }
+import shapeless.nat.{ _1, _2 }
 
 ```
 
@@ -245,7 +243,7 @@ The following shows a number of basic operations (get number of rows, get type o
 scala> data.size(_1).dump
 Cell(Position(StringValue(_1,StringCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
 
-scala> data.types(Over(_2))().dump
+scala> data.types(Over(_2))(false).dump
 (Position(StringValue(fid:A,StringCodec)),Numerical)
 (Position(StringValue(fid:B,StringCodec)),Categorical)
 (Position(StringValue(fid:C,StringCodec)),Numerical)
@@ -277,13 +275,12 @@ Cell(Position(StringValue(iid:0375226,StringCodec)),Content(DiscreteSchema[Long]
 Cell(Position(StringValue(iid:0444510,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
 Cell(Position(StringValue(iid:1004305,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
 
-scala> val aggregators: List[Aggregator[_1, _0, _1]] = List(
+scala> counts.summarise(Along(_1))(
   Mean().andThenRelocate(_.position.append("mean").toOption),
   StandardDeviation().andThenRelocate(_.position.append("sd").toOption),
   Skewness().andThenRelocate(_.position.append("skewness").toOption),
-  Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption))
-
-scala> counts.summarise(Along(_1))(aggregators).dump
+  Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption)
+).dump
 Cell(Position(StringValue(mean,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(4.0,DoubleCodec)))
 Cell(Position(StringValue(sd,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(1.6583123951777,DoubleCodec)))
 Cell(Position(StringValue(skewness,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(0.348873899490999,DoubleCodec)))
@@ -297,7 +294,8 @@ scala> counts.summarise(Along(_1))(Moments(
   _.append("mean").toOption,
   _.append("sd").toOption,
   _.append("skewness").toOption,
-  _.append("kurtosis").toOption)).dump
+  _.append("kurtosis").toOption)
+).dump
 
 ```
 
@@ -347,15 +345,13 @@ When at the Spark REPL console, the first step is to import grimlock's functiona
 // Entering paste mode (ctrl-D to finish)
 
 import commbank.grimlock.framework._
-import commbank.grimlock.framework.aggregate._
-import commbank.grimlock.framework.content._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.spark.environment._
 import commbank.grimlock.spark.environment.Context._
 import commbank.grimlock.spark.Matrix._
 
-import shapeless.nat.{ _0, _1, _2 }
+import shapeless.nat.{ _1, _2 }
 
 ```
 
@@ -398,7 +394,7 @@ The following shows a number of basic operations (get number of rows, get type o
 scala> data.size(_1).foreach(println)
 Cell(Position(StringValue(_1,StringCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
 
-scala> data.types(Over(_2))().foreach(println)
+scala> data.types(Over(_2))(false).foreach(println)
 (Position(StringValue(fid:A,StringCodec)),Numerical)
 (Position(StringValue(fid:B,StringCodec)),Categorical)
 (Position(StringValue(fid:C,StringCodec)),Numerical)
@@ -430,13 +426,12 @@ Cell(Position(StringValue(iid:0375226,StringCodec)),Content(DiscreteSchema[Long]
 Cell(Position(StringValue(iid:0444510,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
 Cell(Position(StringValue(iid:1004305,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
 
-scala> val aggregators: List[Aggregator[_1, _0, _1]] = List(
+scala> counts.summarise(Along(_1))(
   Mean().andThenRelocate(_.position.append("mean").toOption),
   StandardDeviation().andThenRelocate(_.position.append("sd").toOption),
   Skewness().andThenRelocate(_.position.append("skewness").toOption),
-  Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption))
-
-scala> counts.summarise(Along(_1))(aggregators).foreach(println)
+  Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption)
+).foreach(println)
 Cell(Position(StringValue(mean,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(4.0,DoubleCodec)))
 Cell(Position(StringValue(sd,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(1.6583123951777,DoubleCodec)))
 Cell(Position(StringValue(skewness,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(0.348873899490999,DoubleCodec)))
@@ -450,7 +445,8 @@ scala> counts.summarise(Along(_1))(Moments(
   _.append("mean").toOption,
   _.append("sd").toOption,
   _.append("skewness").toOption,
-  _.append("kurtosis").toOption)).foreach(println)
+  _.append("kurtosis").toOption)
+).foreach(println)
 ```
 
 For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Scoring.scala).

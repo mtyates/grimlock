@@ -15,7 +15,6 @@
 package commbank.grimlock.scalding.examples
 
 import commbank.grimlock.framework._
-import commbank.grimlock.framework.aggregate._
 import commbank.grimlock.framework.content._
 //import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.partition._
@@ -73,22 +72,19 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
   val train = parts
     .get("train")
 
-  // Define descriptive statistics to be computed on the training data.
-  val dstats: List[Aggregator[_2, _1, _2]] = List(
-    Count().andThenRelocate(_.position.append("count").toOption),
-    Moments(
-      _.append("mean").toOption,
-      _.append("sd").toOption,
-      _.append("skewness").toOption,
-      _.append("kurtosis").toOption
-    ),
-    Limits(_.append("min").toOption, _.append("max").toOption),
-    MaxAbs().andThenRelocate(_.position.append("max.abs").toOption)
-  )
-
   // Compute descriptive statistics on the training data.
   val descriptive = train
-    .summarise(Along(_1))(dstats)
+    .summarise(Along(_1))(
+      Count().andThenRelocate(_.position.append("count").toOption),
+      Moments(
+        _.append("mean").toOption,
+        _.append("sd").toOption,
+        _.append("skewness").toOption,
+        _.append("kurtosis").toOption
+      ),
+      Limits(_.append("min").toOption, _.append("max").toOption),
+      MaxAbs().andThenRelocate(_.position.append("max.abs").toOption)
+    )
 
   // Compute histogram on the categorical features in the training data.
   val histogram = train
@@ -99,22 +95,17 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
     .summarise(Over(_1))(Sum())
     .compact()
 
-  // Define type of the counts map.
-  type W = Map[Position[_1], Content]
-
   // Define extractor to extract counts from the map.
   val extractCount = ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble)
 
-  // Define summary statisics to compute on the histogram.
-  val sstats: List[AggregatorWithValue[_2, _1, _2] { type V >: W }] = List(
-    Count().andThenRelocate(_.position.append("num.cat").toOption),
-    Entropy(extractCount).andThenRelocate(_.position.append("entropy").toOption),
-    FrequencyRatio().andThenRelocate(_.position.append("freq.ratio").toOption)
-  )
-
   // Compute summary statisics on the histogram.
   val summary = histogram
-    .summariseWithValue(Over(_1))(counts, sstats)
+    .summariseWithValue(Over(_1))(
+      counts,
+      Count().andThenRelocate(_.position.append("num.cat").toOption),
+      Entropy(extractCount).andThenRelocate(_.position.append("entropy").toOption),
+      FrequencyRatio().andThenRelocate(_.position.append("freq.ratio").toOption)
+    )
 
   // Combine all statistics and write result to file
   val stats = (descriptive ++ histogram ++ summary)

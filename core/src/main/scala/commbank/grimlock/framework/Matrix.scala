@@ -620,9 +620,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   /**
    * Summarise a matrix and return the aggregates.
    *
-   * @param slice      Encapsulates the dimension(s) along which to aggregate.
-   * @param tuner      The tuner for the job.
-   * @param aggregator The aggregator(s) to apply to the data.
+   * @param slice       Encapsulates the dimension(s) along which to aggregate.
+   * @param tuner       The tuner for the job.
+   * @param aggregators The aggregator(s) to apply to the data.
    *
    * @return A `U[Cell[Q]]` with the aggregates.
    */
@@ -633,21 +633,21 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     slice: Slice[L, P],
     tuner: T
   )(
-    aggregator: Aggregator[P, slice.S, Q]
+    aggregators: Aggregator[P, slice.S, Q]*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: Aggregator.Validate[slice.S, Q, aggregator.type],
+    ev3: Aggregator.Validate[P, slice.S, Q],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]]
 
   /**
    * Summarise a matrix, using a user supplied value, and return the aggregates.
    *
-   * @param slice      Encapsulates the dimension(s) along which to aggregate.
-   * @param tuner      The tuner for the job.
-   * @param value      A `E` holding a user supplied value.
-   * @param aggregator The aggregator(s) to apply to the data.
+   * @param slice       Encapsulates the dimension(s) along which to aggregate.
+   * @param tuner       The tuner for the job.
+   * @param value       A `E` holding a user supplied value.
+   * @param aggregators The aggregator(s) to apply to the data.
    *
    * @return A `U[Cell[Q]]` with the aggregates.
    */
@@ -660,11 +660,11 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     tuner: T
   )(
     value: E[W],
-    aggregator: AggregatorWithValue[P, slice.S, Q] { type V >: W }
+    aggregators: AggregatorWithValue[P, slice.S, Q] { type V >: W }*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: AggregatorWithValue.Validate[slice.S, Q, aggregator.type],
+    ev3: AggregatorWithValue.Validate[P, slice.S, Q, W],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]]
 

@@ -576,14 +576,16 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     slice: Slice[L, P],
     tuner: T = Default()
   )(
-    aggregator: Aggregator[P, slice.S, Q]
+    aggregators: Aggregator[P, slice.S, Q]*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: Aggregator.Validate[slice.S, Q, aggregator.type],
+    ev3: Aggregator.Validate[P, slice.S, Q],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
-    implicit val tag = aggregator.tag
+    val aggregator = ev3.check(aggregators)
+
+    implicit val tag = aggregator.tTag
 
     data
       .flatMap(c => aggregator.prepare(c).map(t => (slice.selected(c.position), t)))
@@ -600,14 +602,16 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     tuner: T = Default()
   )(
     value: E[W],
-    aggregator: AggregatorWithValue[P, slice.S, Q] { type V >: W }
+    aggregators: AggregatorWithValue[P, slice.S, Q] { type V >: W }*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: AggregatorWithValue.Validate[slice.S, Q, aggregator.type],
+    ev3: AggregatorWithValue.Validate[P, slice.S, Q, W],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
-    implicit val tag = aggregator.tag
+    val aggregator = ev3.check(aggregators)
+
+    implicit val tag = aggregator.tTag
 
     data
       .flatMap(c => aggregator.prepareWithValue(c, value).map(t => (slice.selected(c.position), t)))
@@ -805,7 +809,7 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     ev2: ClassTag[Position[L]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[L]] = {
-    implicit val tag: ClassTag[squasher.T] = squasher.tag
+    implicit val tag: ClassTag[squasher.T] = squasher.tTag
 
     data
       .map(c => (c.position.remove(dim), squasher.prepare(c, dim)))
@@ -827,7 +831,7 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     ev2: ClassTag[Position[L]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[L]] = {
-    implicit val tag: ClassTag[squasher.T] = squasher.tag
+    implicit val tag: ClassTag[squasher.T] = squasher.tTag
 
     data
       .map(c => (c.position.remove(dim), squasher.prepareWithValue(c, dim, value)))

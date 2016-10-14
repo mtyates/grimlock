@@ -58,7 +58,7 @@ trait SquasherWithValue[P <: Nat] extends java.io.Serializable {
   type V
 
   /** ClassTag of type of the state being squashed. */
-  val tag: ClassTag[T]
+  val tTag: ClassTag[T]
 
   /**
    * Prepare for squashing.

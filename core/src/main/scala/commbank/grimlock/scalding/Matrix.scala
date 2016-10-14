@@ -791,18 +791,22 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     slice: Slice[L, P],
     tuner: T = Default()
   )(
-    aggregator: Aggregator[P, slice.S, Q]
+    aggregators: Aggregator[P, slice.S, Q]*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: Aggregator.Validate[slice.S, Q, aggregator.type],
+    ev3: Aggregator.Validate[P, slice.S, Q],
     ev4: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = data
-    .flatMap { case c => aggregator.prepare(c).map(t => (slice.selected(c.position), t)) }
-    .group
-    .tuneReducers(tuner.parameters)
-    .reduce[aggregator.T] { case (lt, rt) => aggregator.reduce(lt, rt) }
-    .flatMap { case (p, t) => aggregator.present(p, t) }
+  ): U[Cell[Q]] = {
+    val aggregator = ev3.check(aggregators)
+
+    data
+      .flatMap { case c => aggregator.prepare(c).map(t => (slice.selected(c.position), t)) }
+      .group
+      .tuneReducers(tuner.parameters)
+      .reduce[aggregator.T] { case (lt, rt) => aggregator.reduce(lt, rt) }
+      .flatMap { case (p, t) => aggregator.present(p, t) }
+  }
 
   def summariseWithValue[
     Q <: Nat,
@@ -813,20 +817,24 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     tuner: T = Default()
   )(
     value: E[W],
-    aggregator: AggregatorWithValue[P, slice.S, Q] { type V >: W }
+    aggregators: AggregatorWithValue[P, slice.S, Q] { type V >: W }*
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
-    ev3: AggregatorWithValue.Validate[slice.S, Q, aggregator.type],
+    ev3: AggregatorWithValue.Validate[P, slice.S, Q, W],
     ev4: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = data
-    .flatMapWithValue(value) {
-      case (c, vo) => aggregator.prepareWithValue(c, vo.get).map(t => (slice.selected(c.position), t))
-    }
-    .group
-    .tuneReducers(tuner.parameters)
-    .reduce[aggregator.T] { case (lt, rt) => aggregator.reduce(lt, rt) }
-    .flatMapWithValue(value) { case ((p, t), vo) => aggregator.presentWithValue(p, t, vo.get) }
+  ): U[Cell[Q]] = {
+    val aggregator = ev3.check(aggregators)
+
+    data
+      .flatMapWithValue(value) {
+        case (c, vo) => aggregator.prepareWithValue(c, vo.get).map(t => (slice.selected(c.position), t))
+      }
+      .group
+      .tuneReducers(tuner.parameters)
+      .reduce[aggregator.T] { case (lt, rt) => aggregator.reduce(lt, rt) }
+      .flatMapWithValue(value) { case ((p, t), vo) => aggregator.presentWithValue(p, t, vo.get) }
+  }
 
   def toSequence[K <: Writable, V <: Writable](writer: SequenceWriter[K, V]): U[(K, V)] = data.flatMap(writer(_))
 
