@@ -20,20 +20,19 @@ import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.environment._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.transform._
-import commbank.grimlock.framework.Type._
 
 import shapeless.Nat
 import shapeless.nat._1
 
 private[transform] object Transform {
-  def check[P <: Nat](cell: Cell[P], t: Type): Boolean = cell.content.schema.kind.isSpecialisationOf(t)
+  def check[P <: Nat](cell: Cell[P], t: Type): Boolean = cell.content.schema.kind.isTypeOf(t)
 
   def presentDouble[
     P <: Nat
   ](
     cell: Cell[P],
     f: (Double) => Double
-  ): TraversableOnce[Cell[P]] = (check(cell, Numerical), cell.content.value.asDouble) match {
+  ): TraversableOnce[Cell[P]] = (check(cell, NumericType), cell.content.value.asDouble) match {
     case (true, Some(d)) => List(Cell(cell.position, Content(ContinuousSchema[Double](), f(d))))
     case _ => List()
   }
@@ -47,11 +46,13 @@ private[transform] object Transform {
     value: Extract[P, W, Double],
     transform: (Double, Double) => Double,
     inverse: Boolean = false
-  ): TraversableOnce[Cell[P]] = (check(cell, Numerical), cell.content.value.asDouble, value.extract(cell, ext)) match {
-    case (true, Some(l), Some(r)) =>
-      List(Cell(cell.position, Content(ContinuousSchema[Double](), if (inverse) transform(r, l) else transform(l, r))))
-    case _ => List()
-  }
+  ): TraversableOnce[Cell[P]] =
+    (check(cell, NumericType), cell.content.value.asDouble, value.extract(cell, ext)) match {
+      case (true, Some(l), Some(r)) => List(
+        Cell(cell.position, Content(ContinuousSchema[Double](), if (inverse) transform(r, l) else transform(l, r)))
+      )
+      case _ => List()
+    }
 
   def presentDoubleWithTwoValues[
     P <: Nat,
@@ -63,7 +64,7 @@ private[transform] object Transform {
     second: Extract[P, W, Double],
     transform: (Double, Double, Double) => Double
   ): TraversableOnce[Cell[P]] =
-    (check(cell, Numerical), cell.content.value.asDouble, first.extract(cell, ext), second.extract(cell, ext)) match {
+    (check(cell, NumericType), cell.content.value.asDouble, first.extract(cell, ext), second.extract(cell, ext)) match {
       case (true, Some(v), Some(f), Some(s)) =>
         List(Cell(cell.position, Content(ContinuousSchema[Double](), transform(v, f, s))))
       case _ => List()
@@ -84,7 +85,7 @@ case class Indicator[P <: Nat]() extends Transformer[P, P] {
  */
 case class Binarise[P <: Nat](pos: Locate.FromCell[P, P]) extends Transformer[P, P] {
   def present(cell: Cell[P]): TraversableOnce[Cell[P]] =
-    if (Transform.check(cell, Categorical)) pos(cell).map(Cell(_, Content(DiscreteSchema[Long](), 1))) else List()
+    if (Transform.check(cell, CategoricalType)) pos(cell).map(Cell(_, Content(DiscreteSchema[Long](), 1))) else List()
 }
 
 /**
@@ -363,7 +364,7 @@ case class Cut[P <: Nat, W](bins: Extract[P, W, List[Double]]) extends Transform
   type V = W
 
   def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] =
-    (Transform.check(cell, Numerical), cell.content.value.asDouble, bins.extract(cell, ext)) match {
+    (Transform.check(cell, NumericType), cell.content.value.asDouble, bins.extract(cell, ext)) match {
       case (true, Some(v), Some(b)) =>
         val bstr = b.sliding(2).map("(" + _.mkString(",") + "]").toList
 

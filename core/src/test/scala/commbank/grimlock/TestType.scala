@@ -14,216 +14,227 @@
 
 package commbank.grimlock
 
-import commbank.grimlock.framework.Type._
+import commbank.grimlock.framework._
 
 class TestMixedType extends TestGrimlock {
 
   "A Mixed" should "return its short name" in {
-    Mixed.toShortString shouldBe "mixed"
+    MixedType.toShortString shouldBe "mixed"
   }
 
   it should "return its name" in {
-    Mixed.toString shouldBe "Mixed"
+    MixedType.toString shouldBe "MixedType"
   }
 
   it should "return correct generalised type" in {
-    Mixed.getGeneralisation shouldBe Mixed
+    MixedType.getRootType shouldBe MixedType
   }
 
   it should "match correct specialisation" in {
-    Mixed.isSpecialisationOf(Mixed) shouldBe true
+    MixedType.isTypeOf(MixedType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Mixed.isSpecialisationOf(Numerical) shouldBe false
+    MixedType.isTypeOf(NumericType) shouldBe false
+    MixedType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 
-class TestNumericalType extends TestGrimlock {
+class TestNumericType extends TestGrimlock {
 
-  "A Numerical" should "return its short name" in {
-    Numerical.toShortString shouldBe "numerical"
+  "A Numeric" should "return its short name" in {
+    NumericType.toShortString shouldBe "numeric"
   }
 
   it should "return its name" in {
-    Numerical.toString shouldBe "Numerical"
+    NumericType.toString shouldBe "NumericType"
   }
 
   it should "return correct generalised type" in {
-    Numerical.getGeneralisation shouldBe Numerical
+    NumericType.getRootType shouldBe NumericType
   }
 
   it should "match correct specialisation" in {
-    Numerical.isSpecialisationOf(Numerical) shouldBe true
+    NumericType.isTypeOf(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Numerical.isSpecialisationOf(Continuous) shouldBe false
+    NumericType.isTypeOf(MixedType) shouldBe false
+    NumericType.isTypeOf(OrdinalType) shouldBe false
+    NumericType.isTypeOf(ContinuousType) shouldBe false
   }
 }
 
 class TestContinuousType extends TestGrimlock {
 
   "A Continuous" should "return its short name" in {
-    Continuous.toShortString shouldBe "continuous"
+    ContinuousType.toShortString shouldBe "continuous"
   }
 
   it should "return its name" in {
-    Continuous.toString shouldBe "Continuous"
+    ContinuousType.toString shouldBe "ContinuousType"
   }
 
   it should "return correct generalised type" in {
-    Continuous.getGeneralisation shouldBe Numerical
+    ContinuousType.getRootType shouldBe NumericType
   }
 
   it should "match correct specialisation" in {
-    Continuous.isSpecialisationOf(Continuous) shouldBe true
-    Continuous.isSpecialisationOf(Numerical) shouldBe true
+    ContinuousType.isTypeOf(ContinuousType) shouldBe true
+    ContinuousType.isTypeOf(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Continuous.isSpecialisationOf(Mixed) shouldBe false
+    ContinuousType.isTypeOf(MixedType) shouldBe false
+    ContinuousType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 
 class TestDiscreteType extends TestGrimlock {
 
   "A Discrete" should "return its short name" in {
-    Discrete.toShortString shouldBe "discrete"
+    DiscreteType.toShortString shouldBe "discrete"
   }
 
   it should "return its name" in {
-    Discrete.toString shouldBe "Discrete"
+    DiscreteType.toString shouldBe "DiscreteType"
   }
 
   it should "return correct generalised type" in {
-    Discrete.getGeneralisation shouldBe Numerical
+    DiscreteType.getRootType shouldBe NumericType
   }
 
   it should "match correct specialisation" in {
-    Discrete.isSpecialisationOf(Discrete) shouldBe true
-    Discrete.isSpecialisationOf(Numerical) shouldBe true
+    DiscreteType.isTypeOf(DiscreteType) shouldBe true
+    DiscreteType.isTypeOf(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Discrete.isSpecialisationOf(Mixed) shouldBe false
+    DiscreteType.isTypeOf(MixedType) shouldBe false
+    DiscreteType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 
 class TestCategoricalType extends TestGrimlock {
 
   "A Categorical" should "return its short name" in {
-    Categorical.toShortString shouldBe "categorical"
+    CategoricalType.toShortString shouldBe "categorical"
   }
 
   it should "return its name" in {
-    Categorical.toString shouldBe "Categorical"
+    CategoricalType.toString shouldBe "CategoricalType"
   }
 
   it should "return correct generalised type" in {
-    Categorical.getGeneralisation shouldBe Categorical
+    CategoricalType.getRootType shouldBe CategoricalType
   }
 
   it should "match correct specialisation" in {
-    Categorical.isSpecialisationOf(Categorical) shouldBe true
+    CategoricalType.isTypeOf(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Categorical.isSpecialisationOf(Continuous) shouldBe false
+    CategoricalType.isTypeOf(NumericType) shouldBe false
+    CategoricalType.isTypeOf(DiscreteType) shouldBe false
+    CategoricalType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 
 class TestNominalType extends TestGrimlock {
 
   "A Nominal" should "return its short name" in {
-    Nominal.toShortString shouldBe "nominal"
+    NominalType.toShortString shouldBe "nominal"
   }
 
   it should "return its name" in {
-    Nominal.toString shouldBe "Nominal"
+    NominalType.toString shouldBe "NominalType"
   }
 
   it should "return correct generalised type" in {
-    Nominal.getGeneralisation shouldBe Categorical
+    NominalType.getRootType shouldBe CategoricalType
   }
 
   it should "match correct specialisation" in {
-    Nominal.isSpecialisationOf(Nominal) shouldBe true
-    Nominal.isSpecialisationOf(Categorical) shouldBe true
+    NominalType.isTypeOf(NominalType) shouldBe true
+    NominalType.isTypeOf(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Nominal.isSpecialisationOf(Mixed) shouldBe false
+    NominalType.isTypeOf(MixedType) shouldBe false
+    NominalType.isTypeOf(DiscreteType) shouldBe false
   }
 }
 
 class TestOrdinalType extends TestGrimlock {
 
   "A Ordinal" should "return its short name" in {
-    Ordinal.toShortString shouldBe "ordinal"
+    OrdinalType.toShortString shouldBe "ordinal"
   }
 
   it should "return its name" in {
-    Ordinal.toString shouldBe "Ordinal"
+    OrdinalType.toString shouldBe "OrdinalType"
   }
 
   it should "return correct generalised type" in {
-    Ordinal.getGeneralisation shouldBe Categorical
+    OrdinalType.getRootType shouldBe CategoricalType
   }
 
   it should "match correct specialisation" in {
-    Ordinal.isSpecialisationOf(Ordinal) shouldBe true
-    Ordinal.isSpecialisationOf(Categorical) shouldBe true
+    OrdinalType.isTypeOf(OrdinalType) shouldBe true
+    OrdinalType.isTypeOf(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Ordinal.isSpecialisationOf(Mixed) shouldBe false
+    OrdinalType.isTypeOf(MixedType) shouldBe false
+    OrdinalType.isTypeOf(DiscreteType) shouldBe false
   }
 }
 
 class TestDateType extends TestGrimlock {
 
   "A Date" should "return its short name" in {
-    Date.toShortString shouldBe "date"
+    DateType.toShortString shouldBe "date"
   }
 
   it should "return its name" in {
-    Date.toString shouldBe "Date"
+    DateType.toString shouldBe "DateType"
   }
 
   it should "return correct generalised type" in {
-    Date.getGeneralisation shouldBe Date
+    DateType.getRootType shouldBe DateType
   }
 
   it should "match correct specialisation" in {
-    Date.isSpecialisationOf(Date) shouldBe true
+    DateType.isTypeOf(DateType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Date.isSpecialisationOf(Numerical) shouldBe false
+    DateType.isTypeOf(NumericType) shouldBe false
+    DateType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 
 class TestEventType extends TestGrimlock {
 
   "A Structured" should "return its short name" in {
-    Structured.toShortString shouldBe "structured"
+    StructuredType.toShortString shouldBe "structured"
   }
 
   it should "return its name" in {
-    Structured.toString shouldBe "Structured"
+    StructuredType.toString shouldBe "StructuredType"
   }
 
   it should "return correct generalised type" in {
-    Structured.getGeneralisation shouldBe Structured
+    StructuredType.getRootType shouldBe StructuredType
   }
 
   it should "match correct specialisation" in {
-    Structured.isSpecialisationOf(Structured) shouldBe true
+    StructuredType.isTypeOf(StructuredType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    Structured.isSpecialisationOf(Numerical) shouldBe false
+    StructuredType.isTypeOf(NumericType) shouldBe false
+    StructuredType.isTypeOf(OrdinalType) shouldBe false
   }
 }
 

@@ -40,7 +40,7 @@ import shapeless.nat.{ _1, _2, _3 }
 // value. All other values are passed through.
 case class CeilingBucketing() extends Transformer[_2, _2] {
   def present(cell: Cell[_2]): TraversableOnce[Cell[_2]] = {
-    val con = (cell.content.schema.kind.isSpecialisationOf(Type.Numerical), cell.content.value.asDouble) match {
+    val con = (cell.content.schema.kind.isTypeOf(NumericType), cell.content.value.asDouble) match {
       case (true, Some(d)) => Content(NominalSchema[Long](), math.ceil(d).toLong)
       case _ => cell.content
     }

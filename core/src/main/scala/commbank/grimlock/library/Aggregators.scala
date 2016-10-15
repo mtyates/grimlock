@@ -35,7 +35,7 @@ private[aggregate] trait PrepareDouble[P <: Nat] {
   val filter: Boolean
 
   def prepareDouble(cell: Cell[P]): Option[Double] =
-    if (filter && !cell.content.schema.kind.isSpecialisationOf(Type.Numerical))
+    if (filter && !cell.content.schema.kind.isTypeOf(NumericType))
       None
     else
       Option(cell.content.value.asDouble.getOrElse(Double.NaN))

@@ -135,7 +135,7 @@ case class ContinuousSchema[
 )(implicit
   ev: Numeric[T]
 ) extends NumericalSchema[T] { self =>
-  val kind = Type.Continuous
+  val kind = ContinuousType
 
   def validate(value: Value { type D = self.D }): Boolean = validateRange(value)
 
@@ -147,7 +147,7 @@ case class ContinuousSchema[
 /** Companion object to `ContinuousSchema` case class. */
 object ContinuousSchema {
   /** Pattern for matching short string continuous schema. */
-  val Pattern = (Type.Continuous.name + """(?:\((?:(.*?:.*))?\))?""").r
+  val Pattern = (ContinuousType.name + """(?:\((?:(.*?:.*))?\))?""").r
 
   /** Construct a continuous schema with unbounded range. */
   def apply[T : ClassTag]()(implicit ev: Numeric[T]): ContinuousSchema[T] = ContinuousSchema(None)
@@ -210,7 +210,7 @@ case class DiscreteSchema[
 )(implicit
   ev: Integral[T]
 ) extends NumericalSchema[T] { self =>
-  val kind = Type.Discrete
+  val kind = DiscreteType
 
   def validate(value: Value { type D = self.D }): Boolean = {
     import ev._
@@ -227,7 +227,7 @@ case class DiscreteSchema[
 /** Companion object to `DiscreteSchema` case class. */
 object DiscreteSchema {
   /** Pattern for matching short string discrete schema. */
-  val Pattern = (Type.Discrete.name + """(?:\((?:(.*?:.*?),(.*))?\))?""").r
+  val Pattern = (DiscreteType.name + """(?:\((?:(.*?:.*?),(.*))?\))?""").r
 
   /** Construct a discrete schema with unbounded range and step size 1. */
   def apply[T : ClassTag]()(implicit ev: Integral[T]): DiscreteSchema[T] = DiscreteSchema(None, None)
@@ -286,7 +286,9 @@ trait CategoricalSchema[T] extends Schema { self =>
   def validate(value: Value { type D = self.D }): Boolean = domain.isEmpty || domain.contains(value.value)
 
   protected def shortName(name: String): String =
-    if (name.contains(".")) { if (name == "java.lang.String") "String" else name } else name.capitalize
+    if (name.startsWith("java.lang.") || name.startsWith("commbank.grimlock.")) name.split("\\.").last
+    else if (name.contains(".")) name
+    else name.capitalize
 }
 
 /**
@@ -295,7 +297,7 @@ trait CategoricalSchema[T] extends Schema { self =>
  * @param domain The values of the variable.
  */
 case class NominalSchema[T : ClassTag](domain: Set[T] = Set[T]()) extends CategoricalSchema[T] {
-  val kind = Type.Nominal
+  val kind = NominalType
 
   override protected def paramString(short: Boolean, f: (D) => String): String =
     SchemaParameters.writeSet(short, domain, f)
@@ -305,7 +307,7 @@ case class NominalSchema[T : ClassTag](domain: Set[T] = Set[T]()) extends Catego
 /** Companion object to `NominalSchema` case class. */
 object NominalSchema {
   /** Pattern for matching short string nominal schema. */
-  val Pattern = (Type.Nominal.name + """(?:\((?:(.*?))?\))?""").r
+  val Pattern = (NominalType.name + """(?:\((?:(.*?))?\))?""").r
 
   /**
    * Parse a nominal schema from string.
@@ -345,7 +347,7 @@ object NominalSchema {
  * @param domain The optional values of the variable.
  */
 case class OrdinalSchema[T : ClassTag: Ordering](domain: Set[T] = Set[T]()) extends CategoricalSchema[T] {
-  val kind = Type.Ordinal
+  val kind = OrdinalType
 
   override protected def paramString(short: Boolean, f: (D) => String): String =
     SchemaParameters.writeOrderedSet(short, domain, f)
@@ -355,7 +357,7 @@ case class OrdinalSchema[T : ClassTag: Ordering](domain: Set[T] = Set[T]()) exte
 /** Companion object to `OrdinalSchema`. */
 object OrdinalSchema {
   /** Pattern for matching short string ordinal schema. */
-  val Pattern = (Type.Ordinal.name + """(?:\((?:(.*?))?\))?""").r
+  val Pattern = (OrdinalType.name + """(?:\((?:(.*?))?\))?""").r
 
   /**
    * Parse a ordinal schema from string.
@@ -407,7 +409,7 @@ case class DateSchema[
 ) extends Schema { self =>
   type D = T
 
-  val kind = Type.Date
+  val kind = DateType
 
   def validate(value: Value { type D = self.D }): Boolean = dates match {
     case None => true
@@ -426,7 +428,7 @@ case class DateSchema[
 /** Companion object to `DateSchema`. */
 object DateSchema {
   /** Pattern for matching short string date schema. */
-  val Pattern = (Type.Date.name + """(?:\((?:(.*?))?\))?""").r
+  val Pattern = (DateType.name + """(?:\((?:(.*?))?\))?""").r
 
   /** Construct an unbounded date schema. */
   def apply[T : ClassTag]()(implicit ev: T => Date): DateSchema[T] = DateSchema[T](None)
@@ -497,7 +499,7 @@ object DateSchema {
     }
   }
 
-  private val RangePattern = (Type.Date.name + """(?:\((?:(.*?:.*))?\))?""").r
+  private val RangePattern = (DateType.name + """(?:\((?:(.*?:.*))?\))?""").r
 }
 
 /** Schema for structured data variables. */

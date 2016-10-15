@@ -14,10 +14,12 @@
 
 package commbank.grimlock.framework.encoding
 
+import commbank.grimlock.framework.Type
+
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import scala.reflect._
+import scala.reflect.{ classTag, ClassTag }
 import scala.util.Try
 
 /** Base trait for encoding/decoding (basic) data types. */
@@ -91,6 +93,7 @@ object Codec {
     case DoubleCodec.Pattern() => DoubleCodec.fromShortString(str)
     case LongCodec.Pattern() => LongCodec.fromShortString(str)
     case BooleanCodec.Pattern() => BooleanCodec.fromShortString(str)
+    case TypeCodec.Pattern() => TypeCodec.fromShortString(str)
     case _ => None
   }
 }
@@ -162,7 +165,7 @@ case object StringCodec extends Codec {
    * @return A `Some[StringCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[StringCodec.type] = str match {
-    case Pattern() => Option(StringCodec)
+    case Pattern() => Option(this)
     case _ => None
   }
 
@@ -196,7 +199,7 @@ case object DoubleCodec extends Codec {
    * @return A `Some[DoubleCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[DoubleCodec.type] = str match {
-    case Pattern() => Option(DoubleCodec)
+    case Pattern() => Option(this)
     case _ => None
   }
 
@@ -231,7 +234,7 @@ case object LongCodec extends Codec {
    * @return A `Some[LongCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[LongCodec.type] = str match {
-    case Pattern() => Option(LongCodec)
+    case Pattern() => Option(this)
     case _ => None
   }
 
@@ -267,12 +270,45 @@ case object BooleanCodec extends Codec {
    * @return A `Some[BooleanCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[BooleanCodec.type] = str match {
-    case Pattern() => Option(BooleanCodec)
+    case Pattern() => Option(this)
     case _ => None
   }
 
   override def tag(): Option[ClassTag[D]] = Option(classTag[D])
   override def ordering(): Option[Ordering[D]] = Option(Ordering.Boolean)
+}
+
+/** Codec for dealing with `Type`. */
+case object TypeCodec extends Codec {
+  type D = Type
+  type V = TypeValue
+
+  /** Pattern for parsing `TypeCodec` from string. */
+  val Pattern = "type".r
+
+  def decode(str: String): Option[V] = Type.fromShortString(str).map(TypeValue(_, this))
+  def encode(value: D): String = value.toShortString
+
+  def compare(x: Value, y: Value): Option[Int] = (x.asType, y.asType) match {
+    case (Some(l), Some(r)) => Option(l.toString.compare(r.toString))
+    case _ => None
+  }
+
+  def toShortString() = "type"
+
+  /**
+   * Parse a TypeCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[TypeCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[TypeCodec.type] = str match {
+    case Pattern() => Option(this)
+    case _ => None
+  }
+
+  override def tag(): Option[ClassTag[D]] = Option(classTag[D])
 }
 
 /** Base trait for dealing with structured data. */

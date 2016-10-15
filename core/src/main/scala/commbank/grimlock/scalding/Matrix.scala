@@ -49,7 +49,7 @@ import commbank.grimlock.framework.{
 }
 import commbank.grimlock.framework.aggregate.{ Aggregator, AggregatorWithValue }
 import commbank.grimlock.framework.content.Content
-import commbank.grimlock.framework.content.metadata.DiscreteSchema
+import commbank.grimlock.framework.content.metadata.{ DiscreteSchema, NominalSchema }
 import commbank.grimlock.framework.DefaultTuners.{ TP1, TP2, TP4 }
 import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.pairwise.{ Comparer, Diagonal, Lower, Operator, OperatorWithValue, Upper }
@@ -876,12 +876,12 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
-  ): U[(Position[slice.S], Type)] = data
+  ): U[Cell[slice.S]] = data
     .map { case Cell(p, c) => (slice.selected(p), c.schema.kind) }
     .group
     .tuneReducers(tuner.parameters)
-    .reduce[Type] { case (lt, rt) => Type.getCommonType(lt, rt) }
-    .map { case (p, t) => (p, if (specific) t else t.getGeneralisation()) }
+    .reduce[Type] { case (lt, rt) => lt.getCommonType(rt) }
+    .map { case (p, t) => Cell(p, Content(NominalSchema[Type](), if (specific) t else t.getRootType)) }
 
   type UniqueTuners[T] = TP2[T]
   def unique[T <: Tuner : UniqueTuners](tuner: T = Default()): U[Content] = {

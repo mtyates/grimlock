@@ -24,7 +24,6 @@ import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.sample._
 import commbank.grimlock.framework.transform._
-import commbank.grimlock.framework.Type._
 import commbank.grimlock.framework.window._
 
 import commbank.grimlock.library.aggregate._
@@ -137,11 +136,11 @@ class TestScalding3(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   (data.types(Over(_1))(false) ++ data.types(Over(_2))(false) ++ data.types(Over(_3))(false))
-    .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Type.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Cell.toString(descriptive = true))
     .toUnit
 
   (data.types(Over(_1))(true) ++ data.types(Over(_2))(true) ++ data.types(Over(_3))(true))
-    .saveAsText(ctx, s"./tmp.${tool}/typ2.out", Type.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/typ2.out", Cell.toString(descriptive = true))
     .toUnit
 }
 
@@ -239,7 +238,7 @@ class TestScalding6(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .which(c => c.content.schema.kind.isSpecialisationOf(Numerical))
+    .which(c => c.content.schema.kind.isTypeOf(NumericType))
     .saveAsText(ctx, s"./tmp.${tool}/whc1.out", Position.toString(descriptive = true))
     .toUnit
 
@@ -686,7 +685,7 @@ class TestScalding17(args : Args) extends Job(args) {
     type V = Map[Position[_1], Map[Position[_1], Content]]
 
     def selectWithValue(cell: Cell[_2], ext: V): Boolean =
-      if (cell.content.schema.kind.isSpecialisationOf(Numerical))
+      if (cell.content.schema.kind.isTypeOf(NumericType))
         cell.content.value leq ext(Position(cell.position(dim)))(Position("mean")).value
       else
         true

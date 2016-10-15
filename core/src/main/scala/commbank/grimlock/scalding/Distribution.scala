@@ -15,14 +15,15 @@
 package commbank.grimlock.scalding.distribution
 
 import commbank.grimlock.framework.{
+  CategoricalType,
   Cell,
   Default,
   InMemory,
   Locate,
   NoParameters,
+  NumericType,
   Reducers,
-  Tuner,
-  Type
+  Tuner
 }
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.content.metadata.DiscreteSchema
@@ -64,7 +65,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev2: GT[Q, slice.S],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
-    .filter(c => (!filter || c.content.schema.kind.isSpecialisationOf(Type.Categorical)))
+    .filter(c => (!filter || c.content.schema.kind.isTypeOf(CategoricalType)))
     .flatMap(c => name(slice.selected(c.position), c.content))
     .asKeys
     .tuneReducers(tuner.parameters)
@@ -96,7 +97,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     val q = QuantileImpl[P, slice.S, Q](probs, quantiser, name, nan)
 
     val prep = data
-      .collect { case c if (!filter || c.content.schema.kind.isSpecialisationOf(Type.Numerical)) =>
+      .collect { case c if (!filter || c.content.schema.kind.isTypeOf(NumericType)) =>
         (slice.selected(c.position), q.prepare(c))
       }
       .group
@@ -152,7 +153,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
     .flatMap { case c =>
-      if (!filter || c.content.schema.kind.isSpecialisationOf(Type.Numerical))
+      if (!filter || c.content.schema.kind.isTypeOf(NumericType))
         Option((slice.selected(c.position), CountMap.from(c.content.value.asDouble.getOrElse(Double.NaN))))
       else
         None
@@ -182,7 +183,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
     .flatMap { case c =>
-      if (!filter || c.content.schema.kind.isSpecialisationOf(Type.Numerical))
+      if (!filter || c.content.schema.kind.isTypeOf(NumericType))
         c.content.value.asDouble.flatMap(d => TDigest.from(d, compression).map(td => (slice.selected(c.position), td)))
       else
         None
@@ -211,7 +212,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
     .flatMap { case c =>
-      if (!filter || c.content.schema.kind.isSpecialisationOf(Type.Numerical))
+      if (!filter || c.content.schema.kind.isTypeOf(NumericType))
         c.content.value.asDouble.map(d =>(slice.selected(c.position), StreamingHistogram.from(d, count)))
       else
         None

@@ -24,7 +24,6 @@ import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.sample._
 import commbank.grimlock.framework.squash._
-import commbank.grimlock.framework.Type._
 import commbank.grimlock.framework.window._
 
 import commbank.grimlock.library.aggregate._
@@ -297,149 +296,159 @@ class TestSparkMatrixNames extends TestMatrix {
 trait TestMatrixTypes extends TestMatrix {
 
   val result1 = List(
-    (Position("bar"), Categorical),
-    (Position("baz"), Categorical),
-    (Position("foo"), Categorical),
-    (Position("qux"), Categorical)
+    Cell(Position("bar"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result2 = List(
-    (Position("bar"), Ordinal),
-    (Position("baz"), Ordinal),
-    (Position("foo"), Ordinal),
-    (Position("qux"), Ordinal)
+    Cell(Position("bar"), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), OrdinalType))
   )
 
   val result3 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Categorical)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result4 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Ordinal)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), OrdinalType))
   )
 
   val result5 = List(
-    (Position(1), Categorical),
-    (Position(2), Numerical),
-    (Position(3), Categorical),
-    (Position(4), Date)
+    Cell(Position(1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
   )
 
-  val result6 = List((Position(1), Ordinal), (Position(2), Numerical), (Position(3), Categorical), (Position(4), Date))
+  val result6 = List(
+    Cell(Position(1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
+  )
 
   val result7 = List(
-    (Position(1), Categorical),
-    (Position(2), Numerical),
-    (Position(3), Categorical),
-    (Position(4), Date)
+    Cell(Position(1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
   )
 
-  val result8 = List((Position(1), Ordinal), (Position(2), Numerical), (Position(3), Categorical), (Position(4), Date))
+  val result8 = List(
+    Cell(Position(1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
+  )
 
   val result9 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Categorical)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result10 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Ordinal)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), OrdinalType))
   )
 
   val result11 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Categorical)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result12 = List(
-    (Position("bar"), Mixed),
-    (Position("baz"), Mixed),
-    (Position("foo"), Mixed),
-    (Position("qux"), Ordinal)
+    Cell(Position("bar"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux"), Content(NominalSchema[Type](), OrdinalType))
   )
 
   val result13 = List(
-    (Position(1, "xyz"), Categorical),
-    (Position(2, "xyz"), Numerical),
-    (Position(3, "xyz"), Categorical),
-    (Position(4, "xyz"), Date)
+    Cell(Position(1, "xyz"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(2, "xyz"), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3, "xyz"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4, "xyz"), Content(NominalSchema[Type](), DateType))
   )
 
   val result14 = List(
-    (Position(1, "xyz"), Ordinal),
-    (Position(2, "xyz"), Numerical),
-    (Position(3, "xyz"), Categorical),
-    (Position(4, "xyz"), Date)
+    Cell(Position(1, "xyz"), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position(2, "xyz"), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3, "xyz"), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4, "xyz"), Content(NominalSchema[Type](), DateType))
   )
 
   val result15 = List(
-    (Position(1), Categorical),
-    (Position(2), Numerical),
-    (Position(3), Categorical),
-    (Position(4), Date)
+    Cell(Position(1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
   )
 
   val result16 = List(
-    (Position(1), Ordinal),
-    (Position(2), Numerical),
-    (Position(3), Categorical),
-    (Position(4), Date)
+    Cell(Position(1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position(2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position(3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position(4), Content(NominalSchema[Type](), DateType))
   )
 
   val result17 = List(
-    (Position("bar", "xyz"), Mixed),
-    (Position("baz", "xyz"), Mixed),
-    (Position("foo", "xyz"), Mixed),
-    (Position("qux", "xyz"), Categorical)
+    Cell(Position("bar", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux", "xyz"), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result18 = List(
-    (Position("bar", "xyz"), Mixed),
-    (Position("baz", "xyz"), Mixed),
-    (Position("foo", "xyz"), Mixed),
-    (Position("qux", "xyz"), Ordinal)
+    Cell(Position("bar", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("baz", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("foo", "xyz"), Content(NominalSchema[Type](), MixedType)),
+    Cell(Position("qux", "xyz"), Content(NominalSchema[Type](), OrdinalType))
   )
 
-  val result19 = List((Position("xyz"), Mixed))
+  val result19 = List(Cell(Position("xyz"), Content(NominalSchema[Type](), MixedType)))
 
-  val result20 = List((Position("xyz"), Mixed))
+  val result20 = List(Cell(Position("xyz"), Content(NominalSchema[Type](), MixedType)))
 
   val result21 = List(
-    (Position("bar", 1), Categorical),
-    (Position("bar", 2), Numerical),
-    (Position("bar", 3), Categorical),
-    (Position("baz", 1), Categorical),
-    (Position("baz", 2), Numerical),
-    (Position("foo", 1), Categorical),
-    (Position("foo", 2), Numerical),
-    (Position("foo", 3), Categorical),
-    (Position("foo", 4), Date),
-    (Position("qux", 1), Categorical)
+    Cell(Position("bar", 1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("bar", 2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position("bar", 3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("baz", 1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("baz", 2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position("foo", 1), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("foo", 2), Content(NominalSchema[Type](), NumericType)),
+    Cell(Position("foo", 3), Content(NominalSchema[Type](), CategoricalType)),
+    Cell(Position("foo", 4), Content(NominalSchema[Type](), DateType)),
+    Cell(Position("qux", 1), Content(NominalSchema[Type](), CategoricalType))
   )
 
   val result22 = List(
-    (Position("bar", 1), Ordinal),
-    (Position("bar", 2), Continuous),
-    (Position("bar", 3), Ordinal),
-    (Position("baz", 1), Ordinal),
-    (Position("baz", 2), Discrete),
-    (Position("foo", 1), Ordinal),
-    (Position("foo", 2), Continuous),
-    (Position("foo", 3), Nominal),
-    (Position("foo", 4), Date),
-    (Position("qux", 1), Ordinal)
+    Cell(Position("bar", 1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("bar", 2), Content(NominalSchema[Type](), ContinuousType)),
+    Cell(Position("bar", 3), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("baz", 1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("baz", 2), Content(NominalSchema[Type](), DiscreteType)),
+    Cell(Position("foo", 1), Content(NominalSchema[Type](), OrdinalType)),
+    Cell(Position("foo", 2), Content(NominalSchema[Type](), ContinuousType)),
+    Cell(Position("foo", 3), Content(NominalSchema[Type](), NominalType)),
+    Cell(Position("foo", 4), Content(NominalSchema[Type](), DateType)),
+    Cell(Position("qux", 1), Content(NominalSchema[Type](), OrdinalType))
   )
 }
 
@@ -448,133 +457,133 @@ class TestScaldingMatrixTypes extends TestMatrixTypes {
   "A Matrix.types" should "return its first over types in 1D" in {
     toPipe(data1)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result1
+      .toList.sortBy(_.position) shouldBe result1
   }
 
   it should "return its first over specific types in 1D" in {
     toPipe(data1)
       .types(Over(_1), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result2
+      .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "return its first over types in 2D" in {
     toPipe(data2)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result3
+      .toList.sortBy(_.position) shouldBe result3
   }
 
   it should "return its first over specific types in 2D" in {
     toPipe(data2)
       .types(Over(_1), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result4
+      .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its first along types in 2D" in {
     toPipe(data2)
       .types(Along(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result5
+      .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first along specific types in 2D" in {
     toPipe(data2)
       .types(Along(_1), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result6
+      .toList.sortBy(_.position) shouldBe result6
   }
 
   it should "return its second over types in 2D" in {
     toPipe(data2)
       .types(Over(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result7
+      .toList.sortBy(_.position) shouldBe result7
   }
 
   it should "return its second over specific types in 2D" in {
     toPipe(data2)
       .types(Over(_2), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result8
+      .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along types in 2D" in {
     toPipe(data2)
       .types(Along(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result9
+      .toList.sortBy(_.position) shouldBe result9
   }
 
   it should "return its second along specific types in 2D" in {
     toPipe(data2)
       .types(Along(_2), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result10
+      .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its first over types in 3D" in {
     toPipe(data3)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result11
+      .toList.sortBy(_.position) shouldBe result11
   }
 
   it should "return its first over specific types in 3D" in {
     toPipe(data3)
       .types(Over(_1), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result12
+      .toList.sortBy(_.position) shouldBe result12
   }
 
   it should "return its first along types in 3D" in {
     toPipe(data3)
       .types(Along(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result13
+      .toList.sortBy(_.position) shouldBe result13
   }
 
   it should "return its first along specific types in 3D" in {
     toPipe(data3)
       .types(Along(_1), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result14
+      .toList.sortBy(_.position) shouldBe result14
   }
 
   it should "return its second over types in 3D" in {
     toPipe(data3)
       .types(Over(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result15
+      .toList.sortBy(_.position) shouldBe result15
   }
 
   it should "return its second over specific types in 3D" in {
     toPipe(data3)
       .types(Over(_2), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result16
+      .toList.sortBy(_.position) shouldBe result16
   }
 
   it should "return its second along types in 3D" in {
     toPipe(data3)
       .types(Along(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result17
+      .toList.sortBy(_.position) shouldBe result17
   }
 
   it should "return its second along specific types in 3D" in {
     toPipe(data3)
       .types(Along(_2), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result18
+      .toList.sortBy(_.position) shouldBe result18
   }
 
   it should "return its third over types in 3D" in {
     toPipe(data3)
       .types(Over(_3), Default())(false)
-      .toList.sortBy(_._1) shouldBe result19
+      .toList.sortBy(_.position) shouldBe result19
   }
 
   it should "return its third over specific types in 3D" in {
     toPipe(data3)
       .types(Over(_3), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result20
+      .toList.sortBy(_.position) shouldBe result20
   }
 
   it should "return its third along types in 3D" in {
     toPipe(data3)
       .types(Along(_3), Default())(false)
-      .toList.sortBy(_._1) shouldBe result21
+      .toList.sortBy(_.position) shouldBe result21
   }
 
   it should "return its third along specific types in 3D" in {
     toPipe(data3)
       .types(Along(_3), Default(Reducers(123)))(true)
-      .toList.sortBy(_._1) shouldBe result22
+      .toList.sortBy(_.position) shouldBe result22
   }
 }
 
@@ -583,133 +592,133 @@ class TestSparkMatrixTypes extends TestMatrixTypes {
   "A Matrix.types" should "return its first over types in 1D" in {
     toRDD(data1)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result1
+      .toList.sortBy(_.position) shouldBe result1
   }
 
   it should "return its first over specific types in 1D" in {
     toRDD(data1)
       .types(Over(_1), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result2
+      .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "return its first over types in 2D" in {
     toRDD(data2)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result3
+      .toList.sortBy(_.position) shouldBe result3
   }
 
   it should "return its first over specific types in 2D" in {
     toRDD(data2)
       .types(Over(_1), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result4
+      .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its first along types in 2D" in {
     toRDD(data2)
       .types(Along(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result5
+      .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first along specific types in 2D" in {
     toRDD(data2)
       .types(Along(_1), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result6
+      .toList.sortBy(_.position) shouldBe result6
   }
 
   it should "return its second over types in 2D" in {
     toRDD(data2)
       .types(Over(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result7
+      .toList.sortBy(_.position) shouldBe result7
   }
 
   it should "return its second over specific types in 2D" in {
     toRDD(data2)
       .types(Over(_2), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result8
+      .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along types in 2D" in {
     toRDD(data2)
       .types(Along(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result9
+      .toList.sortBy(_.position) shouldBe result9
   }
 
   it should "return its second along specific types in 2D" in {
     toRDD(data2)
       .types(Along(_2), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result10
+      .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its first over types in 3D" in {
     toRDD(data3)
       .types(Over(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result11
+      .toList.sortBy(_.position) shouldBe result11
   }
 
   it should "return its first over specific types in 3D" in {
     toRDD(data3)
       .types(Over(_1), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result12
+      .toList.sortBy(_.position) shouldBe result12
   }
 
   it should "return its first along types in 3D" in {
     toRDD(data3)
       .types(Along(_1), Default())(false)
-      .toList.sortBy(_._1) shouldBe result13
+      .toList.sortBy(_.position) shouldBe result13
   }
 
   it should "return its first along specific types in 3D" in {
     toRDD(data3)
       .types(Along(_1), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result14
+      .toList.sortBy(_.position) shouldBe result14
   }
 
   it should "return its second over types in 3D" in {
     toRDD(data3)
       .types(Over(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result15
+      .toList.sortBy(_.position) shouldBe result15
   }
 
   it should "return its second over specific types in 3D" in {
     toRDD(data3)
       .types(Over(_2), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result16
+      .toList.sortBy(_.position) shouldBe result16
   }
 
   it should "return its second along types in 3D" in {
     toRDD(data3)
       .types(Along(_2), Default())(false)
-      .toList.sortBy(_._1) shouldBe result17
+      .toList.sortBy(_.position) shouldBe result17
   }
 
   it should "return its second along specific types in 3D" in {
     toRDD(data3)
       .types(Along(_2), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result18
+      .toList.sortBy(_.position) shouldBe result18
   }
 
   it should "return its third over types in 3D" in {
     toRDD(data3)
       .types(Over(_3), Default())(false)
-      .toList.sortBy(_._1) shouldBe result19
+      .toList.sortBy(_.position) shouldBe result19
   }
 
   it should "return its third over specific types in 3D" in {
     toRDD(data3)
       .types(Over(_3), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result20
+      .toList.sortBy(_.position) shouldBe result20
   }
 
   it should "return its third along types in 3D" in {
     toRDD(data3)
       .types(Along(_3), Default())(false)
-      .toList.sortBy(_._1) shouldBe result21
+      .toList.sortBy(_.position) shouldBe result21
   }
 
   it should "return its third along specific types in 3D" in {
     toRDD(data3)
       .types(Along(_3), Default(Reducers(12)))(true)
-      .toList.sortBy(_._1) shouldBe result22
+      .toList.sortBy(_.position) shouldBe result22
   }
 }
 

@@ -14,6 +14,8 @@
 
 package commbank.grimlock.framework.encoding
 
+import commbank.grimlock.framework.Type
+
 import java.util.Date
 
 import scala.util.matching.Regex
@@ -118,11 +120,14 @@ trait Value { self =>
   /** Return value as `Boolean`. */
   def asBoolean: Option[Boolean] = None
 
+  /** Return value as `Type`. */
+  def asType: Option[Type] = None
+
   /** Return value as event. */
   def asStructured: Option[Structured] = None
 
   /** Return a consise (terse) string representation of a value. */
-  def toShortString: String = codec.encode(value)
+  def toShortString(): String = codec.encode(value)
 
   private def evaluate(that: Value, op: CompareResult): Boolean = codec.compare(this, that) match {
     case Some(0) => (op == Equal) || (op == GreaterEqual) || (op == LessEqual)
@@ -176,6 +181,9 @@ object Value {
 
   /** Converts a `Boolean` to a `Value`. */
   implicit def booleanToValue(t: Boolean): BooleanValue = BooleanValue(t)
+
+  /** Converts a `Type` to a `Value`. */
+  implicit def typeToValue[T <: Type](t: T): TypeValue = TypeValue(t)
 }
 
 /**
@@ -245,6 +253,18 @@ case class BooleanValue(value: Boolean, codec: Codec { type D = Boolean } = Bool
   override def asDouble: Option[Double] = Option(if (value) 1 else 0)
   override def asLong: Option[Long] = Option(if (value) 1 else 0)
   override def asBoolean: Option[Boolean] = Option(value)
+}
+
+/**
+ * Value for when the data is of type `Type`.
+ *
+ * @param value A `Type`.
+ * @param codec The codec used for encoding/decoding `value`.
+ */
+case class TypeValue(value: Type, codec: Codec { type D = Type } = TypeCodec) extends Value {
+  type D = Type
+
+  override def asType: Option[Type] = Option(value)
 }
 
 /**
