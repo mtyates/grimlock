@@ -25,7 +25,7 @@ import shapeless.Nat
 import shapeless.nat._1
 
 private[transform] object Transform {
-  def check[P <: Nat](cell: Cell[P], t: Type): Boolean = cell.content.schema.kind.isTypeOf(t)
+  def check[P <: Nat](cell: Cell[P], t: Type): Boolean = cell.content.schema.kind.isOfType(t)
 
   def presentDouble[
     P <: Nat

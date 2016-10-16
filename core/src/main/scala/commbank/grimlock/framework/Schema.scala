@@ -171,7 +171,7 @@ object ContinuousSchema {
    */
   def fromShortString(str: String, cdc: Codec): Option[ContinuousSchema[cdc.D]] = (cdc.tag, cdc.numeric, str) match {
     case (Some(tag), Some(ev), Pattern(null)) => Option(ContinuousSchema()(tag, ev))
-    case (_, _, Pattern(range)) => SchemaParameters.splitRange(range)
+    case (Some(tag), Some(ev), Pattern(range)) => SchemaParameters.splitRange(range)
       .flatMap { case (min, max) => fromComponents(min, max, cdc) }
     case _ => None
   }
@@ -252,7 +252,7 @@ object DiscreteSchema {
    */
   def fromShortString(str: String, cdc: Codec): Option[DiscreteSchema[cdc.D]] = (cdc.tag, cdc.integral, str) match {
     case (Some(tag), Some(ev), Pattern(null, null)) => Option(DiscreteSchema()(tag, ev))
-    case (_, _, Pattern(range, step)) => SchemaParameters.splitRange(range)
+    case (Some(tag), Some(ev), Pattern(range, step)) => SchemaParameters.splitRange(range)
       .flatMap { case (min, max) => fromComponents(min, max, step, cdc) }
     case _ => None
   }
@@ -320,7 +320,7 @@ object NominalSchema {
   def fromShortString(str: String, cdc: Codec): Option[NominalSchema[cdc.D]] = (cdc.tag, str) match {
     case (Some(tag), Pattern(null)) => Option(NominalSchema()(tag))
     case (Some(tag), Pattern("")) => Option(NominalSchema()(tag))
-    case (_, Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
+    case (Some(tag), Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
     case _ => None
   }
 
@@ -370,7 +370,7 @@ object OrdinalSchema {
   def fromShortString(str: String, cdc: Codec): Option[OrdinalSchema[cdc.D]] = (cdc.tag, cdc.ordering, str) match {
     case (Some(tag), Some(ev), Pattern(null)) => Option(OrdinalSchema()(tag, ev))
     case (Some(tag), Some(ev), Pattern("")) => Option(OrdinalSchema()(tag, ev))
-    case (_, _, Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
+    case (Some(tag), Some(ev), Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
     case _ => None
   }
 
@@ -460,9 +460,9 @@ object DateSchema {
   def fromShortString(str: String, cdc: Codec): Option[DateSchema[cdc.D]] = (cdc.tag, cdc.date, str) match {
     case (Some(tag), Some(ev), Pattern(null)) => Option(DateSchema()(tag, ev))
     case (Some(tag), Some(ev), Pattern("")) => Option(DateSchema()(tag, ev))
-    case (_, _, RangePattern(range)) => SchemaParameters.splitRange(range)
+    case (Some(tag), Some(ev), RangePattern(range)) => SchemaParameters.splitRange(range)
       .flatMap { case (lower, upper) => fromComponents(lower, upper, cdc) }
-    case (_, _, Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
+    case (Some(tag), Some(ev), Pattern(domain)) => fromComponents(SchemaParameters.splitSet(domain), cdc)
     case _ => None
   }
 

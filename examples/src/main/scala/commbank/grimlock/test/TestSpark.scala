@@ -252,7 +252,7 @@ object TestSpark6 {
     val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
     data
-      .which(c => c.content.schema.kind.isTypeOf(NumericType))
+      .which(c => c.content.schema.kind.isOfType(NumericType))
       .saveAsText(ctx, s"./tmp.${tool}/whc1.out", Position.toString(descriptive = true))
       .toUnit
 
@@ -721,7 +721,7 @@ object TestSpark17 {
       type V = Map[Position[_1], Map[Position[_1], Content]]
 
       def selectWithValue(cell: Cell[_2], ext: V): Boolean =
-        if (cell.content.schema.kind.isTypeOf(NumericType))
+        if (cell.content.schema.kind.isOfType(NumericType))
           cell.content.value leq ext(Position(cell.position(dim)))(Position("mean")).value
         else
           true

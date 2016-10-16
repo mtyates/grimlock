@@ -94,6 +94,18 @@ object Content {
     .flatMap(c => Schema.fromShortString(schema, c).map(s => parser[c.D](c, s)))
 
   /**
+   * Parse a content from string components
+   *
+   * @param codec  The codec string to decode content with.
+   * @param schema The schema string to validate content with.
+   * @param value  The content string value to parse.
+   *
+   * @return A `Some[Content]` if successful, `None` otherwise.
+   */
+  def fromComponents(codec: String, schema: String, value: String): Option[Content] =
+    parserFromComponents(codec, schema).flatMap(parser => parser(value))
+
+  /**
    * Parse a content from string.
    *
    * @param str       The string to parse.
@@ -105,7 +117,7 @@ object Content {
     str: String,
     separator: String = "|"
   ): Option[Content] = str.split(Pattern.quote(separator)) match {
-    case Array(c, s, v) => parserFromComponents(c, s).flatMap(f => f(v))
+    case Array(c, s, v) => fromComponents(c, s, v)
     case _ => None
   }
 

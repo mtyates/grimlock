@@ -20,13 +20,13 @@ trait Type extends java.io.Serializable {
   def getRootType: Type = parent.map(_.getRootType).getOrElse(this)
 
   /** Check if this is a sub-type of `that`. */
-  def isTypeOf(that: Type): Boolean = (this == that) || parent.map(_.isTypeOf(that)).getOrElse(false)
+  def isOfType(that: Type): Boolean = (this == that) || parent.map(_.isOfType(that)).getOrElse(false)
 
   /** Return the first type in common between this and `that`, or `Mixed` in case of no common ancestor. */
   def getCommonType(that: Type): Type = {
     if (this == that) this
-    else if (this.isRootType) { if (that.isTypeOf(this)) this else MixedType }
-    else if (that.isRootType) { if (this.isTypeOf(that)) that else MixedType }
+    else if (this.isRootType) { if (that.isOfType(this)) this else MixedType }
+    else if (that.isRootType) { if (this.isOfType(that)) that else MixedType }
     else sharedParent(that).getOrElse(MixedType)
   }
 
@@ -39,7 +39,7 @@ trait Type extends java.io.Serializable {
 
   private def isRootType: Boolean = parent.isEmpty
   private def sharedParent(that: Type): Option[Type] = parent
-    .flatMap(p => if (that.isTypeOf(p)) Option(p) else p.sharedParent(that))
+    .flatMap(p => if (that.isOfType(p)) Option(p) else p.sharedParent(that))
 }
 
 /** Companion object to `Type` trait. */

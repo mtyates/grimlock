@@ -14,6 +14,7 @@
 
 package commbank.grimlock
 
+import commbank.grimlock.framework._
 import commbank.grimlock.framework.encoding._
 
 class TestDateValue extends TestGrimlock {
@@ -47,6 +48,10 @@ class TestDateValue extends TestGrimlock {
 
   it should "not return a boolean" in {
     dv2001.asBoolean shouldBe None
+  }
+
+  it should "not return a type" in {
+    dv2001.asType shouldBe None
   }
 
   it should "not return a structured" in {
@@ -174,6 +179,10 @@ class TestStringValue extends TestGrimlock {
     dvfoo.asBoolean shouldBe None
   }
 
+  it should "not return a type" in {
+    dvfoo.asType shouldBe None
+  }
+
   it should "not return a structured" in {
     dvfoo.asStructured shouldBe None
   }
@@ -298,6 +307,10 @@ class TestDoubleValue extends TestGrimlock {
     dvone.asBoolean shouldBe None
   }
 
+  it should "not return a type" in {
+    dvone.asType shouldBe None
+  }
+
   it should "not return a structured" in {
     dvone.asStructured shouldBe None
   }
@@ -420,6 +433,10 @@ class TestLongValue extends TestGrimlock {
 
   it should "not return a boolean" in {
     dvone.asBoolean shouldBe None
+  }
+
+  it should "not return a type" in {
+    dvone.asType shouldBe None
   }
 
   it should "not return a structured" in {
@@ -547,6 +564,10 @@ class TestBooleanValue extends TestGrimlock {
     dvpos.asBoolean shouldBe Option(true)
   }
 
+  it should "not return a type" in {
+    dvpos.asType shouldBe None
+  }
+
   it should "not return a structured" in {
     dvpos.asStructured shouldBe None
   }
@@ -636,6 +657,133 @@ class TestBooleanValue extends TestGrimlock {
 
   it should "not identify another value calling geq" in {
     dvneg.geq(2) shouldBe false
+  }
+}
+
+class TestTypeValue extends TestGrimlock {
+
+  val mix = MixedType
+  val con = ContinuousType
+  val dvmix = TypeValue(mix)
+  val dvcon = TypeValue(con)
+
+  "A TypeValue" should "return its short string" in {
+    dvmix.toShortString shouldBe "mixed"
+  }
+
+  it should "not return a date" in {
+    dvmix.asDate shouldBe None
+  }
+
+  it should "not return a string" in {
+    dvmix.asString shouldBe None
+  }
+
+  it should "not return a double" in {
+    dvmix.asDouble shouldBe None
+  }
+
+  it should "not return a long" in {
+    dvmix.asLong shouldBe None
+  }
+
+  it should "return a boolean" in {
+    dvmix.asBoolean shouldBe None
+  }
+
+  it should "not return a type" in {
+    dvmix.asType shouldBe Option(MixedType)
+  }
+
+  it should "not return a structured" in {
+    dvmix.asStructured shouldBe None
+  }
+
+  it should "equal itself" in {
+    dvmix.equ(dvmix) shouldBe true
+    dvmix.equ(TypeValue(mix)) shouldBe true
+  }
+
+  it should "not equal another boolean" in {
+    dvmix.equ(dvcon) shouldBe false
+  }
+
+  it should "not equal another value" in {
+    dvmix.equ("a") shouldBe false
+    dvmix.equ(2) shouldBe false
+    dvmix.equ(2.0) shouldBe false
+  }
+
+  it should "match a matching pattern" in {
+    dvmix.like("^m.*d$".r) shouldBe true
+  }
+
+  it should "not match a non-existing pattern" in {
+    dvmix.like("^c.*".r) shouldBe false
+  }
+
+  it should "identify a smaller value calling lss" in {
+    dvcon.lss(dvmix) shouldBe true
+  }
+
+  it should "not identify an equal value calling lss" in {
+    dvcon.lss(dvcon) shouldBe false
+  }
+
+  it should "not identify a greater value calling lss" in {
+    dvmix.lss(dvcon) shouldBe false
+  }
+
+  it should "not identify another value calling lss" in {
+    dvcon.lss(2) shouldBe false
+  }
+
+  it should "identify a smaller value calling leq" in {
+    dvcon.leq(dvmix) shouldBe true
+  }
+
+  it should "identify an equal value calling leq" in {
+    dvcon.leq(dvcon) shouldBe true
+  }
+
+  it should "not identify a greater value calling leq" in {
+    dvmix.leq(dvcon) shouldBe false
+  }
+
+  it should "not identify another value calling leq" in {
+    dvcon.leq(2) shouldBe false
+  }
+
+  it should "not identify a smaller value calling gtr" in {
+    dvcon.gtr(dvmix) shouldBe false
+  }
+
+  it should "not identify an equal value calling gtr" in {
+    dvcon.gtr(dvcon) shouldBe false
+  }
+
+  it should "identify a greater value calling gtr" in {
+    dvmix.gtr(dvcon) shouldBe true
+  }
+
+  it should "not identify another value calling gtr" in {
+    dvcon.gtr(2) shouldBe false
+  }
+
+  it should "not identify a smaller value calling geq" in {
+    dvcon.geq(dvmix) shouldBe false
+  }
+
+  it should "identify an equal value calling geq" in {
+    dvcon.geq(dvcon) shouldBe true
+  }
+
+  it should "identify a greater value calling geq" in {
+    dvmix.geq(dvcon) shouldBe true
+  }
+
+  it should "not identify another value calling geq" in {
+    dvcon.geq(2) shouldBe false
   }
 }
 

@@ -42,7 +42,7 @@ private case class DecodeFromParts(separator: String) extends CellContentDecoder
 
   def decode(pos: Array[String]) = Option(
     (con: Array[String]) => con match {
-      case Array(c, s, v) => Content.fromShortString(c + separator + s + separator + v, separator)
+      case Array(c, s, v) => Content.fromComponents(c, s, v)
       case _ => None
     }
   )

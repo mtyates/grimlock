@@ -31,12 +31,17 @@ class TestMixedType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    MixedType.isTypeOf(MixedType) shouldBe true
+    MixedType.isOfType(MixedType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    MixedType.isTypeOf(NumericType) shouldBe false
-    MixedType.isTypeOf(OrdinalType) shouldBe false
+    MixedType.isOfType(NumericType) shouldBe false
+    MixedType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    MixedType.getCommonType(MixedType) shouldBe MixedType
+    MixedType.getCommonType(NominalType) shouldBe MixedType
   }
 }
 
@@ -55,13 +60,20 @@ class TestNumericType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    NumericType.isTypeOf(NumericType) shouldBe true
+    NumericType.isOfType(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    NumericType.isTypeOf(MixedType) shouldBe false
-    NumericType.isTypeOf(OrdinalType) shouldBe false
-    NumericType.isTypeOf(ContinuousType) shouldBe false
+    NumericType.isOfType(MixedType) shouldBe false
+    NumericType.isOfType(OrdinalType) shouldBe false
+    NumericType.isOfType(ContinuousType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    NumericType.getCommonType(MixedType) shouldBe MixedType
+    NumericType.getCommonType(NominalType) shouldBe MixedType
+    NumericType.getCommonType(NumericType) shouldBe NumericType
+    NumericType.getCommonType(DiscreteType) shouldBe NumericType
   }
 }
 
@@ -80,13 +92,21 @@ class TestContinuousType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    ContinuousType.isTypeOf(ContinuousType) shouldBe true
-    ContinuousType.isTypeOf(NumericType) shouldBe true
+    ContinuousType.isOfType(ContinuousType) shouldBe true
+    ContinuousType.isOfType(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    ContinuousType.isTypeOf(MixedType) shouldBe false
-    ContinuousType.isTypeOf(OrdinalType) shouldBe false
+    ContinuousType.isOfType(MixedType) shouldBe false
+    ContinuousType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    ContinuousType.getCommonType(MixedType) shouldBe MixedType
+    ContinuousType.getCommonType(NominalType) shouldBe MixedType
+    ContinuousType.getCommonType(NumericType) shouldBe NumericType
+    ContinuousType.getCommonType(ContinuousType) shouldBe ContinuousType
+    ContinuousType.getCommonType(DiscreteType) shouldBe NumericType
   }
 }
 
@@ -105,13 +125,21 @@ class TestDiscreteType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    DiscreteType.isTypeOf(DiscreteType) shouldBe true
-    DiscreteType.isTypeOf(NumericType) shouldBe true
+    DiscreteType.isOfType(DiscreteType) shouldBe true
+    DiscreteType.isOfType(NumericType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    DiscreteType.isTypeOf(MixedType) shouldBe false
-    DiscreteType.isTypeOf(OrdinalType) shouldBe false
+    DiscreteType.isOfType(MixedType) shouldBe false
+    DiscreteType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    DiscreteType.getCommonType(MixedType) shouldBe MixedType
+    DiscreteType.getCommonType(NominalType) shouldBe MixedType
+    DiscreteType.getCommonType(NumericType) shouldBe NumericType
+    DiscreteType.getCommonType(ContinuousType) shouldBe NumericType
+    DiscreteType.getCommonType(DiscreteType) shouldBe DiscreteType
   }
 }
 
@@ -130,13 +158,20 @@ class TestCategoricalType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    CategoricalType.isTypeOf(CategoricalType) shouldBe true
+    CategoricalType.isOfType(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    CategoricalType.isTypeOf(NumericType) shouldBe false
-    CategoricalType.isTypeOf(DiscreteType) shouldBe false
-    CategoricalType.isTypeOf(OrdinalType) shouldBe false
+    CategoricalType.isOfType(NumericType) shouldBe false
+    CategoricalType.isOfType(DiscreteType) shouldBe false
+    CategoricalType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    CategoricalType.getCommonType(MixedType) shouldBe MixedType
+    CategoricalType.getCommonType(CategoricalType) shouldBe CategoricalType
+    CategoricalType.getCommonType(NominalType) shouldBe CategoricalType
+    CategoricalType.getCommonType(ContinuousType) shouldBe MixedType
   }
 }
 
@@ -155,13 +190,21 @@ class TestNominalType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    NominalType.isTypeOf(NominalType) shouldBe true
-    NominalType.isTypeOf(CategoricalType) shouldBe true
+    NominalType.isOfType(NominalType) shouldBe true
+    NominalType.isOfType(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    NominalType.isTypeOf(MixedType) shouldBe false
-    NominalType.isTypeOf(DiscreteType) shouldBe false
+    NominalType.isOfType(MixedType) shouldBe false
+    NominalType.isOfType(DiscreteType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    NominalType.getCommonType(MixedType) shouldBe MixedType
+    NominalType.getCommonType(CategoricalType) shouldBe CategoricalType
+    NominalType.getCommonType(NominalType) shouldBe NominalType
+    NominalType.getCommonType(OrdinalType) shouldBe CategoricalType
+    NominalType.getCommonType(ContinuousType) shouldBe MixedType
   }
 }
 
@@ -180,13 +223,21 @@ class TestOrdinalType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    OrdinalType.isTypeOf(OrdinalType) shouldBe true
-    OrdinalType.isTypeOf(CategoricalType) shouldBe true
+    OrdinalType.isOfType(OrdinalType) shouldBe true
+    OrdinalType.isOfType(CategoricalType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    OrdinalType.isTypeOf(MixedType) shouldBe false
-    OrdinalType.isTypeOf(DiscreteType) shouldBe false
+    OrdinalType.isOfType(MixedType) shouldBe false
+    OrdinalType.isOfType(DiscreteType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    OrdinalType.getCommonType(MixedType) shouldBe MixedType
+    OrdinalType.getCommonType(CategoricalType) shouldBe CategoricalType
+    OrdinalType.getCommonType(NominalType) shouldBe CategoricalType
+    OrdinalType.getCommonType(OrdinalType) shouldBe OrdinalType
+    OrdinalType.getCommonType(ContinuousType) shouldBe MixedType
   }
 }
 
@@ -205,12 +256,18 @@ class TestDateType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    DateType.isTypeOf(DateType) shouldBe true
+    DateType.isOfType(DateType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    DateType.isTypeOf(NumericType) shouldBe false
-    DateType.isTypeOf(OrdinalType) shouldBe false
+    DateType.isOfType(NumericType) shouldBe false
+    DateType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    DateType.getCommonType(MixedType) shouldBe MixedType
+    DateType.getCommonType(DateType) shouldBe DateType
+    DateType.getCommonType(NominalType) shouldBe MixedType
   }
 }
 
@@ -229,12 +286,18 @@ class TestEventType extends TestGrimlock {
   }
 
   it should "match correct specialisation" in {
-    StructuredType.isTypeOf(StructuredType) shouldBe true
+    StructuredType.isOfType(StructuredType) shouldBe true
   }
 
   it should "not match incorrect specialisation" in {
-    StructuredType.isTypeOf(NumericType) shouldBe false
-    StructuredType.isTypeOf(OrdinalType) shouldBe false
+    StructuredType.isOfType(NumericType) shouldBe false
+    StructuredType.isOfType(OrdinalType) shouldBe false
+  }
+
+  it should "return correct common type" in {
+    StructuredType.getCommonType(MixedType) shouldBe MixedType
+    StructuredType.getCommonType(StructuredType) shouldBe StructuredType
+    StructuredType.getCommonType(NominalType) shouldBe MixedType
   }
 }
 
