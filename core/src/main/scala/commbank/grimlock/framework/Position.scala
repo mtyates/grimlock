@@ -356,8 +356,7 @@ trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
   def names[
     T <: Tuner : NamesTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,

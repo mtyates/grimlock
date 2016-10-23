@@ -69,24 +69,24 @@ class LabelWeighting(args: Args) extends Job(args) {
   // Compute the total number of labels and compact result into a Map.
   val sum = labels
     .size(_1)
-    .compact(Over(_1))()
+    .compact(Over(_1))
 
   // Define extract object to get data out of sum/min map.
   def extractor(key: String) = ExtractWithKey[_1, Content](key).andThenPresent(_.value.asDouble)
 
   // Compute the ratio of (total number of labels) / (count for each label).
   val ratio = histogram
-    .transformWithValue(Fraction(extractor(Position.indexString[_1]), true), sum)
+    .transformWithValue(sum, Fraction(extractor(Position.indexString[_1]), true))
 
   // Find the minimum ratio, and compact the result into a Map.
   val min = ratio
     .summarise(Along(_1))(Min().andThenRelocate(_.position.append("min").toOption))
-    .compact(Over(_1))()
+    .compact(Over(_1))
 
   // Divide the ratio by the minimum ratio, and compact the result into a Map.
   val weights = ratio
-    .transformWithValue(Fraction(extractor("min")), min)
-    .compact(Over(_1))()
+    .transformWithValue(min, Fraction(extractor("min")))
+    .compact(Over(_1))
 
   // Re-read labels and add the computed weight.
   loadText(
@@ -95,7 +95,7 @@ class LabelWeighting(args: Args) extends Job(args) {
       Cell.parse2DWithSchema(Content.parser(DoubleCodec, ContinuousSchema[Double]()))
     )
     .data // Keep only the data (ignoring errors).
-    .transformWithValue(AddWeight(), weights)
+    .transformWithValue(weights, AddWeight())
     .saveAsText(ctx, s"./demo.${output}/weighted.out")
     .toUnit
 }

@@ -118,18 +118,18 @@ object TestSpark2 {
 
     val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
-    (data.names(Over(_1))() ++ data.names(Over(_2))() ++ data.names(Over(_3))())
+    (data.names(Over(_1)) ++ data.names(Over(_2)) ++ data.names(Over(_3)))
       .saveAsText(ctx, s"./tmp.${tool}/nm0.out", Position.toString(descriptive = true))
       .toUnit
 
     data
-      .names(Over(_2))()
+      .names(Over(_2))
       .slice("fid:M", false)
       .saveAsText(ctx, s"./tmp.${tool}/nm2.out", Position.toString(descriptive = true))
       .toUnit
 
     data
-      .names(Over(_2))()
+      .names(Over(_2))
       .slice(""".*[BCD]$""".r, true, "")
       .saveAsText(ctx, s"./tmp.${tool}/nm5.out", Position.toString(descriptive = true))
       .toUnit
@@ -144,7 +144,7 @@ object TestSpark3 {
 
     val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
-    (data.types(Over(_1))() ++ data.types(Over(_2))() ++ data.types(Over(_3))())
+    (data.types(Over(_1))(false) ++ data.types(Over(_2))(false) ++ data.types(Over(_3))(false))
       .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Type.toString(descriptive = true))
       .toUnit
 
@@ -190,7 +190,7 @@ object TestSpark4 {
     )
 
     data
-      .slice(Over(_2))(data.names(Over(_2))().slice(rem, false), false)
+      .slice(Over(_2))(data.names(Over(_2)).slice(rem, false), false)
       .saveAsText(ctx, s"./tmp.${tool}/scl2.out", Cell.toString(descriptive = true))
       .toUnit
   }
@@ -346,7 +346,7 @@ object TestSpark8 {
 
     loadText(ctx, path + "/mutualInputfile.txt", Cell.parse2D())
       .data
-      .uniqueByPosition(Over(_2))()
+      .uniqueByPosition(Over(_2))
       .saveAsText(ctx, s"./tmp.${tool}/uni2.out", IndexedContent.toString(codec = false, schema = false))
       .toUnit
 
@@ -699,12 +699,12 @@ object TestSpark17 {
 
     val stats = data
       .summarise(Along(_1))(aggregators)
-      .compact(Over(_1))()
+      .compact(Over(_1))
 
     data
       .transformWithValue(
-        Normalise(ExtractWithDimensionAndKey[_2, Content](_2, "max.abs").andThenPresent(_.value.asDouble)),
-        stats
+        stats,
+        Normalise(ExtractWithDimensionAndKey[_2, Content](_2, "max.abs").andThenPresent(_.value.asDouble))
       )
       .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/trn6.csv")
       .toUnit
@@ -729,7 +729,7 @@ object TestSpark17 {
     }
 
     data
-      .subsetWithValue(RemoveGreaterThanMean(_2), stats)
+      .subsetWithValue(stats, RemoveGreaterThanMean(_2))
       .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/flt2.csv")
       .toUnit
   }
@@ -772,7 +772,7 @@ object TestSpark18 {
 
     val rem = stats
       .whichByPosition(Over(_2))(("count", (c: Cell[_2]) => c.content.value leq 2))
-      .names(Over(_1))()
+      .names(Over(_1))
 
     data
       .slice(Over(_2))(rem, false)
@@ -837,7 +837,7 @@ object TestSpark19 {
 
     val rem = stats
       .which(c => (c.position(_2) equ "count") && (c.content.value leq 2))
-      .names(Over(_1))()
+      .names(Over(_1))
 
     type W = Map[Position[_1], Map[Position[_1], Content]]
 
@@ -849,7 +849,7 @@ object TestSpark19 {
 
     def cb(key: String, pipe: RDD[Cell[_2]]): RDD[Cell[_2]] = pipe
       .slice(Over(_2))(rem, false)
-      .transformWithValue(transforms, stats.compact(Over(_1))())
+      .transformWithValue(stats.compact(Over(_1)), transforms)
       .fillHomogeneous(Content(ContinuousSchema[Long](), 0))
       .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/pln_" + key + ".csv")
 
@@ -935,12 +935,12 @@ object TestSpark22 {
     }
 
     data
-      .slide(Over(_1))(Diff())
+      .slide(Over(_1))(true, Diff())
       .saveAsText(ctx, s"./tmp.${tool}/dif1.out")
       .toUnit
 
     data
-      .slide(Over(_2))(Diff())
+      .slide(Over(_2))(true, Diff())
       .permute(_2, _1)
       .saveAsText(ctx, s"./tmp.${tool}/dif2.out")
       .toUnit
@@ -998,7 +998,7 @@ object TestSpark24 {
     val (data, _) = loadText(ctx, path + "/somePairwise2.txt", Cell.parseTable(schema, separator = "|"))
 
     data
-      .correlation(Over(_2))()
+      .correlation(Over(_2))
       .saveAsText(ctx, s"./tmp.${tool}/pws2.out")
       .toUnit
 
@@ -1011,7 +1011,7 @@ object TestSpark24 {
     val (data2, _) = loadText(ctx, path + "/somePairwise3.txt", Cell.parseTable(schema2, separator = "|"))
 
     data2
-      .correlation(Over(_2))()
+      .correlation(Over(_2))
       .saveAsText(ctx, s"./tmp.${tool}/pws3.out")
       .toUnit
   }
@@ -1025,13 +1025,13 @@ object TestSpark25 {
 
     loadText(ctx, path + "/mutualInputfile.txt", Cell.parse2D())
       .data
-      .mutualInformation(Over(_2))()
+      .mutualInformation(Over(_2))
       .saveAsText(ctx, s"./tmp.${tool}/mi.out")
       .toUnit
 
     loadText(ctx, path + "/mutualInputfile.txt", Cell.parse2D())
       .data
-      .mutualInformation(Along(_1))()
+      .mutualInformation(Along(_1))
       .saveAsText(ctx, s"./tmp.${tool}/im.out")
       .toUnit
   }
@@ -1067,31 +1067,31 @@ object TestSpark27 {
 
     loadText(ctx, path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
-      .slide(Over(_2))(SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1)))
+      .slide(Over(_2))(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1)))
       .saveAsText(ctx, s"./tmp.${tool}/sma1.out")
       .toUnit
 
     loadText(ctx, path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
-      .slide(Over(_2))(SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
+      .slide(Over(_2))(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
       .saveAsText(ctx, s"./tmp.${tool}/sma2.out")
       .toUnit
 
     loadText(ctx, path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
-      .slide(Over(_2))(CenteredMovingAverage(2, Locate.AppendRemainderDimension(_1)))
+      .slide(Over(_2))(true, CenteredMovingAverage(2, Locate.AppendRemainderDimension(_1)))
       .saveAsText(ctx, s"./tmp.${tool}/tma.out")
       .toUnit
 
     loadText(ctx, path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
-      .slide(Over(_2))(WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1)))
+      .slide(Over(_2))(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1)))
       .saveAsText(ctx, s"./tmp.${tool}/wma1.out")
       .toUnit
 
     loadText(ctx, path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
-      .slide(Over(_2))(WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
+      .slide(Over(_2))(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
       .saveAsText(ctx, s"./tmp.${tool}/wma2.out")
       .toUnit
 
@@ -1099,7 +1099,7 @@ object TestSpark27 {
 
     loadText(ctx, path + "/cumMovAvgInputfile.txt", Cell.parse1D())
       .data
-      .slide(Along(_1))(CumulativeMovingAverage(Locate.AppendRemainderDimension(_1)))
+      .slide(Along(_1))(true, CumulativeMovingAverage(Locate.AppendRemainderDimension(_1)))
       .saveAsText(ctx, s"./tmp.${tool}/cma.out")
       .toUnit
 
@@ -1107,7 +1107,7 @@ object TestSpark27 {
 
     loadText(ctx, path + "/expMovAvgInputfile.txt", Cell.parse1D())
       .data
-      .slide(Along(_1))(ExponentialMovingAverage(0.33, Locate.AppendRemainderDimension(_1)))
+      .slide(Along(_1))(true, ExponentialMovingAverage(0.33, Locate.AppendRemainderDimension(_1)))
       .saveAsText(ctx, s"./tmp.${tool}/ema.out")
       .toUnit
   }
@@ -1138,59 +1138,59 @@ object TestSpark28 {
 
     val stats = data
       .summarise(Along(_1))(aggregators)
-      .compact(Over(_1))()
+      .compact(Over(_1))
 
     val extractor = ExtractWithDimension[_2, List[Double]](_2)
 
     data
-      .transformWithValue(Cut(extractor), CutRules.fixed(stats, "min", "max", 4))
+      .transformWithValue(CutRules.fixed(stats, "min", "max", 4), Cut(extractor))
       .saveAsText(ctx, s"./tmp.${tool}/cut1.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.square")),
-        CutRules.squareRootChoice(stats, "count", "min", "max")
+        CutRules.squareRootChoice(stats, "count", "min", "max"),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.square"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut2.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.sturges")),
-        CutRules.sturgesFormula(stats, "count", "min", "max")
+        CutRules.sturgesFormula(stats, "count", "min", "max"),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.sturges"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut3.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.rice")),
-        CutRules.riceRule(stats, "count", "min", "max")
+        CutRules.riceRule(stats, "count", "min", "max"),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.rice"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut4.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.doane")),
-        CutRules.doanesFormula(stats, "count", "min", "max", "skewness")
+        CutRules.doanesFormula(stats, "count", "min", "max", "skewness"),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.doane"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut5.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.scott")),
-        CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd")
+        CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd"),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.scott"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut6.out")
       .toUnit
 
     data
       .transformWithValue(
-        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.break")),
-        CutRules.breaks(Map("fid:A" -> List(-1, 4, 8, 12, 16)))
+        CutRules.breaks(Map("fid:A" -> List(-1, 4, 8, 12, 16))),
+        Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.break"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut7.out")
       .toUnit
@@ -1221,13 +1221,13 @@ object TestSpark29 {
     )
 
     data
-      .gini(Over(_1))()
+      .gini(Over(_1))
       .saveAsText(ctx, s"./tmp.${tool}/gini.out")
       .toUnit
 
     data
       .map { case (a, b, c) => (b, a, c) }
-      .gini(Along(_1))()
+      .gini(Along(_1))
       .saveAsText(ctx, s"./tmp.${tool}/inig.out")
       .toUnit
   }

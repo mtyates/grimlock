@@ -27,7 +27,7 @@ import shapeless.ops.nat.{ LTEq, ToInt }
 private[squash] trait PreservingPosition[P <: Nat] extends Squasher[P] {
   type T = (Value, Content)
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
 
   def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): T = (cell.position(dim), cell.content)
   def present(t: T): Option[Content] = Option(t._2)
@@ -47,7 +47,7 @@ case class PreservingMinPosition[P <: Nat]() extends PreservingPosition[P] {
 case class KeepSlice[P <: Nat](keep: Value) extends Squasher[P] {
   type T = Option[Content]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
 
   def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): T =
     if (cell.position(dim) equ keep) Option(cell.content) else None

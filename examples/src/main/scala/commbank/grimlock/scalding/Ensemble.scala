@@ -110,9 +110,9 @@ class Ensemble(args: Args) extends Job(args) {
     .split(EnsembleSplit(scripts(0), scripts(1), scripts(2)))
     .forEach(scripts, trainAndScore)
     .merge(scripts)
-    .summariseWithValue(Over(_1))(WeightedSum(extractWeight), weights)
+    .summariseWithValue(Over(_1))(weights, WeightedSum(extractWeight))
     .saveAsText(ctx, s"./demo.${output}/ensemble.scores.out")
-    .compact(Over(_1))()
+    .compact(Over(_1))
 
   // Rename instance id (first dimension) with its score
   def renameWithScore(cell: Cell[_2], ext: Map[Position[_1], Content]): Option[Position[_2]] = ext
@@ -126,8 +126,8 @@ class Ensemble(args: Args) extends Job(args) {
   // 4/ Persist the Gini Index to file.
   data
     .slice(Over(_2))("label", true)
-    .relocateWithValue(renameWithScore, scores)
-    .gini(Over(_2))()
+    .relocateWithValue(scores, renameWithScore)
+    .gini(Over(_2))
     .saveAsText(ctx, s"./demo.${output}/ensemble.gini.out")
     .toUnit
 }

@@ -51,7 +51,7 @@ class BasicOperations(args: Args) extends Job(args) {
 
   // Get the column names.
   data
-    .names(Over(_2))()
+    .names(Over(_2))
     .saveAsText(ctx, s"./demo.${output}/column_names.out")
     .toUnit
 

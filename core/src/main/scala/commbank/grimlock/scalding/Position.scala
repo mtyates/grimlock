@@ -50,8 +50,7 @@ case class Positions[
   def names[
     T <: Tuner : NamesTuners
   ](
-    slice: Slice[L, P]
-  )(
+    slice: Slice[L, P],
     tuner: T = Default()
   )(implicit
     ev1: slice.S =:!= _0,

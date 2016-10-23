@@ -15,12 +15,10 @@
 package commbank.grimlock.spark.examples
 
 import commbank.grimlock.framework._
-import commbank.grimlock.framework.aggregate._
 import commbank.grimlock.framework.content._
 //import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.transform._
 
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
@@ -74,22 +72,19 @@ object PipelineDataPreparation {
     val train = parts
       .get("train")
 
-    // Define descriptive statistics to be computed on the training data.
-    val dstats: List[Aggregator[_2, _1, _2]] = List(
-      Count().andThenRelocate(_.position.append("count").toOption),
-      Moments(
-        _.append("mean").toOption,
-        _.append("sd").toOption,
-        _.append("skewness").toOption,
-        _.append("kurtosis").toOption
-      ),
-      Limits(_.append("min").toOption, _.append("max").toOption),
-      MaxAbs().andThenRelocate(_.position.append("max.abs").toOption)
-    )
-
     // Compute descriptive statistics on the training data.
     val descriptive = train
-      .summarise(Along(_1))(dstats)
+      .summarise(Along(_1))(
+        Count().andThenRelocate(_.position.append("count").toOption),
+        Moments(
+          _.append("mean").toOption,
+          _.append("sd").toOption,
+          _.append("skewness").toOption,
+          _.append("kurtosis").toOption
+        ),
+        Limits(_.append("min").toOption, _.append("max").toOption),
+        MaxAbs().andThenRelocate(_.position.append("max.abs").toOption)
+      )
 
     // Compute histogram on the categorical features in the training data.
     val histogram = train
@@ -100,22 +95,17 @@ object PipelineDataPreparation {
       .summarise(Over(_1))(Sum())
       .compact()
 
-    // Define type of the counts map.
-    type W = Map[Position[_1], Content]
-
     // Define extractor to extract counts from the map.
     val extractCount = ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble)
 
-    // Define summary statisics to compute on the histogram.
-    val sstats: List[AggregatorWithValue[_2, _1, _2] { type V >: W }] = List(
-      Count().andThenRelocate(_.position.append("num.cat").toOption),
-      Entropy(extractCount).andThenRelocate(_.position.append("entropy").toOption),
-      FrequencyRatio().andThenRelocate(_.position.append("freq.ratio").toOption)
-    )
-
     // Compute summary statisics on the histogram.
     val summary = histogram
-      .summariseWithValue(Over(_1))(sstats, counts)
+      .summariseWithValue(Over(_1))(
+        counts,
+        Count().andThenRelocate(_.position.append("num.cat").toOption),
+        Entropy(extractCount).andThenRelocate(_.position.append("entropy").toOption),
+        FrequencyRatio().andThenRelocate(_.position.append("freq.ratio").toOption)
+      )
 
     // Combine all statistics and write result to file
     val stats = (descriptive ++ histogram ++ summary)
@@ -125,7 +115,7 @@ object PipelineDataPreparation {
     // fewer instances. These are removed first to prevent indicator features from being created.
     val rem1 = stats
       .which(cell => (cell.position(_2) equ "count") && (cell.content.value leq 2))
-      .names(Over(_1))()
+      .names(Over(_1))
 
     // Also remove constant features (standard deviation is 0, or 1 category). These are removed after indicators have
     // been created.
@@ -134,28 +124,16 @@ object PipelineDataPreparation {
         ((cell.position(_2) equ "sd") && (cell.content.value equ 0)) ||
         ((cell.position(_2) equ "num.cat") && (cell.content.value equ 1))
       )
-      .names(Over(_1))()
+      .names(Over(_1))
 
     // Finally remove categoricals for which an individual category has only 1 value. These are removed after binarized
     // features have been created.
     val rem3 = stats
       .which(cell => (cell.position(_2) like ".*=.*".r) && (cell.content.value equ 1))
-      .names(Over(_2))()
-
-    // Define type of statistics map.
-    type S = Map[Position[_1], Map[Position[_1], Content]]
+      .names(Over(_2))
 
     // Define extract object to get data out of statistics map.
     def extractStat(key: String) = ExtractWithDimensionAndKey[_2, Content](_2, key).andThenPresent(_.value.asDouble)
-
-    // List of transformations to apply to each partition.
-    val transforms: List[TransformerWithValue[_2, _2] { type V >: S }] = List(
-      Clamp(
-        extractStat("min"),
-        extractStat("max")
-      ).andThenWithValue(Standardise(extractStat("mean"), extractStat("sd"))),
-      Binarise(Locate.RenameDimensionWithContent(_2))
-    )
 
     // For each partition:
     //  1/  Remove sparse features;
@@ -175,7 +153,12 @@ object PipelineDataPreparation {
 
       val csb = d
         .slice(Over(_2))(rem2, false)
-        .transformWithValue(transforms, stats.compact(Over(_1))())
+        .transformWithValue(
+          stats.compact(Over(_1)),
+          Clamp(extractStat("min"), extractStat("max"))
+            .andThenWithValue(Standardise(extractStat("mean"), extractStat("sd"))),
+          Binarise(Locate.RenameDimensionWithContent(_2))
+        )
         .slice(Over(_2))(rem3, false)
 
       (ind ++ csb)

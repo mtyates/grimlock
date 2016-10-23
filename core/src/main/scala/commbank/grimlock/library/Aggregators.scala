@@ -70,6 +70,8 @@ private[aggregate] trait StrictReduce[P <: Nat, S <: Nat, Q <: Nat] { self: Aggr
 private[aggregate] trait PresentDouble[P <: Nat, S <: Nat] extends StrictReduce[P, S, S] { self: Aggregator[P, S, S] =>
   type O[A] = Single[A]
 
+  val oTag = classTag[O[_]]
+
   /** Indicator if 'NaN' value should be output if the reduction failed (for example due to non-numeric data). */
   val nan: Boolean
 
@@ -102,7 +104,7 @@ private[aggregate] trait DoubleAggregator[
   /** Type of the state being aggregated. */
   type T = Double
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
 
   /**
    * Prepare for reduction.
@@ -130,7 +132,7 @@ private[aggregate] trait MomentsPrepareReduce[
   type T = AlgeMoments
 
   /** ClassTag of type of the state being aggregated. */
-  val tag = classTag[T]
+  val tTag = classTag[T]
 
   /**
    * Prepare for reduction.
@@ -179,7 +181,8 @@ case class Count[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
   type T = Long
   type O[A] = Single[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = Option(1)
   def reduce(lt: T, rt: T): T = lt + rt
@@ -191,7 +194,8 @@ case class DistinctCount[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
   type T = Set[Value]
   type O[A] = Single[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = Option(Set(cell.content.value))
   def reduce(lt: T, rt: T): T = lt ++ rt
@@ -207,7 +211,8 @@ case class PredicateCount[P <: Nat, S <: Nat](predicate: (Content) => Boolean) e
   type T = Long
   type O[A] = Single[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = if (predicate(cell.content)) Option(1) else None
   def reduce(lt: T, rt: T): T = lt + rt
@@ -247,6 +252,8 @@ case class Moments[
 ) extends Aggregator[P, S, Q]
   with MomentsPrepareReduce[P, S, Q] {
   type O[A] = Multiple[A]
+
+  val oTag = classTag[O[_]]
 
   def present(pos: Position[S], t: T): O[Cell[Q]] =
     if (invalid(t) && !nan)
@@ -397,7 +404,8 @@ case class Limits[
   type T = (Double, Double)
   type O[A] = Multiple[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => (d, d))
 
@@ -540,7 +548,8 @@ case class WeightedSum[
   type V = W
   type O[A] = Single[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepareWithValue(cell: Cell[P], ext: V): Option[T] = prepareDouble(cell)
     .map(_ * weight.extract(cell, ext).getOrElse(0.0))
@@ -582,7 +591,8 @@ case class Entropy[
   type V = W
   type O[A] = Single[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepareWithValue(cell: Cell[P], ext: V): Option[T] = prepareDouble(cell).map {
     case v => (1, count.extract(cell, ext) match {
@@ -626,7 +636,7 @@ case class FrequencyRatio[
   with PresentDouble[P, S] {
   type T = (Long, Double, Double)
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
 
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => (1, d, d))
 
@@ -672,7 +682,8 @@ case class TDigestQuantiles[
   type T = TDigest.T
   type O[A] = Multiple[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).flatMap(TDigest.from(_, compression))
   def reduce(lt: T, rt: T): T = TDigest.reduce(lt, rt)
@@ -709,7 +720,8 @@ case class CountMapQuantiles[
   type T = CountMap.T
   type O[A] = Multiple[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(CountMap.from(_))
   def reduce(lt: T, rt: T): T = CountMap.reduce(lt, rt)
@@ -744,7 +756,8 @@ sealed case class UniformQuantiles[
   type T = StreamingHistogram.T
   type O[A] = Multiple[A]
 
-  val tag = classTag[T]
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => StreamingHistogram.from(d, count))
   def reduce(lt: T, rt: T): T = StreamingHistogram.reduce(lt, rt)

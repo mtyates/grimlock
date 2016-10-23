@@ -50,11 +50,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     Q <: Nat,
     T <: Tuner : HistogramTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T = Default()
   )(
     name: Locate.FromSelectedAndContent[slice.S, Q],
-    filter: Boolean,
-    tuner: T = Default()
+    filter: Boolean
   )(implicit
     ev1: ClassTag[Position[Q]],
     ev2: GT[Q, slice.S],
@@ -70,14 +70,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     Q <: Nat,
     T <: Tuner : QuantileTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T = Default()
   )(
     probs: List[Double],
     quantiser: Quantile.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean,
-    nan: Boolean,
-    tuner: T = Default()
+    nan: Boolean
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -112,14 +112,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     Q <: Nat,
     T <: Tuner : CountMapQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T = Default()
   )(
     probs: List[Double],
     quantiser: Quantile.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean,
-    nan: Boolean,
-    tuner: T = Default()
+    nan: Boolean
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -140,14 +140,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     Q <: Nat,
     T <: Tuner : TDigestQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T = Default()
   )(
     probs: List[Double],
     compression: Double,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean,
-    nan: Boolean,
-    tuner: T = Default()
+    nan: Boolean
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
@@ -170,13 +170,13 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     Q <: Nat,
     T <: Tuner : UniformQuantilesTuners
   ](
-    slice: Slice[L, P]
+    slice: Slice[L, P],
+    tuner: T = Default()
   )(
     count: Long,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean,
-    nan: Boolean,
-    tuner: T = Default()
+    nan: Boolean
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],

@@ -18,7 +18,7 @@ import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
 import commbank.grimlock.framework.position._
 
-import scala.reflect.ClassTag
+import scala.reflect.{ classTag, ClassTag }
 
 import shapeless.Nat
 import shapeless.ops.nat.{ GT, GTEq }
@@ -89,6 +89,15 @@ object Multiple {
   def apply[A](): Multiple[A] = Multiple[A](List())
 }
 
+private object Validate {
+  def check[A <: AggregatorWithValue[_, _, _]](aggregators: Seq[A]): A =
+    // TODO: Is there any way to check this at compile time (and not throw a runtime exception)?
+    if (aggregators.size == 1 && aggregators.head.oTag == classTag[Single[_]])
+      aggregators.head
+    else
+      throw new Exception("Only a single aggregator, returning a single value can be used when slice.S =:= Q")
+}
+
 /** Base trait for aggregations. */
 trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S, Q] { self =>
   type V = Any
@@ -126,7 +135,8 @@ trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S,
     type T = self.T
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepare(cell: Cell[P]): Option[T] = self.prepare(cell.mutate(preparer))
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -144,7 +154,8 @@ trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S,
     type T = self.T
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepare(cell: Cell[P]): Option[T] = self.prepare(cell)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -168,7 +179,8 @@ trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S,
     type T = self.T
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepare(cell: Cell[P]): Option[T] = self.prepare(cell)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -181,29 +193,34 @@ trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S,
 /** Companion object to the `Aggregator` trait. */
 object Aggregator {
   /** Type to validate an aggregator. */
-  type Validate[S <: Nat, Q <: Nat, A <: Aggregator[_, S, Q]] = Valid[S, Q, A]
+  type Validate[P <: Nat, S <: Nat, Q <: Nat] = Valid[P, S, Q]
 
   /** Trait for valid aggregators. */
-  trait Valid[S <: Nat, Q <: Nat, A <: Aggregator[_, S, Q]]
+  trait Valid[P <: Nat, S <: Nat, Q <: Nat] {
+    def check(aggregators: Seq[Aggregator[P, S, Q]]): Aggregator[P, S, Q]
+  }
 
-  /** Implicit constraint that ensures that aggregators for which Q == S, can return only a Single value. */
+  /** Implicit constraint that ensures that aggregators for which Q > S, can return any value. */
   implicit def qGreaterThanS[
+    P <: Nat,
     S <: Nat,
-    Q <: Nat,
-    A <: Aggregator[_, S, Q]
+    Q <: Nat
   ](implicit
     ev: GT[Q, S]
-  ): Valid[S, Q, A] = new Valid[S, Q, A] { }
+  ): Valid[P, S, Q] = new Valid[P, S, Q] {
+    def check(aggregators: Seq[Aggregator[P, S, Q]]): Aggregator[P, S, Q] = aggregators.toList
+  }
 
   /** Implicit constraint that ensures that aggregators for which Q == S, can return only a Single value. */
   implicit def qEqualSWithSingle[
+    P <: Nat,
     S <: Nat,
-    Q <: Nat,
-    A <: Aggregator[_, S, Q]
+    Q <: Nat
   ](implicit
-    ev1: Q =:= S,
-    ev2: A <:< Aggregator[_, S, Q] { type O[X] = Single[X] }
-  ): Valid[S, Q, A] = new Valid[S, Q, A] { }
+    ev: Q =:= S
+  ): Valid[P, S, Q] = new Valid[P, S, Q] {
+    def check(aggregators: Seq[Aggregator[P, S, Q]]): Aggregator[P, S, Q] = Validate.check(aggregators)
+  }
 
   /** Implicit conversion from `List[Aggregator[P, S, Q]]` to a single `Aggregator[P, S, Q]`. */
   implicit def listToAggregator[
@@ -212,11 +229,14 @@ object Aggregator {
     Q <: Nat
   ](
     aggregators: List[Aggregator[P, S, Q]]
+  )(implicit
+    ev: GT[Q, S]
   ): Aggregator[P, S, Q] = new Aggregator[P, S, Q] {
     type T = List[(Int, Any)]
     type O[A] = Multiple[A]
 
-    val tag = scala.reflect.classTag[T]
+    val tTag = classTag[T]
+    val oTag = classTag[O[_]]
 
     def prepare(cell: Cell[P]): Option[T] = {
       val s = aggregators.zipWithIndex.map { case (a, i) => a.prepare(cell).map(t => (i, t)) }.flatten
@@ -258,7 +278,10 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
   type O[A] <: Result[A, O]
 
   /** ClassTag of type of the state being aggregated. */
-  val tag: ClassTag[T]
+  val tTag: ClassTag[T]
+
+  /** ClassTag of type of the return type. */
+  val oTag: ClassTag[O[_]]
 
   /**
    * Prepare for reduction.
@@ -303,7 +326,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self.prepareWithValue(cell.mutate(preparer), ext)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -322,7 +346,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self.prepareWithValue(cell, ext)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -349,7 +374,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self.prepareWithValue(cell, ext)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -370,7 +396,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self
       .prepareWithValue(Cell(cell.position, preparer(cell, ext)), ext)
@@ -390,7 +417,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self.prepareWithValue(cell, ext)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -417,7 +445,8 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
     type V = self.V
     type O[A] = self.O[A]
 
-    val tag = self.tag
+    val tTag = self.tTag
+    val oTag = self.oTag
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = self.prepareWithValue(cell, ext)
     def reduce(lt: T, rt: T): T = self.reduce(lt, rt)
@@ -430,29 +459,42 @@ trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializ
 /** Companion object to the `AggregatorWithValue` trait. */
 object AggregatorWithValue {
   /** Type to validate an aggregator. */
-  type Validate[S <: Nat, Q <: Nat, A <: AggregatorWithValue[_, S, Q]] = Valid[S, Q, A]
+  type Validate[P <: Nat, S <: Nat, Q <: Nat, W] = Valid[P, S, Q, W]
 
   /** Trait for valid aggregators. */
-  trait Valid[S <: Nat, Q <: Nat, A <: AggregatorWithValue[_, S, Q]]
+  trait Valid[P <: Nat, S <: Nat, Q <: Nat, W] {
+    def check(
+      aggregators: Seq[AggregatorWithValue[P, S, Q] { type V >: W }]
+    ): AggregatorWithValue[P, S, Q] { type V >: W }
+  }
 
-  /** Implicit constraint that ensures that aggregators for which Q == S, can return only a Single value. */
+  /** Implicit constraint that ensures that aggregators for which Q > S, can return any value. */
   implicit def qGreaterThanSWithValue[
+    P <: Nat,
     S <: Nat,
     Q <: Nat,
-    A <: AggregatorWithValue[_, S, Q]
+    W
   ](implicit
     ev: GT[Q, S]
-  ): Valid[S, Q, A] = new Valid[S, Q, A] { }
+  ): Valid[P, S, Q, W] = new Valid[P, S, Q, W] {
+    def check(
+      aggregators: Seq[AggregatorWithValue[P, S, Q] { type V >: W }]
+    ): AggregatorWithValue[P, S, Q] { type V >: W } = aggregators.toList
+  }
 
   /** Implicit constraint that ensures that aggregators for which Q == S, can return only a Single value. */
   implicit def qEqualSWithSingleWithValue[
+    P <: Nat,
     S <: Nat,
     Q <: Nat,
-    A <: AggregatorWithValue[_, S, Q]
+    W
   ](implicit
-    ev1: Q =:= S,
-    ev2: A <:< AggregatorWithValue[_, S, Q] { type O[X] = Single[X] }
-  ): Valid[S, Q, A] = new Valid[S, Q, A] { }
+    ev: Q =:= S
+  ): Valid[P, S, Q, W] = new Valid[P, S, Q, W] {
+    def check(
+      aggregators: Seq[AggregatorWithValue[P, S, Q] { type V >: W }]
+    ): AggregatorWithValue[P, S, Q] { type V >: W } = Validate.check(aggregators)
+  }
 
   /**
    * Implicit conversion from `List[AggregatorWithValue[P, S, Q] { type V >: W }]` to a single
@@ -465,12 +507,15 @@ object AggregatorWithValue {
     W
   ](
     aggregators: List[AggregatorWithValue[P, S, Q] { type V >: W }]
+  )(implicit
+    ev: GT[Q, S]
   ): AggregatorWithValue[P, S, Q] { type V >: W } = new AggregatorWithValue[P, S, Q] {
     type T = List[(Int, Any)]
     type V = W
     type O[A] = Multiple[A]
 
-    val tag = scala.reflect.classTag[T]
+    val tTag = classTag[T]
+    val oTag = classTag[O[_]]
 
     def prepareWithValue(cell: Cell[P], ext: V): Option[T] = {
       val s = aggregators.zipWithIndex.map { case (a, i) => a.prepareWithValue(cell, ext).map(t => (i, t)) }.flatten
