@@ -32,6 +32,16 @@ class TestContent extends TestGrimlock {
     Content(ContinuousSchema[Double](0, 10), 3.14).toShortString("|") shouldBe "double|continuous(0.0:10.0)|3.14"
   }
 
+  it should "parse from string" in {
+    Content.fromShortString("double|continuous|3.14") shouldBe Option(Content(ContinuousSchema[Double](), 3.14))
+    Content.fromShortString("double|continuous(0.0:10.0)|3.14") shouldBe
+      Option(Content(ContinuousSchema[Double](0, 10), 3.14))
+    Content.fromShortString("string|continuous|3.14") shouldBe None
+    Content.fromShortString("double|continuous|abc") shouldBe None
+    Content.fromShortString("double|continuouz|3.14") shouldBe None
+    Content.fromShortString("doulbe|continuous|3.14") shouldBe None
+  }
+
   "A Continuous Long Content" should "return its string value" in {
     Content(ContinuousSchema[Long](), 42).toString shouldBe "Content(ContinuousSchema[Long](),LongValue(42,LongCodec))"
     Content(ContinuousSchema[Long](0, 100), 42).toString shouldBe
@@ -41,6 +51,15 @@ class TestContent extends TestGrimlock {
   it should "return its short string value" in {
     Content(ContinuousSchema[Long](), 42).toShortString("|") shouldBe "long|continuous|42"
     Content(ContinuousSchema[Long](0, 100), 42).toShortString("|") shouldBe "long|continuous(0:100)|42"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("long|continuous|42") shouldBe Option(Content(ContinuousSchema[Long](), 42))
+    Content.fromShortString("long|continuous(0:100)|42") shouldBe Option(Content(ContinuousSchema[Long](0, 100), 42))
+    Content.fromShortString("string|continuous|42") shouldBe None
+    Content.fromShortString("long|continuous|abc") shouldBe None
+    Content.fromShortString("long|continuouz|42") shouldBe None
+    Content.fromShortString("logn|continuous|42") shouldBe None
   }
 
   "A Discrete Long Content" should "return its string value" in {
@@ -54,6 +73,15 @@ class TestContent extends TestGrimlock {
     Content(DiscreteSchema[Long](0, 100, 2), 42).toShortString("|") shouldBe "long|discrete(0:100,2)|42"
   }
 
+  it should "parse from string" in {
+    Content.fromShortString("long|discrete|42") shouldBe Option(Content(DiscreteSchema[Long](), 42))
+    Content.fromShortString("long|discrete(0:100,2)|42") shouldBe Option(Content(DiscreteSchema[Long](0, 100, 2), 42))
+    Content.fromShortString("string|discrete|42") shouldBe None
+    Content.fromShortString("long|discrete|abc") shouldBe None
+    Content.fromShortString("long|discrets|42") shouldBe None
+    Content.fromShortString("logn|discrete|42") shouldBe None
+  }
+
   "A Nominal String Content" should "return its string value" in {
     Content(NominalSchema[String](), "a").toString shouldBe
       "Content(NominalSchema[String](),StringValue(a,StringCodec))"
@@ -64,6 +92,14 @@ class TestContent extends TestGrimlock {
   it should "return its short string value" in {
     Content(NominalSchema[String](), "a").toShortString("|") shouldBe "string|nominal|a"
     Content(NominalSchema[String](Set("a", "b", "c")), "a").toShortString("|") shouldBe "string|nominal(a,b,c)|a"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("string|nominal|a") shouldBe Option(Content(NominalSchema[String](), "a"))
+    Content.fromShortString("string|nominal(a,b,c)|a") shouldBe
+      Option(Content(NominalSchema[String](Set("a", "b", "c")), "a"))
+    Content.fromShortString("string|nominas|a") shouldBe None
+    Content.fromShortString("strign|nominal|a") shouldBe None
   }
 
   "A Nominal Double Content" should "return its string value" in {
@@ -79,6 +115,15 @@ class TestContent extends TestGrimlock {
       "double|nominal(1.0,2.0,3.0)|1.0"
   }
 
+  it should "parse from string" in {
+    Content.fromShortString("double|nominal|1.0") shouldBe Option(Content(NominalSchema[Double](), 1.0))
+    Content.fromShortString("double|nominal(1.0,2.0,3.0)|1.0") shouldBe
+      Option(Content(NominalSchema[Double](Set(1.0, 2.0, 3.0)), 1.0))
+    Content.fromShortString("double|nominal|abc") shouldBe None
+    Content.fromShortString("double|nominas|1.0") shouldBe None
+    Content.fromShortString("doubel|nominal|1.0") shouldBe None
+  }
+
   "A Nominal Long Content" should "return its string value" in {
     Content(NominalSchema[Long](), 1).toString shouldBe "Content(NominalSchema[Long](),LongValue(1,LongCodec))"
     Content(NominalSchema[Long](Set[Long](1, 2, 3)), 1).toString shouldBe
@@ -88,6 +133,15 @@ class TestContent extends TestGrimlock {
   it should "return its short string value" in {
     Content(NominalSchema[Long](), 1).toShortString("|") shouldBe "long|nominal|1"
     Content(NominalSchema[Long](Set[Long](1, 2, 3)), 1).toShortString("|") shouldBe "long|nominal(1,2,3)|1"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("long|nominal|1") shouldBe Option(Content(NominalSchema[Long](), 1))
+    Content.fromShortString("long|nominal(1,2,3)|1") shouldBe
+      Option(Content(NominalSchema[Long](Set(1, 2, 3)), 1))
+    Content.fromShortString("long|nominal|abc") shouldBe None
+    Content.fromShortString("long|nominas|1") shouldBe None
+    Content.fromShortString("logn|nominal|1") shouldBe None
   }
 
   "A Ordinal String Content" should "return its string value" in {
@@ -100,6 +154,14 @@ class TestContent extends TestGrimlock {
   it should "return its short string value" in {
     Content(OrdinalSchema[String](), "a").toShortString("|") shouldBe "string|ordinal|a"
     Content(OrdinalSchema[String](Set("a", "b", "c")), "a").toShortString("|") shouldBe "string|ordinal(a,b,c)|a"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("string|ordinal|a") shouldBe Option(Content(OrdinalSchema[String](), "a"))
+    Content.fromShortString("string|ordinal(a,b,c)|a") shouldBe
+      Option(Content(OrdinalSchema[String](Set("a", "b", "c")), "a"))
+    Content.fromShortString("string|ordinas|a") shouldBe None
+    Content.fromShortString("strign|ordinal|a") shouldBe None
   }
 
   "A Ordinal Double Content" should "return its string value" in {
@@ -115,6 +177,15 @@ class TestContent extends TestGrimlock {
       "double|ordinal(1.0,2.0,3.0)|1.0"
   }
 
+  it should "parse from string" in {
+    Content.fromShortString("double|ordinal|1.0") shouldBe Option(Content(OrdinalSchema[Double](), 1.0))
+    Content.fromShortString("double|ordinal(1.0,2.0,3.0)|1.0") shouldBe
+      Option(Content(OrdinalSchema[Double](Set(1.0, 2.0, 3.0)), 1.0))
+    Content.fromShortString("double|ordinal|abc") shouldBe None
+    Content.fromShortString("double|ordinas|1.0") shouldBe None
+    Content.fromShortString("doubel|ordinal|1.0") shouldBe None
+  }
+
   "A Ordinal Long Content" should "return its string value" in {
     Content(OrdinalSchema[Long](), 1).toString shouldBe "Content(OrdinalSchema[Long](),LongValue(1,LongCodec))"
     Content(OrdinalSchema[Long](Set[Long](1, 2, 3)), 1).toString shouldBe
@@ -124,6 +195,15 @@ class TestContent extends TestGrimlock {
   it should "return its short string value" in {
     Content(OrdinalSchema[Long](), 1).toShortString("|") shouldBe "long|ordinal|1"
     Content(OrdinalSchema[Long](Set[Long](1, 2, 3)), 1).toShortString("|") shouldBe "long|ordinal(1,2,3)|1"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("long|ordinal|1") shouldBe Option(Content(OrdinalSchema[Long](), 1))
+    Content.fromShortString("long|ordinal(1,2,3)|1") shouldBe
+      Option(Content(OrdinalSchema[Long](Set(1, 2, 3)), 1))
+    Content.fromShortString("long|ordinal|abc") shouldBe None
+    Content.fromShortString("long|ordinas|1") shouldBe None
+    Content.fromShortString("logn|ordinal|1") shouldBe None
   }
 
   val dfmt = new java.text.SimpleDateFormat("yyyy-MM-dd")
@@ -156,6 +236,15 @@ class TestContent extends TestGrimlock {
       DateSchema[java.util.Date](),
       DateValue(dtfmt.parse("2001-01-01 01:01:01"), DateCodec("yyyy-MM-dd hh:mm:ss"))
     ).toShortString("|") shouldBe "date(yyyy-MM-dd hh:mm:ss)|date|2001-01-01 01:01:01"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("date(yyyy-MM-dd)|date|2001-01-01") shouldBe
+      Option(Content(DateSchema[java.util.Date](), DateValue(dfmt.parse("2001-01-01"))))
+    Content.fromShortString("string|date|2001-01-01") shouldBe None
+    Content.fromShortString("date(yyyy-MM-dd)|date|abc") shouldBe None
+    Content.fromShortString("date(yyyy-MM-dd)|dats|2001-01-01") shouldBe None
+    Content.fromShortString("daet(yyyy-MM-dd)|date|2001-01-01") shouldBe None
   }
 }
 

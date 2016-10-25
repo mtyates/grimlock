@@ -14,6 +14,7 @@
 
 package commbank.grimlock
 
+import commbank.grimlock.framework._
 import commbank.grimlock.framework.encoding._
 
 class TestDateCodec extends TestGrimlock {
@@ -135,7 +136,7 @@ class TestDoubleCodec extends TestGrimlock {
   }
 }
 
-class TestLongCodeCodec extends TestGrimlock {
+class TestLongCodec extends TestGrimlock {
 
   "A LongCodec" should "have a name" in {
     LongCodec.toShortString shouldBe "long"
@@ -207,6 +208,53 @@ class TestBooleanCodec extends TestGrimlock {
   it should "not compare an incorrect value" in {
     BooleanCodec.compare(BooleanValue(true), StringValue("abc")) shouldBe None
     BooleanCodec.compare(StringValue("abc"), BooleanValue(true)) shouldBe None
+  }
+}
+
+class TestTypeCodec extends TestGrimlock {
+
+  "A TypeCodec" should "have a name" in {
+    TypeCodec.toShortString shouldBe "type"
+  }
+
+  it should "decode a correct value" in {
+    TypeCodec.decode("mixed") shouldBe Option(TypeValue(MixedType))
+    TypeCodec.decode("categorical") shouldBe Option(TypeValue(CategoricalType))
+    TypeCodec.decode("nominal") shouldBe Option(TypeValue(NominalType))
+    TypeCodec.decode("ordinal") shouldBe Option(TypeValue(OrdinalType))
+    TypeCodec.decode("numeric") shouldBe Option(TypeValue(NumericType))
+    TypeCodec.decode("continuous") shouldBe Option(TypeValue(ContinuousType))
+    TypeCodec.decode("discrete") shouldBe Option(TypeValue(DiscreteType))
+    TypeCodec.decode("date") shouldBe Option(TypeValue(DateType))
+    TypeCodec.decode("structured") shouldBe Option(TypeValue(StructuredType))
+  }
+
+  it should "not decode an incorrect value" in {
+    TypeCodec.decode("a") shouldBe None
+    TypeCodec.decode("2001-01-01") shouldBe None
+  }
+
+  it should "encode a correct value" in {
+    TypeCodec.encode(MixedType) shouldBe "mixed"
+    TypeCodec.encode(CategoricalType) shouldBe "categorical"
+    TypeCodec.encode(NominalType) shouldBe "nominal"
+    TypeCodec.encode(OrdinalType) shouldBe "ordinal"
+    TypeCodec.encode(NumericType) shouldBe "numeric"
+    TypeCodec.encode(ContinuousType) shouldBe "continuous"
+    TypeCodec.encode(DiscreteType) shouldBe "discrete"
+    TypeCodec.encode(DateType) shouldBe "date"
+    TypeCodec.encode(StructuredType) shouldBe "structured"
+  }
+
+  it should "compare a correct value" in {
+    TypeCodec.compare(TypeValue(DiscreteType), TypeValue(MixedType)).map(_ < 0) shouldBe Option(true)
+    TypeCodec.compare(TypeValue(DateType), TypeValue(DateType)) shouldBe Option(0)
+    TypeCodec.compare(TypeValue(NominalType), TypeValue(ContinuousType)).map(_ > 0) shouldBe Option(true)
+  }
+
+  it should "not compare an incorrect value" in {
+    TypeCodec.compare(TypeValue(StructuredType), StringValue("abc")) shouldBe None
+    TypeCodec.compare(StringValue("abc"), TypeValue(OrdinalType)) shouldBe None
   }
 }
 

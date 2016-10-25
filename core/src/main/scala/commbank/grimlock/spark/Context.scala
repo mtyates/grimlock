@@ -14,7 +14,7 @@
 
 package commbank.grimlock.spark.environment
 
-import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors, Type }
+import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors }
 import commbank.grimlock.framework.environment.{
   Context => FwContext,
   DistributedData => FwDistributedData,
@@ -34,8 +34,7 @@ import commbank.grimlock.spark.{
   Matrix6D,
   Matrix7D,
   Matrix8D,
-  Matrix9D,
-  Types
+  Matrix9D
 }
 import commbank.grimlock.spark.content.{ Contents, IndexedContents }
 import commbank.grimlock.spark.partition.Partitions
@@ -360,9 +359,6 @@ object Context {
     ctx: Context,
     ev: ClassTag[Position[T]]
   ): RDD[Position[T]] = ctx.context.parallelize(t)
-
-  /** Conversion from `RDD[(Position[P], Type)]` to a `Types`. */
-  implicit def rddToTypes[P <: Nat](data: RDD[(Position[P], Type)]): Types[P] = Types(data)
 }
 
 trait DistributedData extends FwDistributedData {

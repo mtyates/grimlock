@@ -14,7 +14,7 @@
 
 package commbank.grimlock.scalding.environment
 
-import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors, Type }
+import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors }
 import commbank.grimlock.framework.environment.{
   Context => FwContext,
   DistributedData => FwDistributedData,
@@ -34,8 +34,7 @@ import commbank.grimlock.scalding.{
   Matrix6D,
   Matrix7D,
   Matrix8D,
-  Matrix9D,
-  Types
+  Matrix9D
 }
 import commbank.grimlock.scalding.content.{ Contents, IndexedContents }
 import commbank.grimlock.scalding.partition.Partitions
@@ -311,9 +310,6 @@ object Context {
 
   /** Converts a `List[Position[T]]` to a `TypedPipe[Position[T]]`. */
   implicit def listPositionToPipe[T <: Nat](t: List[Position[T]]): TypedPipe[Position[T]] = IterablePipe(t)
-
-  /** Conversion from `TypedPipe[(Position[P], Type)]` to a `Types`. */
-  implicit def pipeToTypes[P <: Nat](data: TypedPipe[(Position[P], Type)]): Types[P] = Types(data)
 }
 
 trait DistributedData extends FwDistributedData {

@@ -57,7 +57,7 @@ object ExampleEvent {
 case object ExampleEventSchema extends StructuredSchema { self =>
   type D = ExampleEvent
 
-  val kind = Type.Structured
+  val kind = StructuredType
 
   def validate(value: Value { type D = self.D }): Boolean = true
 }

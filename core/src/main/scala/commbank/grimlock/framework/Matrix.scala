@@ -732,9 +732,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param tuner    The tuner for the job.
    * @param specific Indicates if the most specific type should be returned, or it's generalisation (default).
    *
-   * @return A `U[(Position[slice.S], Type)]` of the distinct position(s) together with their type.
-   *
-   * @see [[Types]]
+   * @return A `U[Cell[slice.S]]` of the distinct position(s) together with their type.
    */
   def types[
     T <: Tuner : TypesTuners
@@ -747,7 +745,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
-  ): U[(Position[slice.S], Type)]
+  ): U[Cell[slice.S]]
 
   /** Specifies tuners permitted on a call to `unique` functions. */
   type UniqueTuners[_]
