@@ -392,6 +392,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev: GTEq[Q, P]
   ): U[Cell[Q]]
 
+  /** Specifies tuners permitted on a call to `saveAsIV`. */
+  type SaveAsIVTuners[_]
+
   /**
    * Persist as a sparse matrix file (index, value).
    *
@@ -399,10 +402,22 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param file       File to write to.
    * @param dictionary Pattern for the dictionary file name.
    * @param separator  Column separator to use in dictionary file.
+   * @param tuner      The tuner for the job.
    *
    * @return A `U[Cell[P]]`; that is it returns `data`.
    */
-  def saveAsIV(ctx: C, file: String, dictionary: String = "%1$s.dict.%2$d", separator: String = "|"): U[Cell[P]]
+  def saveAsIV[
+    T <: Tuner : SaveAsIVTuners
+  ](
+    ctx: C,
+    file: String,
+    dictionary: String = "%1$s.dict.%2$d",
+    separator: String = "|",
+    tuner: T
+  ): U[Cell[P]]
+
+  /** Specifies tuners permitted on a call to `saveAsText`. */
+  type SaveAsTextTuners[_]
 
   /**
    * Persist to disk.
@@ -410,10 +425,18 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @param ctx    The context for to persist the matrix.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Cell[P]` to string.
+   * @param tuner  The tuner for the job.
    *
    * @return A `U[Cell[P]]`; that is it returns `data`.
    */
-  def saveAsText(ctx: C, file: String, writer: TextWriter = Cell.toString()): U[Cell[P]]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter = Cell.toString(),
+    tuner: T
+  ): U[Cell[P]]
 
   /** Specifies tuners permitted on a call to `set` functions. */
   type SetTuners[_]
@@ -436,8 +459,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @param tuner The tuner for the job.
    *
-   * @return A `U[Cell[Position1D]]`. The position consists of a string value with the name of the dimension
-   *         (`dim.toString`). The content has the actual size in it as a discrete variable.
+   * @return A `U[Cell[Position1D]]`. The position consists of a long value of the dimension (`Nat.toInt[dim.N]`). The
+   *         content has the actual size in it as a discrete variable.
    */
   def shape[T <: Tuner : ShapeTuners](tuner: T): U[Cell[_1]]
 
@@ -452,8 +475,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *                 enabling this flag has better run-time performance.
    * @param tuner    The tuner for the job.
    *
-   * @return A `U[Cell[_1]]`. The position consists of a string value with the name of the dimension
-   *         (`dim.toString`). The content has the actual size in it as a discrete variable.
+   * @return A `U[Cell[_1]]`. The position consists of a long value of the dimension (`Nat.toInt[dim.N]`). The
+   *         content has the actual size in it as a discrete variable.
    */
   def size[
     T <: Tuner : SizeTuners
@@ -475,8 +498,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @param slice     Encapsulates the dimension(s) to slice.
    * @param tuner     The tuner for the job.
-   * @param positions The position(s) within the dimension(s) to slice.
    * @param keep      Indicates if the `positions` should be kept or removed.
+   * @param positions The position(s) within the dimension(s) to slice.
    *
    * @return A `U[Cell[P]]` of the remaining content.
    */
@@ -486,8 +509,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     slice: Slice[L, P],
     tuner: T
   )(
-    positions: U[Position[slice.S]],
-    keep: Boolean
+    keep: Boolean,
+    positions: U[Position[slice.S]]
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
@@ -572,6 +595,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def splitWithValue[I, W](value: E[W], partitioners: PartitionerWithValue[P, I] { type V >: W }*): U[(I, Cell[P])]
 
+  /** Specifies tuners permitted on a call to `stream` functions. */
+  type StreamTuners[_]
+
   /**
    * Stream this matrix through `command` and apply `script`.
    *
@@ -580,18 +606,57 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *                  located in the same directory as which the job is started.
    * @param writer    Function that converts a cell to a string (prior to streaming it through `command`).
    * @param parser    Function that parses the resulting string back to a cell.
+   * @param hash      Function maps each cell's position to an integer. Use this function to tag functions
+   *                  that should be sent to the same reducer.
+   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the new data as well as a `U[String]` with any parse errors.
    *
    * @note The `command` must be installed on each node of the cluster.
    */
   def stream[
-    Q <: Nat
+    Q <: Nat,
+    T <: Tuner : StreamTuners
   ](
     command: String,
     files: List[String],
     writer: TextWriter,
+    parser: Cell.TextParser[Q],
+    hash: (Position[P]) => Int = _ => 0,
+    tuner: T
+  ): (U[Cell[Q]], U[String])
+
+  /**
+   * Stream this matrix through `command` and apply `script`, after grouping all data by `slice`.
+   *
+   * @param slice     Encapsulates the dimension(s) along which to stream.
+   * @param tuner     The tuner for the job.
+   * @param command   The command to stream (pipe) the data through.
+   * @param files     A list of text files that will be available to `command`. Note that all files must be
+   *                  located in the same directory as which the job is started.
+   * @param writer    Function that converts a group of cells to a string (prior to streaming it through `command`).
+   * @param parser    Function that parses the resulting string back to a cell.
+   *
+   * @return A `U[Cell[Q]]` with the new data as well as a `U[String]` with any parse errors.
+   *
+   * @note The `command` must be installed on each node of the cluster. The implementation assumes that all
+   *       values for a given slice fit into memory.
+   */
+  def streamByPosition[
+    Q <: Nat,
+    T <: Tuner : StreamTuners
+  ](
+    slice: Slice[L, P],
+    tuner: T
+  )(
+    command: String,
+    files: List[String],
+    writer: TextWriterByPosition,
     parser: Cell.TextParser[Q]
+  )(implicit
+    ev1: GTEq[Q, slice.S],
+    ev2: ClassTag[slice.S],
+    ev3: Diff.Aux[P, _1, L]
   ): (U[Cell[Q]], U[String])
 
   /**
@@ -1003,10 +1068,14 @@ trait Matrix2D extends Matrix[_1, _2]
     ev3: D1 =:!= D2
   ): U[Cell[_2]]
 
+  /** Specifies tuners permitted on a call to `saveAsCSV`. */
+  type SaveAsCSVTuners[_]
+
   /**
    * Persist as a CSV file.
    *
    * @param slice       Encapsulates the dimension that makes up the columns.
+   * @param tuner       The tuner for the job.
    * @param ctx         The context used to perist the matrix.
    * @param file        File to write to.
    * @param separator   Column separator to use.
@@ -1018,8 +1087,11 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @return A `U[Cell[_2]]`; that is it returns `data`.
    */
-  def saveAsCSV(
-    slice: Slice[_1, _2]
+  def saveAsCSV[
+    T <: Tuner : SaveAsCSVTuners
+  ](
+    slice: Slice[_1, _2],
+    tuner: T
   )(
     ctx: C,
     file: String,
@@ -1033,10 +1105,14 @@ trait Matrix2D extends Matrix[_1, _2]
     ev: ClassTag[Position[slice.S]]
   ): U[Cell[_2]]
 
+  /** Specifies tuners permitted on a call to `saveAsVW*`. */
+  type SaveAsVWTuners[_]
+
   /**
    * Persist a `Matrix2D` as a Vowpal Wabbit file.
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
+   * @param tuner      The tuner for the job.
    * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param dictionary Pattern for the dictionary file name, use `%``s` for the file name.
@@ -1045,8 +1121,11 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @return A `U[Cell[_2]]`; that is it returns `data`.
    */
-  def saveAsVW(
-    slice: Slice[_1, _2]
+  def saveAsVW[
+    T <: Tuner : SaveAsVWTuners
+  ](
+    slice: Slice[_1, _2],
+    tuner: T
   )(
     ctx: C,
     file: String,
@@ -1061,6 +1140,7 @@ trait Matrix2D extends Matrix[_1, _2]
    * Persist a `Matrix2D` as a Vowpal Wabbit file with the provided labels.
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
+   * @param tuner      The tuner for the job.
    * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param labels     The labels.
@@ -1072,8 +1152,11 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @note The labels are joined to the data keeping only those examples for which data and a label are available.
    */
-  def saveAsVWWithLabels(
-    slice: Slice[_1, _2]
+  def saveAsVWWithLabels[
+    T <: Tuner : SaveAsVWTuners
+  ](
+    slice: Slice[_1, _2],
+    tuner: T
   )(
     ctx: C,
     file: String,
@@ -1089,6 +1172,7 @@ trait Matrix2D extends Matrix[_1, _2]
    * Persist a `Matrix2D` as a Vowpal Wabbit file with the provided importance weights.
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
+   * @param tuner      The tuner for the job.
    * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param importance The importance weights.
@@ -1100,8 +1184,11 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @note The weights are joined to the data keeping only those examples for which data and a weight are available.
    */
-  def saveAsVWWithImportance(
-    slice: Slice[_1, _2]
+  def saveAsVWWithImportance[
+    T <: Tuner : SaveAsVWTuners
+  ](
+    slice: Slice[_1, _2],
+    tuner: T
   )(
     ctx: C,
     file: String,
@@ -1117,6 +1204,7 @@ trait Matrix2D extends Matrix[_1, _2]
    * Persist a `Matrix2D` as a Vowpal Wabbit file with the provided labels and importance weights.
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
+   * @param tuner      The tuner for the job.
    * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param labels     The labels.
@@ -1130,8 +1218,11 @@ trait Matrix2D extends Matrix[_1, _2]
    * @note The labels and weights are joined to the data keeping only those examples for which data and a label
    *       and weight are available.
    */
-  def saveAsVWWithLabelsAndImportance(
-    slice: Slice[_1, _2]
+  def saveAsVWWithLabelsAndImportance[
+    T <: Tuner : SaveAsVWTuners
+  ](
+    slice: Slice[_1, _2],
+    tuner: T
   )(
     ctx: C,
     file: String,

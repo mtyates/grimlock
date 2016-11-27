@@ -26,7 +26,15 @@ import shapeless.ops.nat.{ LTEq, ToInt }
 trait Squasher[P <: Nat] extends SquasherWithValue[P] {
   type V = Any
 
-  def prepareWithValue[D <: Nat : ToInt](cell: Cell[P], dim: D, ext: V)(implicit ev: LTEq[D, P]): T = prepare(cell, dim)
+  def prepareWithValue[
+    D <: Nat : ToInt
+  ](
+    cell: Cell[P],
+    dim: D,
+    ext: V
+  )(implicit
+    ev: LTEq[D, P]
+  ): Option[T] = prepare(cell, dim)
   def presentWithValue(t: T, ext: V): Option[Content] = present(t)
 
   /**
@@ -37,7 +45,7 @@ trait Squasher[P <: Nat] extends SquasherWithValue[P] {
    *
    * @return State to reduce.
    */
-  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): T
+  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): Option[T]
 
   /**
    * Present the squashed content.
@@ -69,7 +77,7 @@ trait SquasherWithValue[P <: Nat] extends java.io.Serializable {
    *
    * @return State to reduce.
    */
-  def prepareWithValue[D <: Nat : ToInt](cell: Cell[P], dim: D, ext: V)(implicit ev: LTEq[D, P]): T
+  def prepareWithValue[D <: Nat : ToInt](cell: Cell[P], dim: D, ext: V)(implicit ev: LTEq[D, P]): Option[T]
 
   /**
    * Standard reduce method.

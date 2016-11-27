@@ -90,7 +90,7 @@ object Ensemble {
     // the data into a ~40% train set per script and a shared ~20% test set. The returned scores are for
     // the test set. The resulting scores are expanded with the model name so they can be merged (see below).
     def trainAndScore(key: String, partition: RDD[Cell[_3]]): RDD[Cell[_2]] = partition
-      .stream("Rscript " + key, List(key), Cell.toString(false, "|", true, true), Cell.parse1D("|", StringCodec))
+      .stream("Rscript " + key, List(key), Cell.toString(false, "|", true), Cell.parse1D("|", StringCodec))
       .data // Keep only the data (ignoring errors).
       .relocate(Locate.AppendValue(key))
 
@@ -125,7 +125,7 @@ object Ensemble {
     // 3/ Compute Gini Index (this sorts the labels by score as its a dimension);
     // 4/ Persist the Gini Index to file.
     data
-      .slice(Over(_2))("label", true)
+      .slice(Over(_2))(true, "label")
       .relocateWithValue(scores, renameWithScore)
       .gini(Over(_2))
       .saveAsText(ctx, s"./demo.${output}/ensemble.gini.out")

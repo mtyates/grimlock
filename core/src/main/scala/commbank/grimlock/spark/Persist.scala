@@ -14,15 +14,17 @@
 
 package commbank.grimlock.spark
 
-import commbank.grimlock.framework.{ Persist => FwPersist }
+import commbank.grimlock.framework.{ Persist => FwPersist, Tuner }
 
 import commbank.grimlock.spark.environment.{ DistributedData, Environment }
+import commbank.grimlock.spark.SparkImplicits._
 
 /** Trait for peristing a Spark `RDD`. */
-trait Persist[T] extends FwPersist[T] with DistributedData with Environment with java.io.Serializable {
-  protected def saveText(ctx: C, file: String, writer: TextWriter): U[T] = {
+trait Persist[X] extends FwPersist[X] with DistributedData with Environment with java.io.Serializable {
+  protected def saveText[T <: Tuner : PersistParition](ctx: C, file: String, writer: TextWriter, tuner: T): U[X] = {
     data
       .flatMap(writer(_))
+      .redistribute(tuner.parameters)
       .saveAsTextFile(file)
 
     data

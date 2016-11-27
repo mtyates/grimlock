@@ -18,6 +18,8 @@ import commbank.grimlock.framework._
 import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.utility._
 
+import play.api.libs.json.{ JsArray, JsError, Json, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
+
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 import scala.collection.immutable.ListSet
@@ -37,7 +39,7 @@ sealed trait Position[P <: Nat] {
    *
    * @param dim Dimension of the coordinate to get.
    */
-  def apply[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, P]): Value = coordinates(toIndex(dim))
+  def apply[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, P]): Value = coordinates(toIndex[D])
 
   /**
    * Update the coordinate at `dim` with `value`.
@@ -54,7 +56,7 @@ sealed trait Position[P <: Nat] {
     value: Value
   )(implicit
     ev: LTEq[D, P]
-  ): Position[P] = PositionImpl(coordinates.updated(toIndex(dim), value))
+  ): Position[P] = PositionImpl(coordinates.updated(toIndex[D], value))
 
   /**
    * Prepend a coordinate to the position.
@@ -74,7 +76,7 @@ sealed trait Position[P <: Nat] {
    * @return A new position with the coordinate `value` prepended.
    */
   def insert[D <: Nat : ToInt](dim: D, value: Value)(implicit ev: LTEq[D, P]): Position[Succ[P]] = {
-    val (h, t) = coordinates.splitAt(toIndex(dim))
+    val (h, t) = coordinates.splitAt(toIndex[D])
 
     PositionImpl(h ++ (value +: t))
   }
@@ -99,6 +101,17 @@ sealed trait Position[P <: Nat] {
 
   override def toString = "Position(" + coordinates.map(_.toString).mkString(",") + ")"
 
+  /**
+   * Converts the position to a JSON string.
+   *
+   * @param pretty Indicator if the resulting JSON string to be indented.
+   */
+  def toJSON(pretty: Boolean = false): String = {
+    val json = Json.toJson(this)
+
+    if (pretty) Json.prettyPrint(json) else Json.stringify(json)
+  }
+
   /** Return this position as an option. */
   def toOption(): Option[this.type] = Option(this)
 
@@ -122,7 +135,7 @@ sealed trait Position[P <: Nat] {
     else
       coordinates.length.compare(that.coordinates.length)
 
-  def toIndex[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, P]): Int = {
+  def toIndex[D <: Nat : ToInt](implicit ev: LTEq[D, P]): Int = {
     val index = Nat.toInt[D]
 
     if (index == 0) coordinates.length - 1 else index - 1
@@ -216,25 +229,53 @@ object Position {
     def compare(x: Position[P], y: Position[P]): Int = x.compare(y) * (if (ascending) 1 else -1)
   }
 
-  /** Convert index (Nat) to string. */
-  def indexString[D <: Nat : ToInt]: String = "_" + Nat.toInt[D]
-
-  /** Convert index (Int) to string. */
-  def indexString(idx: Int): String = "_" + idx
-
   /**
    * Return function that returns a string representation of a position.
    *
-   * @param descriptive Indicator if descriptive string is required or not.
-   * @param separator   The separator to use between various fields (only used if descriptive is `false`).
+   * @param verbose   Indicator if verbose string is required or not.
+   * @param separator The separator to use between various fields (only used if verbose is `false`).
    */
   def toString[
     P <: Nat
   ](
-    descriptive: Boolean = false,
+    verbose: Boolean = false,
     separator: String = "|"
   ): (Position[P]) => TraversableOnce[String] = (t: Position[P]) =>
-    List(if (descriptive) t.toString else t.toShortString(separator))
+    List(if (verbose) t.toString else t.toShortString(separator))
+
+  /**
+   * Return function that returns a JSON representation of a position.
+   *
+   * @param pretty Indicator if the resulting JSON string to be indented.
+   */
+  def toJSON[P <: Nat ](pretty: Boolean = false): (Position[P]) => TraversableOnce[String] = (t: Position[P]) =>
+    List(t.toJSON(pretty))
+
+  /**
+   * Return a `Reads` for parsing a JSON position.
+   *
+   * @param codecs The codecs used to parse the JSON position data.
+   */
+  def reads[P <: Nat : ToInt](codecs: Sized[List[Codec], P]): Reads[Position[P]] = new Reads[Position[P]] {
+    def reads(json: JsValue): JsResult[Position[P]] = {
+      val fields = json.as[JsArray].value.toList
+
+      if (fields.size == codecs.size)
+        codecs
+          .zip(fields)
+          .flatMap { case (c, v) => c.decode(v.as[String]) }
+          .sized[P]
+          .map(c => JsSuccess(Position(c)))
+          .getOrElse(JsError("Unable to parse coordinates"))
+      else
+        JsError("Incorrect number of coordinates")
+    }
+  }
+
+  /** Implicit writes for use in Position.toJSON. */
+  implicit def writes[P <: Nat]: Writes[Position[P]] = new Writes[Position[P]] {
+    def writes(o: Position[P]): JsValue = JsArray(o.coordinates.map(v => JsString(v.toShortString)))
+  }
 
   /** Converts a `Value` to a `Position[P]` */
   implicit def valueToPosition[T <% Value](t: T): Position[_1] = Position(t)
@@ -301,7 +342,7 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
    * @return A new position with dimension `dim` removed.
    */
   def remove[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, P]): Position[L] = {
-    val (h, t) = coordinates.splitAt(toIndex(dim))
+    val (h, t) = coordinates.splitAt(toIndex[D])
 
     PositionImpl(h ++ t.tail)
   }
@@ -330,8 +371,8 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
     ev2: LTEq[D, P],
     ev3: LTEq[E, P]
   ): Position[L] = {
-    val iidx = toIndex(into)
-    val didx = toIndex(dim)
+    val iidx = toIndex[E]
+    val didx = toIndex[D]
 
     PositionImpl(
       coordinates
@@ -367,48 +408,79 @@ trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
     ev3: Diff.Aux[P, _1, L]
   ): U[Position[slice.S]]
 
+  /** Specifies tuners permitted on a call to `saveAsText`. */
+  type SaveAsTextTuners[_]
+
   /**
    * Persist to disk.
    *
    * @param ctx    The context used to persist these positions.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Position[N]` to string.
+   * @param tuner  The tuner for the job.
    *
    * @return A `U[Position[P]]` which is this object's data.
    */
-  def saveAsText(ctx: C, file: String, writer: TextWriter = Position.toString()): U[Position[P]]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter = Position.toString(),
+    tuner: T
+  ): U[Position[P]]
+
+  /**
+   * Slice the positions using a regular expression applied to a dimension.
+   *
+   * @param keep  Indicator if the matched positions should be kept or removed.
+   * @param dim   Dimension to slice on.
+   * @param regex The regular expression to match on.
+   *
+   * @return A `U[Position[P]]` with only the positions of interest.
+   *
+   * @note The matching is done by converting the coordinate to its short string reprensentation and then applying the
+   *       regular expression.
+   */
+  def slice[D <: Nat : ToInt](
+    keep: Boolean,
+    dim: D,
+    regex: Regex
+  )(implicit
+    ev1: ClassTag[Position[P]],
+    ev2: LTEq[D, P]
+  ): U[Position[P]] = slice(keep, p => regex.pattern.matcher(p(dim).toShortString).matches)
 
   /**
    * Slice the positions using a regular expression.
    *
-   * @param regex     The regular expression to match on.
-   * @param keep      Indicator if the matched positions should be kept or removed.
-   * @param spearator Separator used to convert each position to string.
+   * @param keep  Indicator if the matched positions should be kept or removed.
+   * @param regex The regular expression to match on.
    *
    * @return A `U[Position[P]]` with only the positions of interest.
    *
-   * @note The matching is done by converting each position to its short string reprensentation and then applying the
+   * @note The matching is done by converting each coordinate to its short string reprensentation and then applying the
    *       regular expression.
    */
   def slice(
-    regex: Regex,
     keep: Boolean,
-    separator: String
+    regex: Regex
   )(implicit
     ev: ClassTag[Position[P]]
-  ): U[Position[P]] = slice(keep, p => regex.pattern.matcher(p.toShortString(separator)).matches)
+  ): U[Position[P]] =
+    slice(keep, p => p.coordinates.map(c => regex.pattern.matcher(c.toShortString).matches).reduce(_ && _))
 
   /**
    * Slice the positions using one or more positions.
    *
-   * @param positions The positions to slice on.
    * @param keep      Indicator if the matched positions should be kept or removed.
+   * @param positions The positions to slice on.
    *
    * @return A `U[Position[P]]` with only the positions of interest.
    */
   def slice(
-    positions: List[Position[P]],
-    keep: Boolean
+    keep: Boolean,
+    positions: List[Position[P]]
   )(implicit
     ev: ClassTag[Position[P]]
   ): U[Position[P]] = slice(keep, p => positions.contains(p))

@@ -14,6 +14,7 @@
 
 package commbank.grimlock.scalding.content
 
+import commbank.grimlock.framework.{ Default, Tuner }
 import commbank.grimlock.framework.content.{
   Contents => FwContents,
   IndexedContents => FwIndexedContents,
@@ -33,7 +34,15 @@ import shapeless.Nat
  * @param data The `TypedPipe[Content]`.
  */
 case class Contents(data: TypedPipe[Content]) extends FwContents with Persist[Content] {
-  def saveAsText(ctx: C, file: String, writer: TextWriter): U[Content] = saveText(ctx, file, writer)
+  type SaveAsTextTuners[T] = PersistParition[T]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter,
+    tuner: T = Default()
+  ): U[Content] = saveText(ctx, file, writer, tuner)
 }
 
 /**
@@ -47,6 +56,14 @@ case class IndexedContents[
   data: TypedPipe[(Position[P], Content)]
 ) extends FwIndexedContents[P]
   with Persist[(Position[P], Content)] {
-  def saveAsText(ctx: C, file: String, writer: TextWriter): U[(Position[P], Content)] = saveText(ctx, file, writer)
+  type SaveAsTextTuners[T] = PersistParition[T]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter,
+    tuner: T = Default()
+  ): U[(Position[P], Content)] = saveText(ctx, file, writer, tuner)
 }
 

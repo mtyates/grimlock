@@ -15,13 +15,14 @@
 package commbank.grimlock.framework
 
 import commbank.grimlock.framework.environment._
+import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
 import org.apache.hadoop.io.Writable
 
 /** Base trait for persisting data. */
-trait Persist[T] extends DistributedData with Environment {
+trait Persist[X] extends DistributedData with Environment {
   /** The data to persist. */
-  val data: U[T]
+  val data: U[X]
 
   /**
    *   Convenience function for suppressing ‘Discarded non-unit value’ compiler warnings.
@@ -31,10 +32,25 @@ trait Persist[T] extends DistributedData with Environment {
    */
   def toUnit(): Unit = ()
 
-  /** Shorthand type for converting a `T` to string. */
-  type TextWriter = (T) => TraversableOnce[String]
+  /** Shorthand type for converting a `X` to string. */
+  type TextWriter = (X) => TraversableOnce[String]
 
-  /** Shorthand type for converting a `T` to key value tuple. */
-  type SequenceWriter[K <: Writable, V <: Writable] = (T) => TraversableOnce[(K, V)]
+  /**
+   * Type for converting pivoted `X`s to string.
+   *
+   * All data will first be pivoted according to a slice. All `X` belonging to each slice.selected will
+   * be grouped into the list.
+   */
+  type TextWriterByPosition = (List[Option[X]]) => TraversableOnce[String]
+
+  /** Shorthand type for converting a `X` to key value tuple. */
+  type SequenceWriter[K <: Writable, V <: Writable] = (X) => TraversableOnce[(K, V)]
+
+  protected type PersistParition[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
+
+  protected type PersistReduceAndParition[T] = T In OneOf[Default[NoParameters]]#
+    Or[Default[Reducers]]#
+    Or[Default[Redistribute]]#
+    Or[Default[Sequence[Reducers, Redistribute]]]
 }
 

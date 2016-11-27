@@ -3403,3 +3403,133 @@ class TestAndThenMutateAggregator extends TestAggregators {
   }
 }
 
+class TestCountMapHistogram extends TestAggregators {
+
+  val cell1 = Cell(Position("foo", "one"), getStringContent("bar"))
+  val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
+  val cell3 = Cell(Position("foo", "three"), getStringContent("baz"))
+  val cell4 = Cell(Position("foo", "four"), getStringContent("bar"))
+
+  val name = Locate.AppendContentString[_1]()
+
+  "A CountMapHistogram" should "prepare, reduce and present" in {
+    val obj = CountMapHistogram[_2, _1, _2](name)
+
+    val t1 = obj.prepare(cell1)
+    t1 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val t2 = obj.prepare(cell2)
+    t2 shouldBe None
+
+    val t3 = obj.prepare(cell3)
+    t3 shouldBe Option(Map(getStringContent("baz") -> 1L))
+
+    val t4 = obj.prepare(cell4)
+    t4 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val r1 = obj.reduce(t1.get, t3.get)
+    r1 shouldBe Map(getStringContent("bar") -> 1L, getStringContent("baz") -> 1L)
+
+    val r2 = obj.reduce(r1, t4.get)
+    r2 shouldBe Map(getStringContent("bar") -> 2L, getStringContent("baz") -> 1L)
+
+    val c = obj.present(Position("foo"), r2).result.toList
+    c.sortBy(_.position) shouldBe List(
+      Cell(Position("foo", "bar"), getLongContent(2)),
+      Cell(Position("foo", "baz"), getLongContent(1))
+    )
+  }
+
+  it should "prepare, reduce and present without filter" in {
+    val obj = CountMapHistogram[_2, _1, _2](name, false)
+
+    val t1 = obj.prepare(cell1)
+    t1 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val t2 = obj.prepare(cell2)
+    t2 shouldBe Option(Map(getDoubleContent(2) -> 1L))
+
+    val t3 = obj.prepare(cell3)
+    t3 shouldBe Option(Map(getStringContent("baz") -> 1L))
+
+    val t4 = obj.prepare(cell4)
+    t4 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val r1 = obj.reduce(t1.get, t2.get)
+    r1 shouldBe Map(getStringContent("bar") -> 1L, getDoubleContent(2) -> 1L)
+
+    val r2 = obj.reduce(r1, t3.get)
+    r2 shouldBe Map(getDoubleContent(2) -> 1L, getStringContent("bar") -> 1L, getStringContent("baz") -> 1L)
+
+    val r3 = obj.reduce(r2, t4.get)
+    r3 shouldBe Map(getDoubleContent(2) -> 1L, getStringContent("bar") -> 2L, getStringContent("baz") -> 1L)
+
+    val c = obj.present(Position("foo"), r3).result.toList
+    c.sortBy(_.position) shouldBe List(
+      Cell(Position("foo", "2.0"), getLongContent(1)),
+      Cell(Position("foo", "bar"), getLongContent(2)),
+      Cell(Position("foo", "baz"), getLongContent(1))
+    )
+  }
+
+  it should "prepare, reduce and present expanded" in {
+    val obj = CountMapHistogram[_2, _1, _2](name).andThenRelocate(_.position.append("hist").toOption)
+
+    val t1 = obj.prepare(cell1)
+    t1 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val t2 = obj.prepare(cell2)
+    t2 shouldBe None
+
+    val t3 = obj.prepare(cell3)
+    t3 shouldBe Option(Map(getStringContent("baz") -> 1L))
+
+    val t4 = obj.prepare(cell4)
+    t4 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val r1 = obj.reduce(t1.get, t3.get)
+    r1 shouldBe Map(getStringContent("bar") -> 1L, getStringContent("baz") -> 1L)
+
+    val r2 = obj.reduce(r1, t4.get)
+    r2 shouldBe Map(getStringContent("bar") -> 2L, getStringContent("baz") -> 1L)
+
+    val c = obj.present(Position("foo"), r2).result.toList
+    c.sortBy(_.position) shouldBe List(
+      Cell(Position("foo", "bar", "hist"), getLongContent(2)),
+      Cell(Position("foo", "baz", "hist"), getLongContent(1))
+    )
+  }
+
+  it should "prepare, reduce and present expanded without filter" in {
+    val obj = CountMapHistogram[_2, _1, _2](name, false).andThenRelocate(_.position.append("hist").toOption)
+
+    val t1 = obj.prepare(cell1)
+    t1 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val t2 = obj.prepare(cell2)
+    t2 shouldBe Option(Map(getDoubleContent(2) -> 1L))
+
+    val t3 = obj.prepare(cell3)
+    t3 shouldBe Option(Map(getStringContent("baz") -> 1L))
+
+    val t4 = obj.prepare(cell4)
+    t4 shouldBe Option(Map(getStringContent("bar") -> 1L))
+
+    val r1 = obj.reduce(t1.get, t2.get)
+    r1 shouldBe Map(getStringContent("bar") -> 1L, getDoubleContent(2) -> 1L)
+
+    val r2 = obj.reduce(r1, t3.get)
+    r2 shouldBe Map(getDoubleContent(2) -> 1L, getStringContent("bar") -> 1L, getStringContent("baz") -> 1L)
+
+    val r3 = obj.reduce(r2, t4.get)
+    r3 shouldBe Map(getDoubleContent(2) -> 1L, getStringContent("bar") -> 2L, getStringContent("baz") -> 1L)
+
+    val c = obj.present(Position("foo"), r3).result.toList
+    c.sortBy(_.position) shouldBe List(
+      Cell(Position("foo", "2.0", "hist"), getLongContent(1)),
+      Cell(Position("foo", "bar", "hist"), getLongContent(2)),
+      Cell(Position("foo", "baz", "hist"), getLongContent(1))
+    )
+  }
+}
+

@@ -195,16 +195,27 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    */
   def remove(id: I): U[(I, Cell[P])]
 
+  /** Specifies tuners permitted on a call to `saveAsText`. */
+  type SaveAsTextTuners[_]
+
   /**
    * Persist to disk.
    *
    * @param ctx    The context used to persist this partition.
    * @param file   Name of the output file.
    * @param writer Writer that converts `(I, Cell[P])` to string.
+   * @param tuner  The tuner for the job.
    *
    * @return A `U[(I, Cell[P])]` which is this object's data.
    */
-  def saveAsText(ctx: C, file: String, writer: TextWriter = Partition.toString()): U[(I, Cell[P])]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter = Partition.toString(),
+    tuner: T
+  ): U[(I, Cell[P])]
 }
 
 /** Object for `Partition` functions. */
@@ -212,20 +223,37 @@ object Partition {
   /**
    * Return function that returns a string representation of a partition.
    *
-   * @param descriptive Indicator if descriptive string is required or not.
+   * @param verbose     Indicator if verbose string is required or not.
    * @param separator   The separator to use between various fields.
-   * @param codec       Indicator if codec is required or not (only used if descriptive is `false`).
-   * @param schema      Indicator if schema is required or not (only used if descriptive is `false`).
+   * @param descriptive Indicator if codec and schema are required or not (only used if verbose is `false`).
    */
   def toString[
     I,
     P <: Nat
   ](
-    descriptive: Boolean = false,
+    verbose: Boolean = false,
     separator: String = "|",
-    codec: Boolean = true,
-    schema: Boolean = true
-  ): ((I, Cell[P])) => TraversableOnce[String] = (p: (I, Cell[P])) =>
-    List(p._1.toString + separator + (if (descriptive) p._2.toString else p._2.toShortString(separator, codec, schema)))
+    descriptive: Boolean = true
+  ): ((I, Cell[P])) => TraversableOnce[String] = (t: (I, Cell[P])) =>
+    List(t._1.toString + separator + (if (verbose) t._2.toString else t._2.toShortString(separator, descriptive)))
+
+  /**
+   * Return function that returns a JSON representations of a partition.
+   *
+   * @param pretty      Indicator if the resulting JSON string to be indented.
+   * @param separator   The separator to use between various both JSON strings.
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   *
+   * @note The key and cell are separately encoded and then combined using the separator.
+   */
+  def toJSON[
+    I,
+    P <: Nat
+  ](
+    pretty: Boolean = false,
+    separator: String = ",",
+    descriptive: Boolean = true
+  ): ((I, Cell[P])) => TraversableOnce[String] = (t: (I, Cell[P])) =>
+    List(t._1.toString + separator + t._2.toJSON(pretty, descriptive))
 }
 

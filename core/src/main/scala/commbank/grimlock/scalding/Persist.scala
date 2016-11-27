@@ -14,20 +14,22 @@
 
 package commbank.grimlock.scalding
 
-import commbank.grimlock.framework.{ Persist => FwPersist }
+import commbank.grimlock.framework.{ Persist => FwPersist, Tuner }
 
 import commbank.grimlock.scalding.environment.{ DistributedData, Environment }
+import commbank.grimlock.scalding.ScaldingImplicits._
 
 import com.twitter.scalding.TextLine
 import com.twitter.scalding.typed.TypedSink
 
 /** Trait for peristing a Scalding `TypedPipe`. */
-trait Persist[T] extends FwPersist[T] with DistributedData with Environment {
-  protected def saveText(ctx: C, file: String, writer: TextWriter): U[T] = {
+trait Persist[X] extends FwPersist[X] with DistributedData with Environment {
+  protected def saveText[T <: Tuner : PersistParition](ctx: C, file: String, writer: TextWriter, tuner: T): U[X] = {
     import ctx._
 
     data
       .flatMap(writer(_))
+      .redistribute(tuner.parameters)
       .write(TypedSink(TextLine(file)))
 
     data

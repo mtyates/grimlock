@@ -241,7 +241,7 @@ The following shows a number of basic operations (get number of rows, get type o
 
 ```
 scala> data.size(_1).dump
-Cell(Position(StringValue(_1,StringCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
+Cell(Position(LongValue(1,LongCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
 
 scala> data.types(Over(_2))(false).dump
 Cell(Position(StringValue(fid:A,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
@@ -392,7 +392,7 @@ The following shows a number of basic operations (get number of rows, get type o
 
 ```
 scala> data.size(_1).foreach(println)
-Cell(Position(StringValue(_1,StringCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
+Cell(Position(LongValue(1,LongCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
 
 scala> data.types(Over(_2))(false).foreach(println)
 Cell(Position(StringValue(fid:A,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))

@@ -52,7 +52,15 @@ case class Positions[L <: Nat, P <: Nat](data: RDD[Position[P]]) extends FwPosit
     ev3: Diff.Aux[P, _1, L]
   ): U[Position[slice.S]] = data.map(p => slice.selected(p)).tunedDistinct(tuner.parameters)(Position.ordering())
 
-  def saveAsText(ctx: C, file: String, writer: TextWriter): U[Position[P]] = saveText(ctx, file, writer)
+  type SaveAsTextTuners[T] = PersistParition[T]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter,
+    tuner: T = Default()
+  ): U[Position[P]] = saveText(ctx, file, writer, tuner)
 
   protected def slice(
     keep: Boolean,

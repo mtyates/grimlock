@@ -42,8 +42,8 @@ import commbank.grimlock.scalding.position.Positions
 
 import cascading.flow.FlowDef
 
-import com.twitter.scalding.{ Config, Mode }
-import com.twitter.scalding.typed.{ IterablePipe, TypedPipe, ValuePipe }
+import com.twitter.scalding.{ Config, Mode, TextLine }
+import com.twitter.scalding.typed.{ IterablePipe, TypedPipe, TypedSink, ValuePipe }
 
 import shapeless.Nat
 import shapeless.nat.{ _1, _2, _3, _4, _5, _6, _7, _8, _9 }
@@ -310,6 +310,30 @@ object Context {
 
   /** Converts a `List[Position[T]]` to a `TypedPipe[Position[T]]`. */
   implicit def listPositionToPipe[T <: Nat](t: List[Position[T]]): TypedPipe[Position[T]] = IterablePipe(t)
+
+  /**
+   * Implicit class that enriches a TypedPipe with specfic saveAsText functionality.
+   *
+   * @param data TypedPipe to enrich with saveAsText functionality.
+   */
+  implicit class TypedPipeStringSaveAsText(val data: TypedPipe[String]) {
+    /**
+     *   Convenience function for suppressing ‘Discarded non-unit value’ compiler warnings.
+     *
+     *   These occur when the output of a function is not assigned to a variable (for a non-unit return).
+     *   This function ensures that such warnings are suppressed, it does not affect the flow or outcome.
+     */
+    def toUnit(): Unit = ()
+
+    /** Save data to `file`. */
+    def saveAsText(ctx: Context, file: String): TypedPipe[String] = {
+      import ctx._
+
+      data.write(TypedSink(TextLine(file)))
+
+      data
+    }
+  }
 }
 
 trait DistributedData extends FwDistributedData {

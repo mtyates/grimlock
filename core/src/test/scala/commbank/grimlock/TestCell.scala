@@ -27,13 +27,9 @@ class TestCell extends TestGrimlock {
   "A Cell" should "return its string" in {
     Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toString() shouldBe
       "Cell(Position(StringValue(foo,StringCodec),LongValue(123,LongCodec)),Content(ContinuousSchema[Double](),DoubleValue(3.14,DoubleCodec)))"
-    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", true, true) shouldBe
+    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", true) shouldBe
       "foo.123.double.continuous.3.14"
-    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", false, true) shouldBe
-      "foo.123.continuous.3.14"
-    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", true, false) shouldBe
-      "foo.123.double.3.14"
-    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", false, false) shouldBe
+    Cell(Position("foo", 123), Content(ContinuousSchema[Double](), 3.14)).toShortString(".", false) shouldBe
       "foo.123.3.14"
   }
 
@@ -711,6 +707,76 @@ class TestCell extends TestGrimlock {
     )
     val f5 = Cell.parseTable(columns, 0, ":")
     f5("3.14:foo") shouldBe List(Left("Unable to split: '3.14:foo'"))
+  }
+
+  "A Cell" should "parse JSON" in {
+    val cell1 = Cell(Position("foo"), Content(ContinuousSchema[Double](), 3.14))
+    val cell2 = Cell(Position("foo", 1), Content(ContinuousSchema[Double](), 3.14))
+    val cell3 = Cell(Position("foo", 1, true), Content(ContinuousSchema[Double](), 3.14))
+    val cell4 = Cell(Position("foo", 1, true, 3.14), Content(ContinuousSchema[Double](), 3.14))
+    val cell5 = Cell(Position("foo", 1, true, 3.14, "bar"), Content(ContinuousSchema[Double](), 3.14))
+    val cell6 = Cell(Position("foo", 1, true, 3.14, "bar", "baz"), Content(ContinuousSchema[Double](), 3.14))
+    val cell7 = Cell(Position("foo", 1, true, 3.14, "bar", "baz", 42), Content(ContinuousSchema[Double](), 3.14))
+    val cell8 = Cell(Position("foo", 1, true, 3.14, "bar", "baz", 42, 0), Content(ContinuousSchema[Double](), 3.14))
+    val cell9 = Cell(
+      Position("foo", 1, true, 3.14, "bar", "baz", 42, 0, false),
+      Content(ContinuousSchema[Double](), 3.14)
+    )
+
+    val f1 = Cell.parse1DJSON(StringCodec)
+    cell1.toJSON(false,false) shouldBe """{"position":["foo"],"content":{"value":"3.14"}}"""
+    f1(cell1.toJSON(true, true)) shouldBe List(Right(cell1))
+
+    val f2 = Cell.parse2DJSON(StringCodec, LongCodec)
+    cell2.toJSON(true, true) shouldBe """{
+  "position" : [ "foo", "1" ],
+  "content" : {
+    "codec" : "double",
+    "schema" : "continuous",
+    "value" : "3.14"
+  }
+}"""
+    f2(cell2.toJSON(true, true)) shouldBe List(Right(cell2))
+
+    val f3 = Cell.parse3DJSON(StringCodec, LongCodec, BooleanCodec)
+    f3(cell3.toJSON(true, true)) shouldBe List(Right(cell3))
+
+    val f4 = Cell.parse4DJSON(StringCodec, LongCodec, BooleanCodec, DoubleCodec)
+    f4(cell4.toJSON(true, true)) shouldBe List(Right(cell4))
+
+    val f5 = Cell.parse5DJSON(StringCodec, LongCodec, BooleanCodec, DoubleCodec, StringCodec)
+    f5(cell5.toJSON(true, true)) shouldBe List(Right(cell5))
+
+    val f6 = Cell.parse6DJSON(StringCodec, LongCodec, BooleanCodec, DoubleCodec, StringCodec, StringCodec)
+    f6(cell6.toJSON(true, true)) shouldBe List(Right(cell6))
+
+    val f7 = Cell.parse7DJSON(StringCodec, LongCodec, BooleanCodec, DoubleCodec, StringCodec, StringCodec, LongCodec)
+    f7(cell7.toJSON(true, true)) shouldBe List(Right(cell7))
+
+    val f8 = Cell.parse8DJSON(
+      StringCodec,
+      LongCodec,
+      BooleanCodec,
+      DoubleCodec,
+      StringCodec,
+      StringCodec,
+      LongCodec,
+      LongCodec
+    )
+    f8(cell8.toJSON(true, true)) shouldBe List(Right(cell8))
+
+    val f9 = Cell.parse9DJSON(
+      StringCodec,
+      LongCodec,
+      BooleanCodec,
+      DoubleCodec,
+      StringCodec,
+      StringCodec,
+      LongCodec,
+      LongCodec,
+      BooleanCodec
+    )
+    f9(cell9.toJSON(true, true)) shouldBe List(Right(cell9))
   }
 }
 

@@ -21,6 +21,8 @@ import commbank.grimlock.framework.position._
 
 import java.util.regex.Pattern
 
+import play.api.libs.json.{ JsError, JsObject, Json, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
+
 import shapeless.Nat
 
 /** Contents of a cell in a matrix. */
@@ -34,23 +36,35 @@ trait Content { self =>
   /** The value of the variable. */
   val value: Value { type D = self.D }
 
-  override def toString(): String = "Content(" + schema.toString + "," + value.toString + ")"
-
   /**
    * Converts the content to a consise (terse) string.
    *
-   * @param separator The separator to use between the fields.
-   * @param codec     Indicator if codec is required or not.
-   * @param schema    Indicator if schema is required or not.
+   * @param separator   The separator to use between the fields.
+   * @param descriptive Indicator if codec and schema are required or not.
    *
    * @return Short string representation.
    */
-  def toShortString(separator: String, codec: Boolean = true, schema: Boolean = true): String = (
-    if (codec) value.codec.toShortString + separator else ""
-  ) + (
-    if (schema) this.schema.toShortString(value.codec) + separator else ""
-  ) +
-    value.toShortString
+  def toShortString(separator: String, descriptive: Boolean = true): String = (
+    if (descriptive)
+      value.codec.toShortString + separator + schema.toShortString(value.codec) + separator
+    else
+      ""
+  ) + value.toShortString
+
+  override def toString(): String = "Content(" + schema.toString + "," + value.toString + ")"
+
+  /**
+   * Converts the content to a JSON string.
+   *
+   * @param pretty      Indicator if the resulting JSON string to be indented.
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   */
+  def toJSON(pretty: Boolean = false, descriptive: Boolean = true): String = {
+    implicit val wrt = Content.writes(descriptive)
+    val json = Json.toJson(this)
+
+    if (pretty) Json.prettyPrint(json) else Json.stringify(json)
+  }
 }
 
 /** Companion object to `Content` trait. */
@@ -124,18 +138,74 @@ object Content {
   /**
    * Return string representation of a content.
    *
-   * @param descriptive Indicator if descriptive string is required or not.
-   * @param separator   The separator to use between various fields (only used if descriptive is `false`).
-   * @param codec       Indicator if codec is required or not (only used if descriptive is `false`).
-   * @param schema      Indicator if schema is required or not (only used if descriptive is `false`).
+   * @param verbose     Indicator if verbose string is required or not.
+   * @param separator   The separator to use between various fields (only used if verbose is `false`).
+   * @param descriptive Indicator if codec and schema are required or not (only used if verbose is `false`).
    */
   def toString(
-    descriptive: Boolean = false,
+    verbose: Boolean = false,
     separator: String = "|",
-    codec: Boolean = true,
-    schema: Boolean = true
+    descriptive: Boolean = true
   ): (Content) => TraversableOnce[String] = (t: Content) =>
-    List(if (descriptive) t.toString else t.toShortString(separator, codec, schema))
+    List(if (verbose) t.toString else t.toShortString(separator, descriptive))
+
+  /**
+   * Return function that returns a JSON representation of a content.
+   *
+   * @param pretty      Indicator if the resulting JSON string to be indented.
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   */
+  def toJSON(
+    pretty: Boolean = false,
+    descriptive: Boolean = true
+  ): (Content) => TraversableOnce[String] = (t: Content) => List(t.toJSON(pretty, descriptive))
+
+  /**
+   * Return a `Reads` for parsing a JSON content.
+   *
+   * @param parser Optional parser; in case the JSON is not self describing.
+   */
+  def reads(parser: Option[Parser]): Reads[Content] = new Reads[Content] {
+    def reads(json: JsValue): JsResult[Content] = {
+      val fields = json.as[JsObject].value
+
+      if ((fields.size == 3 && parser.isEmpty) || (fields.size == 1 && parser.isDefined))
+        (
+          for {
+            decoder <- parser.orElse(
+              for {
+                codec <- fields.get("codec").map(_.as[String])
+                schema <- fields.get("schema").map(_.as[String])
+                pfc <- Content.parserFromComponents(codec, schema)
+              } yield pfc
+            )
+            value <- fields.get("value").map(_.as[String])
+            content <- decoder(value)
+          } yield JsSuccess(content)
+        ).getOrElse(JsError("Unable to parse content"))
+      else
+        JsError("Incorrect number of fields")
+    }
+  }
+
+  /**
+   * Return a `Writes` for writing JSON content.
+   *
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   */
+  def writes(descriptive: Boolean): Writes[Content] = new Writes[Content] {
+    def writes(o: Content): JsValue = JsObject(
+      (
+        if (descriptive)
+          Seq(
+            "codec" -> JsString(o.value.codec.toShortString),
+            "schema" -> JsString(o.schema.toShortString(o.value.codec))
+          )
+        else
+          Seq()
+      ) ++ Seq("value" -> JsString(o.value.toShortString))
+    )
+  }
 }
 
 private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { type D = T }) extends Content {
@@ -144,30 +214,52 @@ private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { 
 
 /** Base trait that represents the contents of a matrix. */
 trait Contents extends Persist[Content] {
+  /** Specifies tuners permitted on a call to `saveAsText`. */
+  type SaveAsTextTuners[_]
+
   /**
    * Persist to disk.
    *
    * @param ctx    The context used to persist the contents.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Content` to string.
+   * @param tuner  The tuner for the job.
    *
    * @return A `U[Content]` which is this object's data.
    */
-  def saveAsText(ctx: C, file: String, writer: TextWriter = Content.toString()): U[Content]
+  def saveAsText[
+    T <: Tuner: SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter = Content.toString(),
+    tuner: T
+  ): U[Content]
 }
 
 /** Base trait that represents the output of uniqueByPosition. */
 trait IndexedContents[P <: Nat] extends Persist[(Position[P], Content)] {
+  /** Specifies tuners permitted on a call to `saveAsText`. */
+  type SaveAsTextTuners[_]
+
   /**
    * Persist to disk.
    *
    * @param ctx    The context used to persist the indexed contents.
    * @param file   Name of the output file.
    * @param writer Writer that converts `IndexedContent` to string.
+   * @param tuner  The tuner for the job.
    *
    * @return A `U[(Position[P], Content)]` which is this object's data.
    */
-  def saveAsText(ctx: C, file: String, writer: TextWriter = IndexedContent.toString()): U[(Position[P], Content)]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter = IndexedContent.toString(),
+    tuner: T
+  ): U[(Position[P], Content)]
 }
 
 /** Object for `IndexedContent` functions. */
@@ -175,24 +267,40 @@ object IndexedContent {
   /**
    * Return string representation of an indexed content.
    *
-   * @param descriptive Indicator if descriptive string is required or not.
-   * @param separator   The separator to use between various fields (only used if descriptive is `false`).
-   * @param codec       Indicator if codec is required or not (only used if descriptive is `false`).
-   * @param schema      Indicator if schema is required or not (only used if descriptive is `false`).
+   * @param verbose     Indicator if verbose string is required or not.
+   * @param separator   The separator to use between various fields (only used if verbose is `false`).
+   * @param descriptive Indicator if codec and schema are required or not (only used if verbose is `false`).
    */
   def toString[
     P <: Nat
   ](
-    descriptive: Boolean = false,
+    verbose: Boolean = false,
     separator: String = "|",
-    codec: Boolean = true,
-    schema: Boolean = true
+    descriptive: Boolean = true
   ): ((Position[P], Content)) => TraversableOnce[String] = (t: (Position[P], Content)) =>
     List(
-      if (descriptive)
+      if (verbose)
         t.toString
       else
-        t._1.toShortString(separator) + separator + t._2.toShortString(separator, codec, schema)
+        t._1.toShortString(separator) + separator + t._2.toShortString(separator, descriptive)
     )
+
+  /**
+   * Return function that returns a JSON representations of an indexed content.
+   *
+   * @param pretty      Indicator if the resulting JSON string to be indented.
+   * @param separator   The separator to use between various both JSON strings.
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   *
+   * @note The index (Position) and content are separately encoded and then combined using the separator.
+   */
+  def toJSON[
+    P <: Nat
+  ](
+    pretty: Boolean = false,
+    separator: String = ",",
+    descriptive: Boolean = false
+  ): ((Position[P], Content)) => TraversableOnce[String] = (t: (Position[P], Content)) =>
+    List(t._1.toJSON(pretty) + separator + t._2.toJSON(pretty, descriptive))
 }
 

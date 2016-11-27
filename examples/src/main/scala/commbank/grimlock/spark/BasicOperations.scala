@@ -83,8 +83,8 @@ object BasicOperations {
 
     // Keep columns A and B, and remove row 0221707
     data
-      .slice(Over(_2))(List("fid:A", "fid:B"), true)
-      .slice(Over(_1))("iid:0221707", false)
+      .slice(Over(_2))(true, List("fid:A", "fid:B"))
+      .slice(Over(_1))(false, "iid:0221707")
       .saveAsText(ctx, s"./demo.${output}/sliced.txt")
       .toUnit
   }

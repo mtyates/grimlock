@@ -31,6 +31,7 @@ import commbank.grimlock.spark.environment.Context._
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.apache.spark.rdd.RDD
 
+import shapeless.Nat
 import shapeless.nat.{ _1, _2, _3 }
 
 // Define a simple event (structured) data type. It has an id, a type, a start time and duration. It applies to one or
@@ -58,7 +59,7 @@ object ExampleEvent {
 case object ExampleEventSchema extends StructuredSchema { self =>
   type D = ExampleEvent
 
-  val kind = StructuredType
+  val classification = StructuredType
 
   def validate(value: Value { type D = self.D }): Boolean = true
 }
@@ -174,7 +175,7 @@ object InstanceCentricTfIdf {
       .compact(Over(_1))
 
     // Define extractor to get data out of map.
-    val extractN = ExtractWithKey[_1, Content](Position.indexString[_1]).andThenPresent(_.value.asDouble)
+    val extractN = ExtractWithKey[_1, Content](Nat.toInt[_1]).andThenPresent(_.value.asDouble)
 
     // Using the number of documents, compute Idf:
     //  1/ Compute document frequency;
