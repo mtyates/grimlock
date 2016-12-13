@@ -730,31 +730,31 @@ trait TestMatrixSize extends TestMatrix {
     Cell(Position(3, 3), Content(OrdinalSchema[String](), "c"))
   )
 
-  val result1 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)))
+  val result1 = List(Cell(Position(1), Content(DiscreteSchema[Long](), 4)))
 
-  val result2 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)))
+  val result2 = List(Cell(Position(1), Content(DiscreteSchema[Long](), 4)))
 
-  val result3 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)))
+  val result3 = List(Cell(Position(1), Content(DiscreteSchema[Long](), 4)))
 
-  val result4 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), data2.length)))
+  val result4 = List(Cell(Position(1), Content(DiscreteSchema[Long](), data2.length)))
 
-  val result5 = List(Cell(Position("_2"), Content(DiscreteSchema[Long](), 4)))
+  val result5 = List(Cell(Position(2), Content(DiscreteSchema[Long](), 4)))
 
-  val result6 = List(Cell(Position("_2"), Content(DiscreteSchema[Long](), data2.length)))
+  val result6 = List(Cell(Position(2), Content(DiscreteSchema[Long](), data2.length)))
 
-  val result7 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)))
+  val result7 = List(Cell(Position(1), Content(DiscreteSchema[Long](), 4)))
 
-  val result8 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), data3.length)))
+  val result8 = List(Cell(Position(1), Content(DiscreteSchema[Long](), data3.length)))
 
-  val result9 = List(Cell(Position("_2"), Content(DiscreteSchema[Long](), 4)))
+  val result9 = List(Cell(Position(2), Content(DiscreteSchema[Long](), 4)))
 
-  val result10 = List(Cell(Position("_2"), Content(DiscreteSchema[Long](), data3.length)))
+  val result10 = List(Cell(Position(2), Content(DiscreteSchema[Long](), data3.length)))
 
-  val result11 = List(Cell(Position("_3"), Content(DiscreteSchema[Long](), 1)))
+  val result11 = List(Cell(Position(3), Content(DiscreteSchema[Long](), 1)))
 
-  val result12 = List(Cell(Position("_3"), Content(DiscreteSchema[Long](), data3.length)))
+  val result12 = List(Cell(Position(3), Content(DiscreteSchema[Long](), data3.length)))
 
-  val result13 = List(Cell(Position("_2"), Content(DiscreteSchema[Long](), 3)))
+  val result13 = List(Cell(Position(2), Content(DiscreteSchema[Long](), 3)))
 }
 
 class TestScaldingMatrixSize extends TestMatrixSize {
@@ -921,17 +921,17 @@ class TestSparkMatrixSize extends TestMatrixSize {
 
 trait TestMatrixShape extends TestMatrix {
 
-  val result1 = List(Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)))
+  val result1 = List(Cell(Position(1), Content(DiscreteSchema[Long](), 4)))
 
   val result2 = List(
-    Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)),
-    Cell(Position("_2"), Content(DiscreteSchema[Long](), 4))
+    Cell(Position(1), Content(DiscreteSchema[Long](), 4)),
+    Cell(Position(2), Content(DiscreteSchema[Long](), 4))
   )
 
   val result3 = List(
-    Cell(Position("_1"), Content(DiscreteSchema[Long](), 4)),
-    Cell(Position("_2"), Content(DiscreteSchema[Long](), 4)),
-    Cell(Position("_3"), Content(DiscreteSchema[Long](), 1))
+    Cell(Position(1), Content(DiscreteSchema[Long](), 4)),
+    Cell(Position(2), Content(DiscreteSchema[Long](), 4)),
+    Cell(Position(3), Content(DiscreteSchema[Long](), 1))
   )
 }
 
@@ -1196,157 +1196,157 @@ class TestScaldingMatrixSlice extends TestMatrixSlice {
 
   "A Matrix.slice" should "return its first over slice in 1D" in {
     toPipe(data1)
-      .slice(Over(_1), InMemory())(List("bar", "qux"), false)
+      .slice(Over(_1), InMemory())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result1
   }
 
   it should "return its first over inverse slice in 1D" in {
     toPipe(data1)
-      .slice(Over(_1), Default())(List("bar", "qux"), true)
+      .slice(Over(_1), Default())(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "return its first over slice in 2D" in {
     toPipe(data2)
-      .slice(Over(_1), Default(Reducers(123)))(List("bar", "qux"), false)
+      .slice(Over(_1), Default(Reducers(123)))(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result3
   }
 
   it should "return its first over inverse slice in 2D" in {
     toPipe(data2)
-      .slice(Over(_1), Unbalanced(Reducers(123)))(List("bar", "qux"), true)
+      .slice(Over(_1), Unbalanced(Reducers(123)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its first along slice in 2D" in {
     toPipe(data2)
-      .slice(Along(_1), InMemory())(List(1, 3), false)
+      .slice(Along(_1), InMemory())(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first along inverse slice in 2D" in {
     toPipe(data2)
-      .slice(Along(_1), Default())(List(1, 3), true)
+      .slice(Along(_1), Default())(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result6
   }
 
   it should "return its second over slice in 2D" in {
     toPipe(data2)
-      .slice(Over(_2), Default(Reducers(123)))(List(1, 3), false)
+      .slice(Over(_2), Default(Reducers(123)))(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result7
   }
 
   it should "return its second over inverse slice in 2D" in {
     toPipe(data2)
-      .slice(Over(_2), Unbalanced(Reducers(123)))(List(1, 3), true)
+      .slice(Over(_2), Unbalanced(Reducers(123)))(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along slice in 2D" in {
     toPipe(data2)
-      .slice(Along(_2), InMemory())(List("bar", "qux"), false)
+      .slice(Along(_2), InMemory())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result9
   }
 
   it should "return its second along inverse slice in 2D" in {
     toPipe(data2)
-      .slice(Along(_2), Default())(List("bar", "qux"), true)
+      .slice(Along(_2), Default())(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its first over slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_1), Default(Reducers(123)))(List("bar", "qux"), false)
+      .slice(Over(_1), Default(Reducers(123)))(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result11
   }
 
   it should "return its first over inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_1), Unbalanced(Reducers(123)))(List("bar", "qux"), true)
+      .slice(Over(_1), Unbalanced(Reducers(123)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result12
   }
 
   it should "return its first along slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_1), InMemory())(List(Position(1, "xyz"), Position(3, "xyz")), false)
+      .slice(Along(_1), InMemory())(false, List(Position(1, "xyz"), Position(3, "xyz")))
       .toList.sortBy(_.position) shouldBe result13
   }
 
   it should "return its first along inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_1), Default())(List(Position(1, "xyz"), Position(3, "xyz")), true)
+      .slice(Along(_1), Default())(true, List(Position(1, "xyz"), Position(3, "xyz")))
       .toList.sortBy(_.position) shouldBe result14
   }
 
   it should "return its second over slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_2), Default(Reducers(123)))(List(1, 3), false)
+      .slice(Over(_2), Default(Reducers(123)))(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result15
   }
 
   it should "return its second over inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_2), Unbalanced(Reducers(123)))(List(1, 3), true)
+      .slice(Over(_2), Unbalanced(Reducers(123)))(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result16
   }
 
   it should "return its second along slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_2), InMemory())(List(Position("bar", "xyz"), Position("qux", "xyz")), false)
+      .slice(Along(_2), InMemory())(false, List(Position("bar", "xyz"), Position("qux", "xyz")))
       .toList.sortBy(_.position) shouldBe result17
   }
 
   it should "return its second along inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_2), Default())(List(Position("bar", "xyz"), Position("qux", "xyz")), true)
+      .slice(Along(_2), Default())(true, List(Position("bar", "xyz"), Position("qux", "xyz")))
       .toList.sortBy(_.position) shouldBe result18
   }
 
   it should "return its third over slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_3), Default(Reducers(123)))("xyz", false)
+      .slice(Over(_3), Default(Reducers(123)))(false, "xyz")
       .toList.sortBy(_.position) shouldBe result19
   }
 
   it should "return its third over inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Over(_3), Unbalanced(Reducers(123)))("xyz", true)
+      .slice(Over(_3), Unbalanced(Reducers(123)))(true, "xyz")
       .toList.sortBy(_.position) shouldBe result20
   }
 
   it should "return its third along slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_3), InMemory())(List(Position("foo", 3), Position("baz", 1)), false)
+      .slice(Along(_3), InMemory())(false, List(Position("foo", 3), Position("baz", 1)))
       .toList.sortBy(_.position) shouldBe result21
   }
 
   it should "return its third along inverse slice in 3D" in {
     toPipe(data3)
-      .slice(Along(_3), Default())(List(Position("foo", 3), Position("baz", 1)), true)
+      .slice(Along(_3), Default())(true, List(Position("foo", 3), Position("baz", 1)))
       .toList.sortBy(_.position) shouldBe result22
   }
 
   it should "return empty data - InMemory" in {
     toPipe(data3)
-      .slice(Along(_3), InMemory())(List.empty[Position[_2]], true)
+      .slice(Along(_3), InMemory())(true, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe List()
   }
 
   it should "return all data - InMemory" in {
     toPipe(data3)
-      .slice(Along(_3), InMemory())(List.empty[Position[_2]], false)
+      .slice(Along(_3), InMemory())(false, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe data3.sortBy(_.position)
   }
 
   it should "return empty data - Default" in {
     toPipe(data3)
-      .slice(Along(_3), Default())(List.empty[Position[_2]], true)
+      .slice(Along(_3), Default())(true, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe List()
   }
 
   it should "return all data - Default" in {
     toPipe(data3)
-      .slice(Along(_3), Default())(List.empty[Position[_2]], false)
+      .slice(Along(_3), Default())(false, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe data3.sortBy(_.position)
   }
 }
@@ -1355,145 +1355,145 @@ class TestSparkMatrixSlice extends TestMatrixSlice {
 
   "A Matrix.slice" should "return its first over slice in 1D" in {
     toRDD(data1)
-      .slice(Over(_1), Default())(List("bar", "qux"), false)
+      .slice(Over(_1), Default())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result1
   }
 
   it should "return its first over inverse slice in 1D" in {
     toRDD(data1)
-      .slice(Over(_1), Default(Reducers(12)))(List("bar", "qux"), true)
+      .slice(Over(_1), Default(Reducers(12)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "return its first over slice in 2D" in {
     toRDD(data2)
-      .slice(Over(_1), Default())(List("bar", "qux"), false)
+      .slice(Over(_1), Default())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result3
   }
 
   it should "return its first over inverse slice in 2D" in {
     toRDD(data2)
-      .slice(Over(_1), Default(Reducers(12)))(List("bar", "qux"), true)
+      .slice(Over(_1), Default(Reducers(12)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its first along slice in 2D" in {
     toRDD(data2)
-      .slice(Along(_1), Default())(List(1, 3), false)
+      .slice(Along(_1), Default())(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first along inverse slice in 2D" in {
     toRDD(data2)
-      .slice(Along(_1), Default(Reducers(12)))(List(1, 3), true)
+      .slice(Along(_1), Default(Reducers(12)))(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result6
   }
 
   it should "return its second over slice in 2D" in {
     toRDD(data2)
-      .slice(Over(_2), Default())(List(1, 3), false)
+      .slice(Over(_2), Default())(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result7
   }
 
   it should "return its second over inverse slice in 2D" in {
     toRDD(data2)
-      .slice(Over(_2), Default(Reducers(12)))(List(1, 3), true)
+      .slice(Over(_2), Default(Reducers(12)))(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along slice in 2D" in {
     toRDD(data2)
-      .slice(Along(_2), Default())(List("bar", "qux"), false)
+      .slice(Along(_2), Default())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result9
   }
 
   it should "return its second along inverse slice in 2D" in {
     toRDD(data2)
-      .slice(Along(_2), Default(Reducers(12)))(List("bar", "qux"), true)
+      .slice(Along(_2), Default(Reducers(12)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its first over slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_1), Default())(List("bar", "qux"), false)
+      .slice(Over(_1), Default())(false, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result11
   }
 
   it should "return its first over inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_1), Default(Reducers(12)))(List("bar", "qux"), true)
+      .slice(Over(_1), Default(Reducers(12)))(true, List("bar", "qux"))
       .toList.sortBy(_.position) shouldBe result12
   }
 
   it should "return its first along slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_1), Default())(List(Position(1, "xyz"), Position(3, "xyz")), false)
+      .slice(Along(_1), Default())(false, List(Position(1, "xyz"), Position(3, "xyz")))
       .toList.sortBy(_.position) shouldBe result13
   }
 
   it should "return its first along inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_1), Default(Reducers(12)))(List(Position(1, "xyz"), Position(3, "xyz")), true)
+      .slice(Along(_1), Default(Reducers(12)))(true, List(Position(1, "xyz"), Position(3, "xyz")))
       .toList.sortBy(_.position) shouldBe result14
   }
 
   it should "return its second over slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_2), Default())(List(1, 3), false)
+      .slice(Over(_2), Default())(false, List(1, 3))
       .toList.sortBy(_.position) shouldBe result15
   }
 
   it should "return its second over inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_2), Default(Reducers(12)))(List(1, 3), true)
+      .slice(Over(_2), Default(Reducers(12)))(true, List(1, 3))
       .toList.sortBy(_.position) shouldBe result16
   }
 
   it should "return its second along slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_2), Default())(List(Position("bar", "xyz"), Position("qux", "xyz")), false)
+      .slice(Along(_2), Default())(false, List(Position("bar", "xyz"), Position("qux", "xyz")))
       .toList.sortBy(_.position) shouldBe result17
   }
 
   it should "return its second along inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_2), Default(Reducers(12)))(List(Position("bar", "xyz"), Position("qux", "xyz")), true)
+      .slice(Along(_2), Default(Reducers(12)))(true, List(Position("bar", "xyz"), Position("qux", "xyz")))
       .toList.sortBy(_.position) shouldBe result18
   }
 
   it should "return its third over slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_3), Default())("xyz", false)
+      .slice(Over(_3), Default())(false, "xyz")
       .toList.sortBy(_.position) shouldBe result19
   }
 
   it should "return its third over inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Over(_3), Default(Reducers(12)))("xyz", true)
+      .slice(Over(_3), Default(Reducers(12)))(true, "xyz")
       .toList.sortBy(_.position) shouldBe result20
   }
 
   it should "return its third along slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_3), Default())(List(Position("foo", 3), Position("baz", 1)), false)
+      .slice(Along(_3), Default())(false, List(Position("foo", 3), Position("baz", 1)))
       .toList.sortBy(_.position) shouldBe result21
   }
 
   it should "return its third along inverse slice in 3D" in {
     toRDD(data3)
-      .slice(Along(_3), Default(Reducers(12)))(List(Position("foo", 3), Position("baz", 1)), true)
+      .slice(Along(_3), Default(Reducers(12)))(true, List(Position("foo", 3), Position("baz", 1)))
       .toList.sortBy(_.position) shouldBe result22
   }
 
   it should "return empty data - Default" in {
     toRDD(data3)
-      .slice(Along(_3), Default())(List.empty[Position[_2]], true)
+      .slice(Along(_3), Default())(true, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe List()
   }
 
   it should "return all data - Default" in {
     toRDD(data3)
-      .slice(Along(_3), Default())(List.empty[Position[_2]], false)
+      .slice(Along(_3), Default())(false, List.empty[Position[_2]])
       .toList.sortBy(_.position) shouldBe data3.sortBy(_.position)
   }
 }
@@ -9471,8 +9471,8 @@ object TestMatrixSquash {
     val squasher = PreservingMaxPosition[P]()
     val tTag = squasher.tTag
 
-    def prepareWithValue[D <: Nat : ToInt](cell: Cell[P], dim: D, ext: V)(implicit ev: LTEq[D, P]): T = squasher
-      .prepare(cell, dim)
+    def prepareWithValue[D <: Nat : ToInt](cell: Cell[P], dim: D, ext: V)(implicit ev: LTEq[D, P]): Option[T] =
+      squasher.prepare(cell, dim)
 
     def reduce(lt: T, rt: T): T = squasher.reduce(lt, rt)
 

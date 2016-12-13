@@ -19,9 +19,6 @@ import commbank.grimlock.framework.utility.UnionTypes._
 /** Base trait for tuner parameters. */
 trait TunerParameters extends java.io.Serializable { }
 
-/** Indicates that the data should be collated. */
-case class Collate() extends TunerParameters { }
-
 /** Indicates that no special operations are to be performed. */
 case class NoParameters() extends TunerParameters { }
 

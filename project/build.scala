@@ -66,6 +66,10 @@ object build extends Build {
         noHadoop("org.apache.spark" %% "spark-core" % "1.6.2")
           exclude("com.twitter", "chill-java")
           exclude("com.twitter", "chill_2.11"),
+        "com.typesafe.play" %% "play-json" % "2.3.9"
+          exclude("com.fasterxml.jackson.core", "jackson-annotations")
+          exclude("com.fasterxml.jackson.core", "jackson-core")
+          exclude("com.fasterxml.jackson.core", "jackson-databind"),
         "com.tdunning"  %  "t-digest"  % "3.2-20160726-OMNIA",
         "org.scalatest" %% "scalatest" % "2.2.4" % "test"
       )

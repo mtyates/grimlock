@@ -39,99 +39,126 @@ class TestPreservingMaxPosition extends TestSquashers {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe Option((cell1.position(_1), cell1.content))
+
     val t2 = squash.prepare(cell2, _1)
+    t2 shouldBe Option((cell2.position(_1), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the first dimension when greater" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
+    t1 shouldBe Option((cell2.position(_1), cell2.content))
+
     val t2 = squash.prepare(cell1, _1)
+    t2 shouldBe Option((cell1.position(_1), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the first dimension when equal" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
+    t1 shouldBe Option((cell2.position(_1), cell2.content))
+
     val t2 = squash.prepare(cell2, _1)
+    t2 shouldBe Option((cell2.position(_1), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the second dimension when greater" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe Option((cell1.position(_2), cell1.content))
+
     val t2 = squash.prepare(cell2, _2)
+    t2 shouldBe Option((cell2.position(_2), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the second dimension when greater" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
+    t1 shouldBe Option((cell2.position(_2), cell2.content))
+
     val t2 = squash.prepare(cell1, _2)
+    t2 shouldBe Option((cell1.position(_2), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the first cell for the second dimension when equal" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe Option((cell1.position(_2), cell1.content))
+
     val t2 = squash.prepare(cell1, _2)
+    t2 shouldBe Option((cell1.position(_2), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the third dimension when greater" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe Option((cell1.position(_3), cell1.content))
+
     val t2 = squash.prepare(cell2, _3)
+    t2 shouldBe Option((cell2.position(_3), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the third dimension when greater" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
+    t1 shouldBe Option((cell2.position(_3), cell2.content))
+
     val t2 = squash.prepare(cell1, _3)
+    t2 shouldBe Option((cell1.position(_3), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the third dimension when equal" in {
     val squash = PreservingMaxPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
+    t1 shouldBe Option((cell2.position(_3), cell2.content))
+
     val t2 = squash.prepare(cell2, _3)
+    t2 shouldBe Option((cell2.position(_3), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 }
 
@@ -141,99 +168,126 @@ class TestPreservingMinPosition extends TestSquashers {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe Option((cell1.position(_1), cell1.content))
+
     val t2 = squash.prepare(cell2, _1)
+    t2 shouldBe Option((cell2.position(_1), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the first dimension when less" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
+    t1 shouldBe Option((cell2.position(_1), cell2.content))
+
     val t2 = squash.prepare(cell1, _1)
+    t2 shouldBe Option((cell1.position(_1), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the first cell for the first dimension when equal" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe Option((cell1.position(_1), cell1.content))
+
     val t2 = squash.prepare(cell1, _1)
+    t2 shouldBe Option((cell1.position(_1), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the second dimension when less" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe Option((cell1.position(_2), cell1.content))
+
     val t2 = squash.prepare(cell2, _2)
+    t2 shouldBe Option((cell2.position(_2), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the second dimension when less" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
+    t1 shouldBe Option((cell2.position(_2), cell2.content))
+
     val t2 = squash.prepare(cell1, _2)
+    t2 shouldBe Option((cell1.position(_2), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the second dimension when equal" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
+    t1 shouldBe Option((cell2.position(_2), cell2.content))
+
     val t2 = squash.prepare(cell2, _2)
+    t2 shouldBe Option((cell2.position(_2), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t) shouldBe Option(cell2.content)
   }
 
   it should "return the first cell for the third dimension when less" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe Option((cell1.position(_3), cell1.content))
+
     val t2 = squash.prepare(cell2, _3)
+    t2 shouldBe Option((cell2.position(_3), cell2.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the third dimension when less" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
+    t1 shouldBe Option((cell2.position(_3), cell2.content))
+
     val t2 = squash.prepare(cell1, _3)
+    t2 shouldBe Option((cell1.position(_3), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 
   it should "return the first cell for the third dimension when equal" in {
     val squash = PreservingMinPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe Option((cell1.position(_3), cell1.content))
+
     val t2 = squash.prepare(cell1, _3)
+    t2 shouldBe Option((cell1.position(_3), cell1.content))
 
-    val t = squash.reduce(t1, t2)
+    val t = squash.reduce(t1.get, t2.get)
 
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t) shouldBe Option(cell1.content)
   }
 }
 
@@ -243,99 +297,102 @@ class TestKeepSlice extends TestSquashers {
     val squash = KeepSlice[_3](1)
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe Option(cell1.content)
+
     val t2 = squash.prepare(cell2, _1)
+    t2 shouldBe None
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t1.get) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the first dimension when equal" in {
     val squash = KeepSlice[_3](2)
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _1)
+    t2 shouldBe Option(cell2.content)
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t2.get) shouldBe Option(cell2.content)
   }
 
   it should "return the second cell for the first dimension when not equal" in {
     val squash = KeepSlice[_3](3)
 
     val t1 = squash.prepare(cell1, _1)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _1)
-
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe None
+    t2 shouldBe None
   }
 
   it should "return the second cell for the second dimension when equal" in {
     val squash = KeepSlice[_3]("b")
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe Option(cell1.content)
+
     val t2 = squash.prepare(cell2, _2)
+    t2 shouldBe None
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t1.get) shouldBe Option(cell1.content)
   }
 
   it should "return the first cell for the second dimension when equal" in {
     val squash = KeepSlice[_3]("a")
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _2)
+    t2 shouldBe Option(cell2.content)
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t2.get) shouldBe Option(cell2.content)
   }
 
   it should "return the second cell for the second dimension when not equal" in {
     val squash = KeepSlice[_3]("c")
 
     val t1 = squash.prepare(cell1, _2)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _2)
-
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe None
+    t2 shouldBe None
   }
 
   it should "return the first cell for the third dimension when equal" in {
     val squash = KeepSlice[_3](DateValue(dfmt.parse("2001-01-01"), DateCodec()))
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe Option(cell1.content)
+
     val t2 = squash.prepare(cell2, _3)
+    t2 shouldBe None
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con1)
+    squash.present(t1.get) shouldBe Option(cell1.content)
   }
 
   it should "return the second cell for the third dimension when equal" in {
     val squash = KeepSlice[_3](DateValue(dfmt.parse("2002-01-01"), DateCodec()))
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _3)
+    t2 shouldBe Option(cell2.content)
 
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe Option(con2)
+    squash.present(t2.get) shouldBe Option(cell2.content)
   }
 
   it should "return the second cell for the third dimension when not equal" in {
     val squash = KeepSlice[_3](DateValue(dfmt.parse("2003-01-01"), DateCodec()))
 
     val t1 = squash.prepare(cell1, _3)
+    t1 shouldBe None
+
     val t2 = squash.prepare(cell2, _3)
-
-    val t = squash.reduce(t1, t2)
-
-    squash.present(t) shouldBe None
+    t2 shouldBe None
   }
 }
 

@@ -84,7 +84,7 @@ class TestScalding1(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .saveAsText(ctx, s"./tmp.${tool}/dat1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/dat1.out", Cell.toString(verbose = true))
     .toUnit
 
   data
@@ -94,13 +94,13 @@ class TestScalding1(args : Args) extends Job(args) {
         Content(ContinuousSchema[Long](), 1234)
       )
     )
-    .slice(Over(_1))("iid:1548763", true)
-    .saveAsText(ctx, s"./tmp.${tool}/dat2.out", Cell.toString(descriptive = true))
+    .slice(Over(_1))(true, "iid:1548763")
+    .saveAsText(ctx, s"./tmp.${tool}/dat2.out", Cell.toString(verbose = true))
     .toUnit
 
   loadText(ctx, path + "/smallInputfile.txt", Cell.parse3D(third = DateCodec()))
     .data
-    .saveAsText(ctx, s"./tmp.${tool}/dat3.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/dat3.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -112,19 +112,19 @@ class TestScalding2(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   (data.names(Over(_1)) ++ data.names(Over(_2)) ++ data.names(Over(_3)))
-    .saveAsText(ctx, s"./tmp.${tool}/nm0.out", Position.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/nm0.out", Position.toString(verbose = true))
     .toUnit
 
   data
     .names(Over(_2))
-    .slice("fid:M", false)
-    .saveAsText(ctx, s"./tmp.${tool}/nm2.out", Position.toString(descriptive = true))
+    .slice(false, "fid:M")
+    .saveAsText(ctx, s"./tmp.${tool}/nm2.out", Position.toString(verbose = true))
     .toUnit
 
   data
     .names(Over(_2))
-    .slice(""".*[BCD]$""".r, true, "")
-    .saveAsText(ctx, s"./tmp.${tool}/nm5.out", Position.toString(descriptive = true))
+    .slice(true, """.*[BCD]$""".r)
+    .saveAsText(ctx, s"./tmp.${tool}/nm5.out", Position.toString(verbose = true))
     .toUnit
 }
 
@@ -136,11 +136,11 @@ class TestScalding3(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   (data.types(Over(_1))(false) ++ data.types(Over(_2))(false) ++ data.types(Over(_3))(false))
-    .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Cell.toString(verbose = true))
     .toUnit
 
   (data.types(Over(_1))(true) ++ data.types(Over(_2))(true) ++ data.types(Over(_3))(true))
-    .saveAsText(ctx, s"./tmp.${tool}/typ2.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/typ2.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -152,14 +152,14 @@ class TestScalding4(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .slice(Over(_2))("fid:B", true)
-    .saveAsText(ctx, s"./tmp.${tool}/scl0.out", Cell.toString(descriptive = true))
+    .slice(Over(_2))(true, "fid:B")
+    .saveAsText(ctx, s"./tmp.${tool}/scl0.out", Cell.toString(verbose = true))
     .toUnit
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B"), true)
-    .slice(Over(_1))("iid:0221707", true)
-    .saveAsText(ctx, s"./tmp.${tool}/scl1.out", Cell.toString(descriptive = true))
+    .slice(Over(_2))(true, List("fid:A", "fid:B"))
+    .slice(Over(_1))(true, "iid:0221707")
+    .saveAsText(ctx, s"./tmp.${tool}/scl1.out", Cell.toString(verbose = true))
     .toUnit
 
   val rem = List(
@@ -179,8 +179,8 @@ class TestScalding4(args : Args) extends Job(args) {
   )
 
   data
-    .slice(Over(_2))(data.names(Over(_2)).slice(rem, false), false)
-    .saveAsText(ctx, s"./tmp.${tool}/scl2.out", Cell.toString(descriptive = true))
+    .slice(Over(_2))(false, data.names(Over(_2)).slice(false, rem))
+    .saveAsText(ctx, s"./tmp.${tool}/scl2.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -192,15 +192,15 @@ class TestScalding5(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B"), true)
-    .slice(Over(_1))("iid:0221707", true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B"))
+    .slice(Over(_1))(true, "iid:0221707")
     .squash(_3, PreservingMaxPosition())
-    .saveAsText(ctx, s"./tmp.${tool}/sqs1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/sqs1.out", Cell.toString(verbose = true))
     .toUnit
 
   data
     .squash(_3, PreservingMaxPosition())
-    .saveAsText(ctx, s"./tmp.${tool}/sqs2.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/sqs2.out", Cell.toString(verbose = true))
     .toUnit
 
   val ids = List(
@@ -217,14 +217,14 @@ class TestScalding5(args : Args) extends Job(args) {
   )
 
   data
-    .slice(Over(_1))(ids, true)
+    .slice(Over(_1))(true, ids)
     .squash(_3, PreservingMaxPosition())
     .saveAsCSV(Over(_2))(ctx, s"./tmp.${tool}/sqs3.out")
     .toUnit
 
   data
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
     .saveAsCSV(Over(_2))(ctx, s"./tmp.${tool}/sqs4.out")
     .toUnit
@@ -238,23 +238,23 @@ class TestScalding6(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .which(c => c.content.schema.kind.isOfType(NumericType))
-    .saveAsText(ctx, s"./tmp.${tool}/whc1.out", Position.toString(descriptive = true))
+    .which(c => c.content.schema.classification.isOfType(NumericType))
+    .saveAsText(ctx, s"./tmp.${tool}/whc1.out", Position.toString(verbose = true))
     .toUnit
 
   data
     .which(c => !c.content.value.isInstanceOf[StringValue])
-    .saveAsText(ctx, s"./tmp.${tool}/whc2.out", Position.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/whc2.out", Position.toString(verbose = true))
     .toUnit
 
   data
     .get(data.which(c => (c.content.value equ 666) || (c.content.value leq 11.0) || (c.content.value equ "KQUPKFEH")))
-    .saveAsText(ctx, s"./tmp.${tool}/whc3.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/whc3.out", Cell.toString(verbose = true))
     .toUnit
 
   data
     .which(c => c.content.value.isInstanceOf[LongValue])
-    .saveAsText(ctx, s"./tmp.${tool}/whc4.out", Position.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/whc4.out", Position.toString(verbose = true))
     .toUnit
 
   val aggregators: List[Aggregator[_2, _1, _2]] = List(
@@ -279,12 +279,12 @@ class TestScalding6(args : Args) extends Job(args) {
   )
 
   load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
     .summarise(Along(_1))(aggregators)
     .whichByPosition(Over(_2))(List(("count", c => c.content.value leq 2), ("min", c => c.content.value equ 107)))
-    .saveAsText(ctx, s"./tmp.${tool}/whc5.out", Position.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/whc5.out", Position.toString(verbose = true))
     .toUnit
 }
 
@@ -297,7 +297,7 @@ class TestScalding7(args : Args) extends Job(args) {
 
   data
     .get(Position("iid:1548763", "fid:Y", DateCodec().decode("2014-04-26").get))
-    .saveAsText(ctx, s"./tmp.${tool}/get1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/get1.out", Cell.toString(verbose = true))
     .toUnit
 
   data
@@ -307,7 +307,7 @@ class TestScalding7(args : Args) extends Job(args) {
         Position("iid:1303823", "fid:A", DateCodec().decode("2014-05-05").get)
       )
     )
-    .saveAsText(ctx, s"./tmp.${tool}/get2.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/get2.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -319,37 +319,37 @@ class TestScalding8(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .slice(Over(_2))("fid:B", true)
+    .slice(Over(_2))(true, "fid:B")
     .squash(_3, PreservingMaxPosition())
     .unique()
-    .saveAsText(ctx, s"./tmp.${tool}/uniq.out", Content.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/uniq.out", Content.toString(verbose = true))
     .toUnit
 
   loadText(ctx, path + "/mutualInputfile.txt", Cell.parse2D())
     .data
     .uniqueByPosition(Over(_2))
-    .saveAsText(ctx, s"./tmp.${tool}/uni2.out", IndexedContent.toString(codec = false, schema = false))
+    .saveAsText(ctx, s"./tmp.${tool}/uni2.out", IndexedContent.toString(descriptive = false))
     .toUnit
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/test.csv")
     .saveAsCSV(Over(_2))(ctx, s"./tmp.${tool}/tset.csv", writeHeader = false, separator = ",")
     .toUnit
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .permute(_2, _1)
-    .saveAsText(ctx, s"./tmp.${tool}/trs1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/trs1.out", Cell.toString(verbose = true))
     .toUnit
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .saveAsText(ctx, s"./tmp.${tool}/data.txt")
     .toUnit
@@ -370,13 +370,13 @@ class TestScalding9(args : Args) extends Job(args) {
   }
 
   val prt1 = data
-    .slice(Over(_2))(List("fid:A", "fid:B"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .split(StringPartitioner(_2))
 
   prt1
-    .saveAsText(ctx, s"./tmp.${tool}/prt1.out", Partition.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/prt1.out", Partition.toString(verbose = true))
     .toUnit
 
   case class IntTuplePartitioner[
@@ -393,26 +393,26 @@ class TestScalding9(args : Args) extends Job(args) {
   }
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .split(IntTuplePartitioner(_2))
-    .saveAsText(ctx, s"./tmp.${tool}/prt2.out", Partition.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/prt2.out", Partition.toString(verbose = true))
     .toUnit
 
   prt1
     .get("training")
-    .saveAsText(ctx, s"./tmp.${tool}/train.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/train.out", Cell.toString(verbose = true))
     .toUnit
 
   prt1
     .get("testing")
-    .saveAsText(ctx, s"./tmp.${tool}/test.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/test.out", Cell.toString(verbose = true))
     .toUnit
 
   prt1
     .get("scoring")
-    .saveAsText(ctx, s"./tmp.${tool}/score.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/score.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -442,7 +442,7 @@ class TestScalding10(args : Args) extends Job(args) {
   )
 
   data
-    .slice(Over(_1))(ids, true)
+    .slice(Over(_1))(true, ids)
     .squash(_3, PreservingMaxPosition())
     .summarise(Along(_2))(Count().andThenRelocate(_.position.append("count").toOption))
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/agg2.csv")
@@ -460,7 +460,7 @@ class TestScalding10(args : Args) extends Job(args) {
   )
 
   data
-    .slice(Over(_1))(ids, true)
+    .slice(Over(_1))(true, ids)
     .squash(_3, PreservingMaxPosition())
     .summarise(Along(_1))(aggregators)
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/agg3.csv")
@@ -475,15 +475,15 @@ class TestScalding11(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .transform(Indicator().andThenRelocate(Locate.RenameDimension(_2, "%1$s.ind")))
-    .saveAsText(ctx, s"./tmp.${tool}/trn2.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/trn2.out", Cell.toString(verbose = true))
     .toUnit
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .squash(_3, PreservingMaxPosition())
     .transform(Binarise(Locate.RenameDimensionWithContent(_2)))
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/trn3.out")
@@ -496,8 +496,8 @@ class TestScalding12(args : Args) extends Job(args) {
   val path = args("path")
 
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
 
   data
     .squash(_3, PreservingMaxPosition())
@@ -507,7 +507,7 @@ class TestScalding12(args : Args) extends Job(args) {
 
   data
     .fillHomogeneous(Content(ContinuousSchema[Long](), 0))
-    .saveAsText(ctx, s"./tmp.${tool}/fll3.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/fll3.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -531,8 +531,8 @@ class TestScalding13(args : Args) extends Job(args) {
 
   val all = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
   val data = all
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
 
   val inds = data
@@ -558,13 +558,13 @@ class TestScalding14(args : Args) extends Job(args) {
   val path = args("path")
 
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:Y", "fid:Z"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
 
   data
     .change(Over(_2))("fid:A", Content.parser(LongCodec, NominalSchema[Long]()))
     .data
-    .saveAsText(ctx, s"./tmp.${tool}/chg1.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/chg1.out", Cell.toString(verbose = true))
     .toUnit
 }
 
@@ -576,8 +576,8 @@ class TestScalding15(args : Args) extends Job(args) {
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
 
   data
-    .slice(Over(_2))(List("fid:A", "fid:C", "fid:E", "fid:G"), true)
-    .slice(Over(_1))(List("iid:0221707", "iid:0364354"), true)
+    .slice(Over(_2))(true, List("fid:A", "fid:C", "fid:E", "fid:G"))
+    .slice(Over(_1))(true, List("iid:0221707", "iid:0364354"))
     .summarise(Along(_3))(Sum().andThenRelocate(_.position.append("sum").toOption))
     .melt(_3, _2, Value.concatenate("."))
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/rsh1.out")
@@ -597,15 +597,15 @@ class TestScalding15(args : Args) extends Job(args) {
   )
 
   val inds = data
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
     .transform(Indicator().andThenRelocate(Locate.RenameDimension(_2, "%1$s.ind")))
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/trn1.csv")
 
   data
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
     .join(Over(_1))(inds)
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/jn1.csv")
@@ -648,8 +648,8 @@ class TestScalding17(args : Args) extends Job(args) {
   )
 
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
 
   val aggregators: List[Aggregator[_2, _1, _2]] = List(
@@ -685,7 +685,7 @@ class TestScalding17(args : Args) extends Job(args) {
     type V = Map[Position[_1], Map[Position[_1], Content]]
 
     def selectWithValue(cell: Cell[_2], ext: V): Boolean =
-      if (cell.content.schema.kind.isOfType(NumericType))
+      if (cell.content.schema.classification.isOfType(NumericType))
         cell.content.value leq ext(Position(cell.position(dim)))(Position("mean")).value
       else
         true
@@ -716,8 +716,8 @@ class TestScalding18(args : Args) extends Job(args) {
   )
 
   val data = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
 
   val aggregators: List[Aggregator[_2, _1, _2]] = List(
@@ -736,7 +736,7 @@ class TestScalding18(args : Args) extends Job(args) {
     .names(Over(_1))
 
   data
-    .slice(Over(_2))(rem, false)
+    .slice(Over(_2))(false, rem)
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/flt3.csv")
     .toUnit
 }
@@ -760,8 +760,8 @@ class TestScalding19(args : Args) extends Job(args) {
   )
 
   val raw = load4TupleDataAddDate(ctx, path + "/someInputfile3.txt")
-    .slice(Over(_1))(ids, true)
-    .slice(Over(_2))(List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"), true)
+    .slice(Over(_1))(true, ids)
+    .slice(Over(_2))(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
     .squash(_3, PreservingMaxPosition())
 
   case class CustomPartition[
@@ -807,7 +807,7 @@ class TestScalding19(args : Args) extends Job(args) {
   )
 
   def cb(key: String, pipe: TypedPipe[Cell[_2]]): TypedPipe[Cell[_2]] = pipe
-    .slice(Over(_2))(rem, false)
+    .slice(Over(_2))(false, rem)
     .transformWithValue(stats.compact(Over(_1)), transforms)
     .fillHomogeneous(Content(ContinuousSchema[Long](), 0))
     .saveAsCSV(Over(_1))(ctx, s"./tmp.${tool}/pln_" + key + ".csv")
@@ -1191,7 +1191,7 @@ class TestScalding30(args: Args) extends Job(args) {
     .stream(
       "Rscript double.R",
       List("double.R"),
-      Cell.toString(false, "|", true, true),
+      Cell.toString(false, "|", true),
       Cell.parse2D("#", StringCodec, LongCodec)
     )
     .data
@@ -1207,7 +1207,7 @@ class TestScalding31(args: Args) extends Job(args) {
   val (data, errors) = loadText(ctx, path + "/badInputfile.txt", Cell.parse3D(third = DateCodec()))
 
   data
-    .saveAsText(ctx, s"./tmp.${tool}/yok.out", Cell.toString(descriptive = true))
+    .saveAsText(ctx, s"./tmp.${tool}/yok.out", Cell.toString(verbose = true))
     .toUnit
 
   errors.write(TypedSink(TextLine(s"./tmp.${tool}/nok.out")))
@@ -1337,6 +1337,32 @@ class TestScalding33(args: Args) extends Job(args) {
 
   data
     .saveAsVWWithLabelsAndImportance(Over(_1))(ctx, s"./tmp.${tool}/vw4.out", labels, importance, tag = false)
+    .toUnit
+}
+
+class TestScalding34(args: Args) extends Job(args) {
+  implicit val ctx = Context()
+  val tool = "scalding"
+
+  val data = List(
+    ("a", "one", Content(ContinuousSchema[Double](), 3.14)),
+    ("a", "two", Content(NominalSchema[String](), "foo")),
+    ("a", "three", Content(DiscreteSchema[Long](), 42)),
+    ("b", "one", Content(ContinuousSchema[Double](), 6.28)),
+    ("b", "two", Content(NominalSchema[String](), "bar")),
+    ("c", "one", Content(ContinuousSchema[Double](), 12.56)),
+    ("c", "three", Content(DiscreteSchema[Long](), 123))
+  )
+
+  def writer(values: List[Option[Cell[_2]]]) = List(
+    values.map(_.map(_.content.value.toShortString).getOrElse("")).mkString("|")
+  )
+
+  val (result, errors) = data
+    .streamByPosition(Over(_1))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D())
+
+  errors
+    .saveAsText(ctx, s"./tmp.${tool}/sbp.out")
     .toUnit
 }
 

@@ -359,6 +359,28 @@ object Context {
     ctx: Context,
     ev: ClassTag[Position[T]]
   ): RDD[Position[T]] = ctx.context.parallelize(t)
+
+  /**
+   * Implicit class that enriches a RDD with specfic saveAsText functionality.
+   *
+   * @param data RDD to enrich with saveAsText functionality.
+   */
+  implicit class RDDStringSaveAsText(val data: RDD[String]) {
+    /**
+     *   Convenience function for suppressing ‘Discarded non-unit value’ compiler warnings.
+     *
+     *   These occur when the output of a function is not assigned to a variable (for a non-unit return).
+     *   This function ensures that such warnings are suppressed, it does not affect the flow or outcome.
+     */
+    def toUnit(): Unit = ()
+
+    /** Save data to `file`. */
+    def saveAsText(ctx: Context, file: String): RDD[String] = {
+      data.saveAsTextFile(file)
+
+      data
+    }
+  }
 }
 
 trait DistributedData extends FwDistributedData {

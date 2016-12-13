@@ -27,7 +27,7 @@ trait Schema { self =>
   type D
 
   /** The type of variable. */
-  val kind: Type
+  val classification: Type
 
   /**
    * Validates if a value confirms to this schema.
@@ -44,7 +44,7 @@ trait Schema { self =>
    * @param codec The codec used to encode this schema's data.
    */
   def toShortString(codec: Codec { type D = self.D }): String =
-    kind.toShortString + round(paramString(true, s => codec.encode(s)))
+    classification.toShortString + round(paramString(true, s => codec.encode(s)))
 
   override def toString(): String =
     this.getClass.getSimpleName + square(typeString()) + "(" + paramString(false, s => s.toString) + ")"
@@ -68,7 +68,8 @@ object Schema {
    */
   def fromShortString(str: String, cdc: Codec): Option[Schema { type D = cdc.D }] = str match {
     case ContinuousSchema.Pattern(_) => ContinuousSchema.fromShortString(str, cdc)
-    case DiscreteSchema.Pattern(_, _) => DiscreteSchema.fromShortString(str, cdc)
+    case DiscreteSchema.PatternStep(_, _) => DiscreteSchema.fromShortString(str, cdc)
+    case DiscreteSchema.Pattern(_) => DiscreteSchema.fromShortString(str, cdc)
     case NominalSchema.Pattern(_) => NominalSchema.fromShortString(str, cdc)
     case OrdinalSchema.Pattern(_) => OrdinalSchema.fromShortString(str, cdc)
     case DateSchema.Pattern(_) => DateSchema.fromShortString(str, cdc)
@@ -135,7 +136,7 @@ case class ContinuousSchema[
 )(implicit
   ev: Numeric[T]
 ) extends NumericalSchema[T] { self =>
-  val kind = ContinuousType
+  val classification = ContinuousType
 
   def validate(value: Value { type D = self.D }): Boolean = validateRange(value)
 
@@ -147,7 +148,7 @@ case class ContinuousSchema[
 /** Companion object to `ContinuousSchema` case class. */
 object ContinuousSchema {
   /** Pattern for matching short string continuous schema. */
-  val Pattern = (ContinuousType.name + """(?:\((?:(.*?:.*))?\))?""").r
+  val Pattern = (ContinuousType.name + """(?:\((?:(-?\d+\.?\d*:-?\d+\.?\d*))?\))?""").r
 
   /** Construct a continuous schema with unbounded range. */
   def apply[T : ClassTag]()(implicit ev: Numeric[T]): ContinuousSchema[T] = ContinuousSchema(None)
@@ -210,7 +211,7 @@ case class DiscreteSchema[
 )(implicit
   ev: Integral[T]
 ) extends NumericalSchema[T] { self =>
-  val kind = DiscreteType
+  val classification = DiscreteType
 
   def validate(value: Value { type D = self.D }): Boolean = {
     import ev._
@@ -218,19 +219,30 @@ case class DiscreteSchema[
     validateRange(value) && step.map(s => (value.value % s) == 0).getOrElse(true)
   }
 
-  override protected def paramString(short: Boolean, f: (D) => String): String = step
-    .map(s => SchemaParameters.writeRange(short, range, f) + "," + f(s))
-    .getOrElse("")
+  override protected def paramString(short: Boolean, f: (D) => String): String =
+    SchemaParameters.writeRange(short, range, f) + step.map(s => "," + f(s)).getOrElse("")
   override protected def typeString(): String = classTag[T].runtimeClass.getName.capitalize
 }
 
 /** Companion object to `DiscreteSchema` case class. */
 object DiscreteSchema {
-  /** Pattern for matching short string discrete schema. */
-  val Pattern = (DiscreteType.name + """(?:\((?:(.*?:.*?),(.*))?\))?""").r
+  /** Pattern for matching short string discrete schema without step. */
+  val Pattern = (DiscreteType.name + """(?:\((?:(-?\d+:-?\d+))?\))?""").r
+
+  /** Pattern for matching short string discrete schema with step. */
+  val PatternStep = (DiscreteType.name + """(?:\((?:(-?\d+:-?\d+),(\d+))?\))?""").r
 
   /** Construct a discrete schema with unbounded range and step size 1. */
   def apply[T : ClassTag]()(implicit ev: Integral[T]): DiscreteSchema[T] = DiscreteSchema(None, None)
+
+  /**
+   * Construct a discrete schema with bounded range and step size 1.
+   *
+   * @param lower The lower bound (minimum value).
+   * @param upper The upper bound (maximum value).
+   */
+  def apply[T : ClassTag](lower: T, upper: T)(implicit ev: Integral[T]): DiscreteSchema[T] =
+    DiscreteSchema(Option((lower, upper)), None)
 
   /**
    * Construct a discrete schema with bounded range and step size.
@@ -251,11 +263,29 @@ object DiscreteSchema {
    * @return A `Some[DiscreteSchema]` if successful, `None` otherwise.
    */
   def fromShortString(str: String, cdc: Codec): Option[DiscreteSchema[cdc.D]] = (cdc.tag, cdc.integral, str) match {
-    case (Some(tag), Some(ev), Pattern(null, null)) => Option(DiscreteSchema()(tag, ev))
-    case (Some(tag), Some(ev), Pattern(range, step)) => SchemaParameters.splitRange(range)
+    case (Some(tag), Some(ev), Pattern(null)) => Option(DiscreteSchema()(tag, ev))
+    case (Some(tag), Some(ev), PatternStep(range, step)) => SchemaParameters.splitRange(range)
       .flatMap { case (min, max) => fromComponents(min, max, step, cdc) }
+    case (Some(tag), Some(ev), Pattern(range)) => SchemaParameters.splitRange(range)
+      .flatMap { case (min, max) => fromComponents(min, max, cdc) }
     case _ => None
   }
+
+  /**
+   * Parse a discrete schema from components.
+   *
+   * @param min  The minimum value string to parse.
+   * @param max  The maximum value string to parse.
+   * @param cdc  The codec to parse with.
+   *
+   * @return A `Some[DiscreteSchema]` if successful, `None` otherwise.
+   */
+  def fromComponents(min: String, max: String, cdc: Codec): Option[DiscreteSchema[cdc.D]] = for {
+    low <- SchemaParameters.parse(cdc, min)
+    upp <- SchemaParameters.parse(cdc, max)
+    tag <- cdc.tag
+    ev <- cdc.integral
+  } yield DiscreteSchema(low, upp)(tag, ev)
 
   /**
    * Parse a discrete schema from components.
@@ -297,7 +327,7 @@ trait CategoricalSchema[T] extends Schema { self =>
  * @param domain The values of the variable.
  */
 case class NominalSchema[T : ClassTag](domain: Set[T] = Set[T]()) extends CategoricalSchema[T] {
-  val kind = NominalType
+  val classification = NominalType
 
   override protected def paramString(short: Boolean, f: (D) => String): String =
     SchemaParameters.writeSet(short, domain, f)
@@ -333,11 +363,9 @@ object NominalSchema {
    * @return A `Some[NominalSchema]` if successful, `None` otherwise.
    */
   def fromComponents(dom: Set[String], cdc: Codec): Option[NominalSchema[cdc.D]] = {
-    val values = dom.map(SchemaParameters.parse(cdc, _))
+    val values = dom.flatMap(SchemaParameters.parse(cdc, _))
 
-    cdc.tag.collect { case tag if !(values.isEmpty || values.exists(_.isEmpty)) =>
-      NominalSchema(values.map(_.get))(tag)
-    }
+    if (values.isEmpty || values.size != dom.size) None else cdc.tag.map(NominalSchema(values)(_))
   }
 }
 
@@ -347,7 +375,7 @@ object NominalSchema {
  * @param domain The optional values of the variable.
  */
 case class OrdinalSchema[T : ClassTag: Ordering](domain: Set[T] = Set[T]()) extends CategoricalSchema[T] {
-  val kind = OrdinalType
+  val classification = OrdinalType
 
   override protected def paramString(short: Boolean, f: (D) => String): String =
     SchemaParameters.writeOrderedSet(short, domain, f)
@@ -383,10 +411,10 @@ object OrdinalSchema {
    * @return A `Some[OrdinalSchema]` if successful, `None` otherwise.
    */
   def fromComponents(dom: Set[String], cdc: Codec): Option[OrdinalSchema[cdc.D]] = {
-    val values = dom.map(SchemaParameters.parse(cdc, _))
+    val values = dom.flatMap(SchemaParameters.parse(cdc, _))
 
-    (cdc.tag, cdc.ordering, values.isEmpty || values.exists(_.isEmpty)) match {
-      case (Some(tag), Some(ev), false) => Option(OrdinalSchema(values.map(_.get))(tag, ev))
+    (cdc.tag, cdc.ordering, values.isEmpty || values.size != dom.size) match {
+      case (Some(tag), Some(ev), false) => Option(OrdinalSchema(values)(tag, ev))
       case _ => None
     }
   }
@@ -409,7 +437,7 @@ case class DateSchema[
 ) extends Schema { self =>
   type D = T
 
-  val kind = DateType
+  val classification = DateType
 
   def validate(value: Value { type D = self.D }): Boolean = dates match {
     case None => true
@@ -491,10 +519,10 @@ object DateSchema {
    * @return A `Some[DateSchema]` if successful, `None` otherwise.
    */
   def fromComponents(dom: Set[String], cdc: Codec): Option[DateSchema[cdc.D]] = {
-    val values = dom.map(SchemaParameters.parse(cdc, _))
+    val values = dom.flatMap(SchemaParameters.parse(cdc, _))
 
-    (cdc.tag, cdc.date, values.isEmpty || values.exists(_.isEmpty)) match {
-      case (Some(tag), Some(ev), false) => Option(DateSchema(values.map(_.get))(tag, ev))
+    (cdc.tag, cdc.date, values.isEmpty || values.size != dom.size) match {
+      case (Some(tag), Some(ev), false) => Option(DateSchema(values)(tag, ev))
       case _ => None
     }
   }

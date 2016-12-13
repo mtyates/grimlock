@@ -85,6 +85,7 @@ class TestDiscreteSchema extends TestGrimlock {
 
   "A DiscreteSchema" should "return its string representation" in {
     DiscreteSchema[Long]().toString shouldBe "DiscreteSchema[Long]()"
+    DiscreteSchema[Long](-1, 1).toString shouldBe "DiscreteSchema[Long](-1,1)"
     DiscreteSchema[Long](-1, 1, 1).toString shouldBe "DiscreteSchema[Long](-1,1,1)"
   }
 
@@ -103,7 +104,8 @@ class TestDiscreteSchema extends TestGrimlock {
   it should "parse correctly" in {
     DiscreteSchema.fromShortString("discrete", LongCodec) shouldBe Option(DiscreteSchema[Long])
     DiscreteSchema.fromShortString("discrete()", LongCodec) shouldBe Option(DiscreteSchema[Long])
-    DiscreteSchema.fromShortString("discrete(-1:2,1)", LongCodec) shouldBe Option(DiscreteSchema[Long](-1, 2, 1))
+    DiscreteSchema.fromShortString("discrete(-1:2)", LongCodec) shouldBe Option(DiscreteSchema[Long](-1, 2))
+    DiscreteSchema.fromShortString("discrete(-1:2,2)", LongCodec) shouldBe Option(DiscreteSchema[Long](-1, 2, 2))
 
     DiscreteSchema.fromShortString("foo", LongCodec) shouldBe None
 
@@ -122,7 +124,6 @@ class TestDiscreteSchema extends TestGrimlock {
     DiscreteSchema.fromShortString("discrete(foo:2,1)", LongCodec) shouldBe None
     DiscreteSchema.fromShortString("discrete(-1:2,foo)", LongCodec) shouldBe None
     DiscreteSchema.fromShortString("discrete(-1,1)", LongCodec) shouldBe None
-    DiscreteSchema.fromShortString("discrete(-1:2)", LongCodec) shouldBe None
     DiscreteSchema.fromShortString("discrete(-1.2:2,1)", LongCodec) shouldBe None
     DiscreteSchema.fromShortString("discrete(-1:2.2,1)", LongCodec) shouldBe None
     DiscreteSchema.fromShortString("discrete(-1:2,1.2)", LongCodec) shouldBe None

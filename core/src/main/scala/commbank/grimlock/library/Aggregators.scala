@@ -35,7 +35,7 @@ private[aggregate] trait PrepareDouble[P <: Nat] {
   val filter: Boolean
 
   def prepareDouble(cell: Cell[P]): Option[Double] =
-    if (filter && !cell.content.schema.kind.isOfType(NumericType))
+    if (filter && !cell.content.schema.classification.isOfType(NumericType))
       None
     else
       Option(cell.content.value.asDouble.getOrElse(Double.NaN))
@@ -762,5 +762,47 @@ sealed case class UniformQuantiles[
   def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => StreamingHistogram.from(d, count))
   def reduce(lt: T, rt: T): T = StreamingHistogram.reduce(lt, rt)
   def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(StreamingHistogram.toCells(t, count, pos, name, nan))
+}
+
+/**
+ * Compute histograms using a CountMap.
+ *
+ * @param name   Names each histogram value output.
+ * @param filter Indicates if only categorical types should be aggregated. Is set then all numeric values are
+ *               filtered prior to aggregation.
+ *
+ * @note Only use this if all distinct values and their counts fit in memory.
+ */
+case class CountMapHistogram[
+  P <: Nat,
+  S <: Nat,
+  Q <: Nat
+](
+  name: Locate.FromSelectedAndContent[S, Q],
+  filter: Boolean = true
+)(implicit
+  ev: GT[Q, S]
+) extends Aggregator[P, S, Q] {
+  type T = Map[Content, Long]
+  type O[A] = Multiple[A]
+
+  val tTag = classTag[T]
+  val oTag = classTag[O[_]]
+
+  def prepare(cell: Cell[P]): Option[T] =
+    if (!filter || cell.content.schema.classification.isOfType(CategoricalType))
+      Option(Map(cell.content -> 1L))
+    else
+      None
+  def reduce(lt: T, rt: T): T = {
+    val (big, small) = if (lt.size > rt.size) (lt, rt) else (rt, lt)
+
+    big ++ small.map { case (k, v) => k -> big.get(k).map(_ + v).getOrElse(v) }
+  }
+  def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(
+    t
+      .flatMap { case (c, s) => name(pos, c).map(p => Cell(p, Content(DiscreteSchema[Long](), s))) }
+      .toList
+  )
 }
 

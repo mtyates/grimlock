@@ -48,7 +48,7 @@ object Conditional {
     // Define function that appends the value as a string, or "missing" if no value is available
     def cast[P <: Nat](cell: Cell[P], value: Option[Value]): Option[Position[Succ[P]]] = cell
       .position
-      .append(value.map(_.toShortString).getOrElse("missing").toString)
+      .append(value.map(_.toShortString).getOrElse[String]("missing"))
       .toOption
 
     // Generate 3D matrix (hair color x eye color x gender)

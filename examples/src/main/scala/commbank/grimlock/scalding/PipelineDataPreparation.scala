@@ -146,20 +146,20 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
   //  4c/ Save the result as pipe separated CSV for use in modelling.
   def prepare(key: String, partition: TypedPipe[Cell[_2]]): TypedPipe[Cell[_2]] = {
     val d = partition
-      .slice(Over(_2))(rem1, false)
+      .slice(Over(_2))(false, rem1)
 
     val ind = d
       .transform(Indicator().andThenRelocate(Locate.RenameDimension(_2, "%1$s.ind")))
 
     val csb = d
-      .slice(Over(_2))(rem2, false)
+      .slice(Over(_2))(false, rem2)
       .transformWithValue(
         stats.compact(Over(_1)),
         Clamp(extractStat("min"), extractStat("max"))
           .andThenWithValue(Standardise(extractStat("mean"), extractStat("sd"))),
         Binarise(Locate.RenameDimensionWithContent(_2))
       )
-      .slice(Over(_2))(rem3, false)
+      .slice(Over(_2))(false, rem3)
 
     (ind ++ csb)
       //.fillHomogeneous(Content(ContinuousSchema[Double](), 0.0))

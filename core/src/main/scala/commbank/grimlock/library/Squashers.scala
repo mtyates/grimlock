@@ -29,7 +29,8 @@ private[squash] trait PreservingPosition[P <: Nat] extends Squasher[P] {
 
   val tTag = classTag[T]
 
-  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): T = (cell.position(dim), cell.content)
+  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): Option[T] =
+    Option((cell.position(dim), cell.content))
   def present(t: T): Option[Content] = Option(t._2)
 }
 
@@ -45,13 +46,13 @@ case class PreservingMinPosition[P <: Nat]() extends PreservingPosition[P] {
 
 /** Reduce two cells preserving the cell whose coordinate matches `keep`. */
 case class KeepSlice[P <: Nat](keep: Value) extends Squasher[P] {
-  type T = Option[Content]
+  type T = Content
 
   val tTag = classTag[T]
 
-  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): T =
+  def prepare[D <: Nat : ToInt](cell: Cell[P], dim: D)(implicit ev: LTEq[D, P]): Option[T] =
     if (cell.position(dim) equ keep) Option(cell.content) else None
-  def reduce(lt: T, rt: T): T = if (lt.isEmpty) rt else lt
-  def present(t: T): Option[Content] = t
+  def reduce(lt: T, rt: T): T = lt
+  def present(t: T): Option[Content] = Option(t)
 }
 

@@ -30,6 +30,7 @@ import commbank.grimlock.spark.Matrix._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 
+import shapeless.Nat
 import shapeless.nat.{ _1, _2, _3 }
 
 // Simple transformer that adds weight to a label.
@@ -72,11 +73,11 @@ object LabelWeighting {
       .compact(Over(_1))
 
     // Define extract object to get data out of sum/min map.
-    def extractor(key: String) = ExtractWithKey[_1, Content](key).andThenPresent(_.value.asDouble)
+    def extractor(key: Position[_1]) = ExtractWithKey[_1, Content](key).andThenPresent(_.value.asDouble)
 
     // Compute the ratio of (total number of labels) / (count for each label).
     val ratio = histogram
-      .transformWithValue(sum, Fraction(extractor(Position.indexString[_1]), true))
+      .transformWithValue(sum, Fraction(extractor(Nat.toInt[_1]), true))
 
     // Find the minimum ratio, and compact the result into a Map.
     val min = ratio

@@ -86,6 +86,14 @@ case class Partitions[
 
   def remove(id: I): U[(I, Cell[P])] = data.filter { case (i, _) => i != id }
 
-  def saveAsText(ctx: C, file: String, writer: TextWriter): U[(I, Cell[P])] = saveText(ctx, file, writer)
+  type SaveAsTextTuners[T] = PersistParition[T]
+  def saveAsText[
+    T <: Tuner : SaveAsTextTuners
+  ](
+    ctx: C,
+    file: String,
+    writer: TextWriter,
+    tuner: T = Default()
+  ): U[(I, Cell[P])] = saveText(ctx, file, writer, tuner)
 }
 
