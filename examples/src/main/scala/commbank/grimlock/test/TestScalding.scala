@@ -1359,10 +1359,10 @@ class TestScalding34(args: Args) extends Job(args) {
   )
 
   val (result, errors) = data
-    .streamByPosition(Over(_1))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D())
+    .streamByPosition(Over(_1), Default(Reducers(5)))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D())
 
   errors
-    .saveAsText(ctx, s"./tmp.${tool}/sbp.out")
+    .saveAsText(ctx, s"./tmp.${tool}/sbp.out", Default(Redistribute(1)))
     .toUnit
 }
 

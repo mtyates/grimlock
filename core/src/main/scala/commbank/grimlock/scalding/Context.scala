@@ -14,7 +14,7 @@
 
 package commbank.grimlock.scalding.environment
 
-import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors }
+import commbank.grimlock.framework.{ Cell, Default, MatrixWithParseErrors, NoParameters, Redistribute, Tuner }
 import commbank.grimlock.framework.environment.{
   Context => FwContext,
   DistributedData => FwDistributedData,
@@ -24,6 +24,7 @@ import commbank.grimlock.framework.environment.{
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.position.Position
+import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
 import commbank.grimlock.scalding.{
   Matrix1D,
@@ -39,6 +40,7 @@ import commbank.grimlock.scalding.{
 import commbank.grimlock.scalding.content.{ Contents, IndexedContents }
 import commbank.grimlock.scalding.partition.Partitions
 import commbank.grimlock.scalding.position.Positions
+import commbank.grimlock.scalding.ScaldingImplicits._
 
 import cascading.flow.FlowDef
 
@@ -325,11 +327,30 @@ object Context {
      */
     def toUnit(): Unit = ()
 
-    /** Save data to `file`. */
-    def saveAsText(ctx: Context, file: String): TypedPipe[String] = {
+    /** Specifies tuners permitted on a call to `saveAsText`. */
+    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
+
+    /**
+     * Persist to disk.
+     *
+     * @param ctx   The context for to persist the matrix.
+     * @param file  Name of the output file.
+     * @param tuner The tuner for the job.
+     *
+     * @return A `TypedPipe[String]`; that is it returns `data`.
+     */
+    def saveAsText[
+      T <: Tuner : SaveAsTextTuners
+    ](
+      ctx: Context,
+      file: String,
+      tuner: T = Default()
+    ): TypedPipe[String] = {
       import ctx._
 
-      data.write(TypedSink(TextLine(file)))
+      data
+        .redistribute(tuner.parameters)
+        .write(TypedSink(TextLine(file)))
 
       data
     }
