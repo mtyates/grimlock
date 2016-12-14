@@ -58,7 +58,7 @@ import commbank.grimlock.framework.sample.{ Sampler, SamplerWithValue }
 import commbank.grimlock.framework.squash.{ Squasher, SquasherWithValue }
 import commbank.grimlock.framework.transform.{ Transformer, TransformerWithValue }
 import commbank.grimlock.framework.utility.{ =:!=, Distinct, Escape }
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
+import commbank.grimlock.framework.utility.UnionTypes.{ In, Is, OneOf }
 import commbank.grimlock.framework.window.{ Window, WindowWithValue }
 
 import commbank.grimlock.spark.distribution.ApproximateDistribution
@@ -564,7 +564,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     data.flatMap(c => partitioner.assignWithValue(c, value).map(q => (q, c)))
   }
 
-  type StreamTuners[T] = TP2[T]
+  type StreamTuners[T] = T Is Default[Reducers]
   def stream[
     Q <: Nat,
     T <: Tuner : StreamTuners
@@ -574,10 +574,12 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     writer: TextWriter,
     parser: Cell.TextParser[Q],
     hash: (Position[P]) => Int,
-    tuner: T = Default()
+    tuner: T = Default(Reducers(1))
   ): (U[Cell[Q]], U[String]) = {
+    val reducers = tuner.parameters match { case Reducers(r) => r }
+
     val result = data
-      .flatMap(c => writer(c).map(s => (hash(c.position), s)))
+      .flatMap(c => writer(c).map(s => (hash(c.position) % reducers, s)))
       .tunedGroupByKey(tuner.parameters)
       .flatMap { case (key, itr) => Stream.delegate(command, files)(key, itr.toIterator) }
       .flatMap(parser)
@@ -587,7 +589,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
 
   def streamByPosition[Q <: Nat, T <: Tuner : StreamTuners](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T
   )(
     command: String,
     files: List[String],
@@ -598,15 +600,19 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[slice.S],
     ev3: Diff.Aux[P, _1, L]
   ): (U[Cell[Q]], U[String]) = {
-    val result = pivot(slice, tuner.parameters)
-      ._1
-      .flatMap { case (key, list) => writer(list.map(_._2)).map(s => (key, s)) }
+    val reducers = tuner.parameters match { case Reducers(r) => r }
+    val murmur = new scala.util.hashing.MurmurHash3.ArrayHashing[Value]()
+    val (rows, _) = pivot(slice, tuner.parameters)
+
+    val result = rows
+      .flatMap { case (key, list) =>
+        writer(list.map(_._2)).map(s => (murmur.hash(key.coordinates.toArray) % reducers, s))
+      }
       .tunedGroupByKey(tuner.parameters)
       .flatMap { case (key, itr) => Stream.delegate(command, files)(key, itr.toIterator) }
       .flatMap(parser)
 
     (result.collect { case Right(c) => c }, result.collect { case Left(e) => e })
-
   }
 
   def subset(samplers: Sampler[P]*): U[Cell[P]] = {

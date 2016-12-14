@@ -14,7 +14,7 @@
 
 package commbank.grimlock.spark.environment
 
-import commbank.grimlock.framework.{ Cell, MatrixWithParseErrors }
+import commbank.grimlock.framework.{ Cell, Default, MatrixWithParseErrors, NoParameters, Redistribute, Tuner }
 import commbank.grimlock.framework.environment.{
   Context => FwContext,
   DistributedData => FwDistributedData,
@@ -24,6 +24,7 @@ import commbank.grimlock.framework.environment.{
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.position.Position
+import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
 import commbank.grimlock.spark.{
   Matrix1D,
@@ -39,6 +40,7 @@ import commbank.grimlock.spark.{
 import commbank.grimlock.spark.content.{ Contents, IndexedContents }
 import commbank.grimlock.spark.partition.Partitions
 import commbank.grimlock.spark.position.Positions
+import commbank.grimlock.spark.SparkImplicits._
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -374,9 +376,28 @@ object Context {
      */
     def toUnit(): Unit = ()
 
-    /** Save data to `file`. */
-    def saveAsText(ctx: Context, file: String): RDD[String] = {
-      data.saveAsTextFile(file)
+    /** Specifies tuners permitted on a call to `saveAsText`. */
+    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
+
+    /**
+     * Persist to disk.
+     *
+     * @param ctx   The context for to persist the matrix.
+     * @param file  Name of the output file.
+     * @param tuner The tuner for the job.
+     *
+     * @return A `RDD[String]`; that is it returns `data`.
+     */
+    def saveAsText[
+      T <: Tuner : SaveAsTextTuners
+    ](
+      ctx: Context,
+      file: String,
+      tuner: T = Default()
+    ): RDD[String] = {
+      data
+        .redistribute(tuner.parameters)
+        .saveAsTextFile(file)
 
       data
     }

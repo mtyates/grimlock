@@ -28,7 +28,7 @@ private[grimlock] object Stream {
     val contents = files.map(f => (new File(f).getName, Files.readAllBytes(Paths.get(f))))
 
     (key: K, itr: Iterator[String]) => {
-      val tmp = Files.createTempDirectory("grimlock-")
+      val tmp = Files.createTempDirectory(s"grimlock-${key}-")
       tmp.toFile.deleteOnExit
 
       contents.foreach {
