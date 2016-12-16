@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import commbank.grimlock.spark.environment.{ DistributedData, Environment }
 import commbank.grimlock.spark.SparkImplicits._
 
 /** Trait for peristing a Spark `RDD`. */
-trait Persist[X] extends FwPersist[X] with DistributedData with Environment with java.io.Serializable {
+trait Persist[X] extends FwPersist[X] with DistributedData with Environment {
   protected def saveText[T <: Tuner : PersistParition](ctx: C, file: String, writer: TextWriter, tuner: T): U[X] = {
     data
-      .flatMap(writer(_))
-      .redistribute(tuner.parameters)
-      .saveAsTextFile(file)
+      .flatMap { case x => writer(x) }
+      .tunedSaveAsText(ctx, tuner, file)
 
     data
   }

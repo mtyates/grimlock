@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,22 +63,22 @@ class Conditional(args: Args) extends Job(args) {
     .reshape(_2, "eye", cast)
     .reshape(_2, "gender", cast)
     .melt(_2, _1, Value.concatenate("."))
-    .squash(_1, PreservingMaxPosition())
+    .squash(_1, PreservingMaximumPosition())
 
   // Define an extractor for getting data out of the gender count (gcount) map.
   def extractor = ExtractWithDimension[_2, Content](_2).andThenPresent(_.value.asDouble)
 
   // Get the gender counts. Sum out hair and eye color.
   val gcount = heg
-    .summarise(Along(_1))(Sum())
-    .summarise(Along(_1))(Sum())
+    .summarise(Along(_1))(Sums())
+    .summarise(Along(_1))(Sums())
     .compact()
 
   // Get eye color conditional on gender.
   // 1/ Sum out hair color.
   // 2/ Divide each element by the gender's count to get conditional distribution.
   heg
-    .summarise(Along(_1))(Sum())
+    .summarise(Along(_1))(Sums())
     .transformWithValue(gcount, Fraction(extractor))
     .saveAsText(ctx, s"./demo.${output}/eye.out")
     .toUnit
@@ -87,7 +87,7 @@ class Conditional(args: Args) extends Job(args) {
   // 1/ Sum out eye color.
   // 2/ Divide each element by the gender's count to get conditional distribution.
   heg
-    .summarise(Along(_2))(Sum())
+    .summarise(Along(_2))(Sums())
     .transformWithValue(gcount, Fraction(extractor))
     .saveAsText(ctx, s"./demo.${output}/hair.out")
     .toUnit

@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,97 +16,180 @@ package commbank.grimlock.framework
 
 import commbank.grimlock.framework.utility.UnionTypes._
 
+import scala.reflect.ClassTag
+
 /** Base trait for tuner parameters. */
-trait TunerParameters extends java.io.Serializable { }
+trait Parameters extends java.io.Serializable { }
 
 /** Indicates that no special operations are to be performed. */
-case class NoParameters() extends TunerParameters { }
+case class NoParameters() extends Parameters { }
 
 /**
  * Tune the number of reducers.
  *
  * @param reducers The number of reducers to use.
  */
-case class Reducers(reducers: Int) extends TunerParameters { }
+case class Reducers(reducers: Int) extends Parameters { }
+
+/**
+ * Create a pair of tuner parameters
+ *
+ * @param first  The first parameter of the pair.
+ * @param second The second parameter of the pair.
+ */
+case class Pair[F <: Parameters, S <: Parameters](first: F, second: S) extends Parameters { }
+
+/** Base trait that indicates size/shape of the data for tuning. */
+sealed trait Tuner extends java.io.Serializable {
+  /** The parameters used for tuning. */
+  val parameters: Parameters
+}
+
+/** Indicates that some of the data can fit in memory (permits map-side only operations). */
+case class InMemory[T <: Parameters](parameters: T = NoParameters()) extends Tuner { }
+
+/** Companion object to `InMemory`. */
+object InMemory {
+  /**
+   * Create an in-memory tuner with a number of reducers.
+   *
+   * @param reducers The number of reducers.
+   */
+  def apply(reducers: Int): InMemory[Reducers] = InMemory(Reducers(reducers))
+}
+
+/** Indicates that the data is (reasonably) evenly distributed. */
+case class Default[T <: Parameters](parameters: T = NoParameters()) extends Tuner { }
+
+/** Companion object to `Default`. */
+object Default {
+  /**
+   * Create a tuner with a pair of tuner parameters.
+   *
+   * @param first  The first parameter of the pair.
+   * @param second The second parameter of the pair.
+   */
+  def apply[
+    F <: Parameters,
+    S <: Parameters
+  ](
+    first: F,
+    second: S
+  ): Default[Pair[F, S]] = Default(Pair(first, second))
+
+  /**
+   * Create a tuner with a number of reducers.
+   *
+   * @param reducers The number of reducers.
+   */
+  def apply(reducers: Int): Default[Reducers] = Default(Reducers(reducers))
+}
+
+/** Indicates that the data is (heavily) skewed. */
+case class Unbalanced[T <: Parameters](parameters: T) extends Tuner { }
+
+/** Companion object to `Unbalanced`. */
+object Unbalanced {
+  /**
+   * Create an unbalanced tuner with a pair of tuner parameters.
+   *
+   * @param first  The first parameter of the pair.
+   * @param second The second parameter of the pair.
+   */
+  def apply[
+    F <: Parameters,
+    S <: Parameters
+  ](
+    first: F,
+    second: S
+  ): Unbalanced[Pair[F, S]] = Unbalanced(Pair(first, second))
+
+  /**
+   * Create an unbalanced tuner with a number of reducers.
+   *
+   * @param reducers The number of reducers.
+   */
+  def apply(reducers: Int): Unbalanced[Reducers] = Unbalanced(Reducers(reducers))
+}
 
 /**
  * Redistribute the data across a number of partitions.
  *
  * @param partitions The number of partitions to redistribute among.
  */
-case class Redistribute(partitions: Int) extends TunerParameters { }
+case class Redistribute(partitions: Int) extends Tuner {
+  val parameters = Reducers(partitions)
+}
 
 /**
- * Create a sequence of two tuner parameters
+ * A binary tuner.
  *
- * @param first  The first parameters of the sequence.
- * @param second The second parameters of the sequence.
+ * @param first  First tuner.
+ * @param second Second tuner.
  */
-case class Sequence[F <: TunerParameters, S <: TunerParameters](first: F, second: S) extends TunerParameters { }
-
-/** Base trait that indicates size/shape of the data for tuning. */
-sealed trait Tuner extends java.io.Serializable {
-  /** The parameters used for tuning. */
-  val parameters: TunerParameters
+case class Binary[F <: Tuner, S <: Tuner](first: F, second: S) extends Tuner {
+  val parameters = NoParameters()
 }
 
-/** Indicates that some of the data can fit in memory (permits map-side only operations). */
-case class InMemory[T <: TunerParameters](parameters: T = NoParameters()) extends Tuner { }
-
-/** Indicates that the data is (reasonably) evenly distributed. */
-case class Default[T <: TunerParameters](parameters: T = NoParameters()) extends Tuner { }
-
-/** Companion object to `Default`. */
-object Default {
-  /**
-   * Create a tuner with a sequence of two tuner parameters.
-   *
-   * @param first  The first parameters of the sequence.
-   * @param second The second parameters of the sequence.
-   */
-  def apply[
-    F <: TunerParameters,
-    S <: TunerParameters
-  ](
-    first: F,
-    second: S
-  ): Default[Sequence[F, S]] = Default(Sequence(first, second))
-}
-
-/** Indicates that the data is (heavily) skewed. */
-case class Unbalanced[T <: TunerParameters](parameters: T) extends Tuner { }
-
-/** Companion object to `Unbalanced`. */
-object Unbalanced {
-  /**
-   * Create an unbalanced tuner with a sequence of two tuner parameters.
-   *
-   * @param first  The first parameters of the sequence.
-   * @param second The second parameters of the sequence.
-   */
-  def apply[
-    F <: TunerParameters,
-    S <: TunerParameters
-  ](
-    first: F,
-    second: S
-  ): Unbalanced[Sequence[F, S]] = Unbalanced(Sequence(first, second))
+/**
+ * A ternary tuner.
+ *
+ * @param first  First tuner.
+ * @param second Second tuner.
+ * @param third  Third tuner.
+ */
+case class Ternary[F <: Tuner, S <: Tuner, T <: Tuner](first: F, second: S, third: T) extends Tuner {
+  val parameters = NoParameters()
 }
 
 /** Some common sets of default permitted tuners. */
 private[grimlock] object DefaultTuners {
 
-  type TP1[T] = T Is Default[NoParameters]
+  type TP1[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
 
-  type TP2[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
+  type TP2[T] = T In OneOf[InMemory[NoParameters]]#
+    Or[Default[NoParameters]]#
+    Or[Default[Reducers]]
 
-  type TP3[T] = T In OneOf[Default[NoParameters]]#
-    Or[Default[Reducers]]#
-    Or[Default[Sequence[Reducers, Reducers]]]
+  type TP3[T] = T In OneOf[InMemory[NoParameters]]#
+    Or[InMemory[Reducers]]#
+    Or[Default[NoParameters]]#
+    Or[Default[Reducers]]
 
   type TP4[T] = T In OneOf[InMemory[NoParameters]]#
     Or[Default[NoParameters]]#
     Or[Default[Reducers]]#
     Or[Unbalanced[Reducers]]
+
+  type TP5[T] = T In OneOf[InMemory[NoParameters]]#
+    Or[InMemory[Reducers]]#
+    Or[Default[NoParameters]]#
+    Or[Default[Reducers]]#
+    Or[Unbalanced[Reducers]]
+}
+
+private[grimlock] trait MapSideJoin[K, V, W, U[_], E[_]] extends java.io.Serializable {
+  type T
+
+  val empty: T
+
+  def compact(smaller: U[(K, W)])(implicit ev1: ClassTag[K], ev2: ClassTag[W], ev3: Ordering[K]): E[T]
+  def join(k: K, v: V, t: T): Option[W]
+}
+
+private[grimlock] trait MapMapSideJoin[K, V, W, U[_], E[_]] extends MapSideJoin[K, V, W, U, E] {
+  type T = Map[K, W]
+
+  val empty = Map[K, W]()
+
+  def join(k: K, v: V, t: T): Option[W] = t.get(k)
+}
+
+private[grimlock] trait SetMapSideJoin[K, V, U[_], E[_]] extends MapSideJoin[K, V, Unit, U, E] {
+  type T = Set[K]
+
+  val empty = Set[K]()
+
+  def join(k: K, v: V, t: T): Option[Unit] = t.find { case x => x == k }.map { case x => () }
 }
 

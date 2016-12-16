@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,31 +104,13 @@ object Ensemble {
     // 4/ Merge the scores of each model into a single 2D matrix (instance x model);
     // 5/ Apply a weighted sum to the model scores (this can be leared by streaming the scores);
     // 6/ Persist the final scores.
-    // 7/ Compact the scores into a Map so they can be used to compute the Gini index with.
-    val scores = data
+    data
       .relocate(c => c.position.append(math.abs(c.position(_1).hashCode % 10)).toOption)
       .split(EnsembleSplit(scripts(0), scripts(1), scripts(2)))
       .forEach(scripts, trainAndScore)
       .merge(scripts)
-      .summariseWithValue(Over(_1))(weights, WeightedSum(extractWeight))
+      .summariseWithValue(Over(_1))(weights, WeightedSums(extractWeight))
       .saveAsText(ctx, s"./demo.${output}/ensemble.scores.out")
-      .compact(Over(_1))
-
-    // Rename instance id (first dimension) with its score
-    def renameWithScore(cell: Cell[_2], ext: Map[Position[_1], Content]): Option[Position[_2]] = ext
-      .get(Position(cell.position(_1)))
-      .map(con => Position(con.value, cell.position(_2)))
-
-    // Compute Gini Index on ensemble scores:
-    // 1/ Keep only 'label' column, results in 2D matrix (instance x label) with 1 column;
-    // 2/ Filter rows to only keep instances for which a score is available and rename instance id with score;
-    // 3/ Compute Gini Index (this sorts the labels by score as its a dimension);
-    // 4/ Persist the Gini Index to file.
-    data
-      .slice(Over(_2))(true, "label")
-      .relocateWithValue(scores, renameWithScore)
-      .gini(Over(_2))
-      .saveAsText(ctx, s"./demo.${output}/ensemble.gini.out")
       .toUnit
   }
 }

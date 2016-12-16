@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class DataAnalysis(args: Args) extends Job(args) {
   //  3/ Compute the moments of the counts;
   //  4/ Save the moments.
   data
-    .summarise(Over(_1))(Count())
+    .summarise(Over(_1))(Counts())
     .saveAsText(ctx, s"./demo.${output}/feature_count.out")
     .summarise(Along(_1))(
       Moments(
@@ -64,7 +64,7 @@ class DataAnalysis(args: Args) extends Job(args) {
   //  3/ Compute the moments of the counts;
   //  4/ Save the moments.
   data
-    .summarise(Over(_2))(Count())
+    .summarise(Over(_2))(Counts())
     .saveAsText(ctx, s"./demo.${output}/instance_count.out")
     .summarise(Along(_1))(
       Moments(

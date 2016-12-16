@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,14 +38,12 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   /**
    * Compute histogram.
    *
-   * @param slice     Encapsulates the dimension(s) to compute histogram on.
-   * @param tuner     The tuner for the job.
-   * @param position  Function for extracting the position of the histogram.
-   * @param filter    Indicator if numerical values shoud be filtered or not.
+   * @param slice  Encapsulates the dimension(s) to compute histogram on.
+   * @param tuner  The tuner for the job.
+   * @param name   Function for extracting the position of the histogram value.
+   * @param filter Indicator if numerical values shoud be filtered or not.
    *
    * @return A `U[Cell[Q]]` with the histogram.
-   *
-   * @note The histogram is computed on the positions returned by `position`.
    */
   def histogram[
     Q <: Nat,
@@ -54,7 +52,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     slice: Slice[L, P],
     tuner: T
   )(
-    position: Locate.FromSelectedAndContent[slice.S, Q],
+    name: Locate.FromSelectedAndContent[slice.S, Q],
     filter: Boolean = true
   )(implicit
     ev1: ClassTag[Position[Q]],
@@ -103,7 +101,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   type CountMapQuantilesTuners[_]
 
   /**
-   * Compute quantiles using a count Map.
+   * Compute quantiles using a count map.
    *
    * @param slice     Encapsulates the dimension(s) to compute quantiles on.
    * @param tuner     The tuner for the job.
@@ -399,6 +397,33 @@ private[grimlock] object QuantileImpl {
    */
   def round(value: Double, places: Int = 6): Double =
     if (value.isNaN) value else BigDecimal(value).setScale(places, BigDecimal.RoundingMode.HALF_UP).toDouble
+
+  /**
+   * Apply quantiles to a stream of sorted doubles.
+   *
+   * @param qnt Quantile implementation to compute quantiles with.
+   * @param key Key for the stream of sorted doubles.
+   * @param itr Stream of doubles.
+   *
+   * @return The quantiles for this key.
+   */
+  def stream[
+    P <: Nat,
+    S <: Nat,
+    Q <: Nat
+  ](
+    qnt: QuantileImpl[P, S, Q],
+    key: (Position[S], Long),
+    itr: Iterator[Double]
+  ): TraversableOnce[Cell[Q]] = {
+    val (p, count) = key
+    val first = itr.next
+    val (t, c, l) = qnt.initialise(first, count)
+
+    l.flatMap { case o => qnt.present(p, o) }.toTraversable ++ itr
+      .scanLeft((t, List[qnt.O]())) { case ((t, _), i) => qnt.update(i, t, c) }
+      .flatMap { case (_, lo) => lo.flatMap { case o => qnt.present(p, o) } }
+  }
 }
 
 /** Defines convenience functions for dealing with count maps. */

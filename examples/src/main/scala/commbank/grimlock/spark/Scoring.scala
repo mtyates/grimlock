@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ object Scoring {
         Clamp(extractStat("min"), extractStat("max"))
           .andThenWithValue(Standardise(extractStat("mean"), extractStat("sd")))
       )
-      .summariseWithValue(Over(_1))(weights, WeightedSum(extractWeight))
+      .summariseWithValue(Over(_1))(weights, WeightedSums(extractWeight))
       .saveAsText(ctx, s"./demo.${output}/scores.out")
       .toUnit
   }

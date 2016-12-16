@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -165,7 +165,7 @@ case class ExponentialMovingAverage[
  * @param position Function to extract result position.
  * @param strict   Indicates is non-numeric values should result in NaN.
  */
-case class CumulativeSum[
+case class CumulativeSums[
   P <: Nat,
   S <: Nat,
   R <: Nat,

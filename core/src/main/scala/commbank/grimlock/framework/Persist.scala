@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 import org.apache.hadoop.io.Writable
 
 /** Base trait for persisting data. */
-trait Persist[X] extends DistributedData with Environment {
+trait Persist[X] extends DistributedData with Environment with java.io.Serializable {
   /** The data to persist. */
   val data: U[X]
 
@@ -46,11 +46,6 @@ trait Persist[X] extends DistributedData with Environment {
   /** Shorthand type for converting a `X` to key value tuple. */
   type SequenceWriter[K <: Writable, V <: Writable] = (X) => TraversableOnce[(K, V)]
 
-  protected type PersistParition[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
-
-  protected type PersistReduceAndParition[T] = T In OneOf[Default[NoParameters]]#
-    Or[Default[Reducers]]#
-    Or[Default[Redistribute]]#
-    Or[Default[Sequence[Reducers, Redistribute]]]
+  protected type PersistParition[T] = T In OneOf[Default[NoParameters]]#Or[Redistribute]
 }
 

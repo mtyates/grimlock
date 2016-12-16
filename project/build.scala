@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,37 @@
 
 import sbt._
 import sbt.Keys._
-import sbtassembly.AssemblyKeys._
+import sbtassembly.AssemblyKeys.assembly
 
-import au.com.cba.omnia.uniform.assembly.UniformAssemblyPlugin._
+import au.com.cba.omnia.uniform.assembly.UniformAssemblyPlugin.uniformAssemblySettings
 import au.com.cba.omnia.uniform.core.standard.StandardProjectPlugin.uniform
-import au.com.cba.omnia.uniform.dependency.UniformDependencyPlugin._
-import au.com.cba.omnia.uniform.thrift.UniformThriftPlugin._
+import au.com.cba.omnia.uniform.dependency.UniformDependencyPlugin.{
+  depend,
+  noHadoop,
+  uniformPublicDependencySettings,
+  strictDependencySettings
+}
+import au.com.cba.omnia.uniform.thrift.UniformThriftPlugin.uniformThriftSettings
 
 object build extends Build {
+
+  lazy val standardSettings = Defaults.coreDefaultSettings ++
+    uniformPublicDependencySettings ++
+    strictDependencySettings ++
+    Seq(
+      test in assembly := {},
+      parallelExecution in Test := false,
+      scalacOptions += "-Xfatal-warnings",
+      scalacOptions in (Compile, console) ~= (_.filterNot(Set("-Xfatal-warnings"))),
+      scalacOptions in (Compile, doc) ~= (_.filterNot(Set("-Xfatal-warnings"))),
+      scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value
+    )
+
   lazy val all = Project(
     id = "all",
     base = file("."),
-    settings = uniform.project("grimlock-all", "commbank.grimlock.all") ++
-      common ++
+    settings = standardSettings ++
+      uniform.project("grimlock-all", "commbank.grimlock.all") ++
       uniform.ghsettings ++
       Seq(assembly := file(""), publishArtifact := false),
     aggregate = Seq(core, examples)
@@ -35,53 +53,52 @@ object build extends Build {
   lazy val core = Project(
     id = "core",
     base = file("core"),
-    settings = uniform.project("grimlock-core", "commbank.grimlock") ++
-      common ++
-      dependencies ++
-      overrides ++
+    settings = standardSettings ++
+      uniform.project("grimlock-core", "commbank.grimlock") ++
       uniformAssemblySettings ++
-      Seq(test in assembly := {}, parallelExecution in Test := false)
+      uniform.docSettings("https://github.com/CommBank/grimlock") ++
+      Seq(
+        libraryDependencies ++= noDerby(
+          depend.hadoopClasspath ++
+          depend.scalding() ++
+          depend.parquet() ++
+          depend.shapeless("2.3.0") ++
+          depend.omnia("ebenezer", "0.23.6-20170119005115-2ac29d0") ++
+          Seq(
+            noHadoop("org.apache.spark" %% "spark-core" % "2.1.0")
+              exclude("com.twitter", "chill-java")
+              exclude("com.twitter", "chill_2.11"),
+            "com.typesafe.play"         %% "play-json"  % "2.3.9"
+              exclude("com.fasterxml.jackson.core", "jackson-annotations")
+              exclude("com.fasterxml.jackson.core", "jackson-core")
+              exclude("com.fasterxml.jackson.core", "jackson-databind"),
+            "com.tdunning"              %  "t-digest"   % "3.2-20160726-OMNIA",
+            "com.esotericsoftware"      %  "kryo"       % "3.0.3" % "test", // needed by unit tests for Spark 2.1.0
+            "org.scalatest"             %% "scalatest"  % "2.2.6" % "test"
+          )
+        )
+      ) ++
+      overrides
    )
 
   lazy val examples = Project(
     id = "examples",
     base = file("examples"),
-    settings = uniform.project("grimlock-examples", "commbank.grimlock.examples") ++
-      common ++
+    settings = standardSettings ++
+      uniform.project("grimlock-examples", "commbank.grimlock.examples") ++
       uniformAssemblySettings ++
-      Seq(libraryDependencies ++= depend.hadoopClasspath)
+      Seq(libraryDependencies ++= depend.hadoopClasspath) ++
+      overrides
   ).dependsOn(core % "test->test;compile->compile")
 
-  lazy val common: Seq[Setting[_]] = uniformDependencySettings ++
-    strictDependencySettings ++
-    uniform.docSettings("https://github.com/CommBank/grimlock")
-
-  lazy val dependencies: Seq[Setting[_]] = Seq(libraryDependencies <++=
-    scalaVersion.apply(scalaVersion => depend.hadoopClasspath ++
-      depend.scalding() ++
-      depend.parquet() ++
-      depend.omnia("ebenezer", "0.22.2-20160619063420-4eb964f") ++
-      depend.shapeless("2.3.0") ++
-      Seq(
-        noHadoop("org.apache.spark" %% "spark-core" % "1.6.2")
-          exclude("com.twitter", "chill-java")
-          exclude("com.twitter", "chill_2.11"),
-        "com.typesafe.play" %% "play-json" % "2.3.9"
-          exclude("com.fasterxml.jackson.core", "jackson-annotations")
-          exclude("com.fasterxml.jackson.core", "jackson-core")
-          exclude("com.fasterxml.jackson.core", "jackson-databind"),
-        "com.tdunning"  %  "t-digest"  % "3.2-20160726-OMNIA",
-        "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-      )
-    )
-  )
-
-  lazy val overrides: Seq[Setting[_]] = Seq(
+  lazy val overrides = Seq(
     dependencyOverrides ++= Set(
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
-      "org.scala-lang.modules" %% "scala-xml"                % "1.0.3",
+      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+      "org.scala-lang.modules" %% "scala-xml"                % "1.0.4",
       "org.apache.commons"     %  "commons-lang3"            % "3.3.2"
     )
   )
+
+  def noDerby(deps: Seq[ModuleID]) = deps.map(_ exclude("org.apache.derby", "derby")) // Exclude for Spark 2.1.0 REPL
 }
 

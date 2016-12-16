@@ -1,4 +1,4 @@
-// Copyright 2016 Commonwealth Bank of Australia
+// Copyright 2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import commbank.grimlock.scalding.ScaldingImplicits._
 
 import cascading.flow.FlowDef
 
-import com.twitter.scalding.{ Config, Mode, TextLine }
-import com.twitter.scalding.typed.{ IterablePipe, TypedPipe, TypedSink, ValuePipe }
+import com.twitter.scalding.{ Config, Mode }
+import com.twitter.scalding.typed.{ IterablePipe, TypedPipe, ValuePipe }
 
 import shapeless.Nat
 import shapeless.nat.{ _1, _2, _3, _4, _5, _6, _7, _8, _9 }
@@ -305,7 +305,9 @@ object Context {
   implicit def valueToPipe[T <% Value](t: T): TypedPipe[Position[_1]] = IterablePipe(List(Position(t)))
 
   /** Converts a `List[Value]` to a `TypedPipe[Position[_1]]`. */
-  implicit def listValueToPipe[T <% Value](t: List[T]): TypedPipe[Position[_1]] = IterablePipe(t.map(Position(_)))
+  implicit def listValueToPipe[T <% Value](t: List[T]): TypedPipe[Position[_1]] = IterablePipe(
+    t.map { case v => Position(v) }
+  )
 
   /** Converts a `Position[T]` to a `TypedPipe[Position[T]]`. */
   implicit def positionToPipe[T <: Nat](t: Position[T]): TypedPipe[Position[T]] = IterablePipe(List(t))
@@ -328,7 +330,7 @@ object Context {
     def toUnit(): Unit = ()
 
     /** Specifies tuners permitted on a call to `saveAsText`. */
-    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
+    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Redistribute]
 
     /**
      * Persist to disk.
@@ -346,11 +348,8 @@ object Context {
       file: String,
       tuner: T = Default()
     ): TypedPipe[String] = {
-      import ctx._
-
       data
-        .redistribute(tuner.parameters)
-        .write(TypedSink(TextLine(file)))
+        .tunedSaveAsText(ctx, tuner, file)
 
       data
     }

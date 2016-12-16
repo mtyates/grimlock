@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
 
 package commbank.grimlock.scalding.position
 
-import commbank.grimlock.framework.{ Default, NoParameters, Reducers, Tuner }
+import commbank.grimlock.framework.{ Default, Tuner }
+import commbank.grimlock.framework.DefaultTuners.TP1
 import commbank.grimlock.framework.position.{
   Position,
   Positions => FwPositions,
   Slice
 }
 import commbank.grimlock.framework.utility.=:!=
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
 import commbank.grimlock.scalding.Persist
 import commbank.grimlock.scalding.ScaldingImplicits._
@@ -46,7 +46,7 @@ case class Positions[
   data: TypedPipe[Position[P]]
 ) extends FwPositions[L, P]
   with Persist[Position[P]] {
-  type NamesTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
+  type NamesTuners[T] = TP1[T]
   def names[
     T <: Tuner : NamesTuners
   ](
@@ -56,7 +56,7 @@ case class Positions[
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
-  ): U[Position[slice.S]] = data.map(p => slice.selected(p)).tunedDistinct(tuner.parameters)(Position.ordering())
+  ): U[Position[slice.S]] = data.map { case p => slice.selected(p) }.tunedDistinct(tuner)(Position.ordering())
 
   type SaveAsTextTuners[T] = PersistParition[T]
   def saveAsText[
