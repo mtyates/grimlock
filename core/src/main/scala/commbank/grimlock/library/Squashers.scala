@@ -35,12 +35,12 @@ private[squash] trait PreservingPosition[P <: Nat] extends Squasher[P] {
 }
 
 /** Reduce two cells preserving the cell with maximal value for the coordinate of the dimension being squashed. */
-case class PreservingMaxPosition[P <: Nat]() extends PreservingPosition[P] {
+case class PreservingMaximumPosition[P <: Nat]() extends PreservingPosition[P] {
   def reduce(lt: T, rt: T): T = if (Value.ordering.compare(lt._1, rt._1) > 0) lt else rt
 }
 
 /** Reduce two cells preserving the cell with minimal value for the coordinate of the dimension being squashed. */
-case class PreservingMinPosition[P <: Nat]() extends PreservingPosition[P] {
+case class PreservingMinimumPosition[P <: Nat]() extends PreservingPosition[P] {
   def reduce(lt: T, rt: T): T = if (Value.ordering.compare(lt._1, rt._1) < 0) lt else rt
 }
 

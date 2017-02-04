@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@ package commbank.grimlock.spark
 import au.com.cba.omnia.ebenezer.scrooge.ScroogeReadSupport
 
 import commbank.grimlock.framework.{
+  Binary,
   Cell,
   Consume,
   Compactable,
   Default,
-  ExtractWithDimension,
-  ExtractWithKey,
+  InMemory,
   Locate,
   Matrix => FwMatrix,
   Matrix1D => FwMatrix1D,
@@ -39,20 +39,19 @@ import commbank.grimlock.framework.{
   ReducibleMatrix => FwReducibleMatrix,
   Reducers,
   ReshapeableMatrix => FwReshapeableMatrix,
-  Sequence,
   Stream,
+  Ternary,
   Tuner,
-  TunerParameters,
   Type
 }
 import commbank.grimlock.framework.aggregate.{ Aggregator, AggregatorWithValue }
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.content.metadata.{ DiscreteSchema, NominalSchema }
-import commbank.grimlock.framework.DefaultTuners.{ TP1, TP2, TP3 }
+import commbank.grimlock.framework.DefaultTuners.{ TP1, TP2 }
 import commbank.grimlock.framework.encoding.Value
-import commbank.grimlock.framework.pairwise.{ Comparer, Diagonal, Lower, Operator, OperatorWithValue, Upper }
+import commbank.grimlock.framework.pairwise.{ Comparer, Operator, OperatorWithValue }
 import commbank.grimlock.framework.partition.{ Partitioner, PartitionerWithValue }
-import commbank.grimlock.framework.position.{ Along, Over, Position, Slice }
+import commbank.grimlock.framework.position.{ Position, Slice }
 import commbank.grimlock.framework.position.Position.listSetAdditiveCollection
 import commbank.grimlock.framework.sample.{ Sampler, SamplerWithValue }
 import commbank.grimlock.framework.squash.{ Squasher, SquasherWithValue }
@@ -61,8 +60,10 @@ import commbank.grimlock.framework.utility.{ =:!=, Distinct, Escape }
 import commbank.grimlock.framework.utility.UnionTypes.{ In, Is, OneOf }
 import commbank.grimlock.framework.window.{ Window, WindowWithValue }
 
+import commbank.grimlock.spark.distance.PairwiseDistance
 import commbank.grimlock.spark.distribution.ApproximateDistribution
 import commbank.grimlock.spark.environment.{ DistributedData, Environment, UserData }
+import commbank.grimlock.spark.statistics.Statistics
 import commbank.grimlock.spark.SparkImplicits._
 
 import com.twitter.scrooge.ThriftStruct
@@ -73,60 +74,13 @@ import org.apache.spark.rdd.RDD
 
 import parquet.hadoop.ParquetInputFormat
 
-import scala.collection.immutable.HashSet
 import scala.collection.immutable.ListSet
 import scala.reflect.{ classTag, ClassTag }
 
-import shapeless.{ Nat, Succ, Witness }
+import shapeless.{ Nat, Witness }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8, _9 }
 import shapeless.ops.nat.{ Diff, LTEq, GT, GTEq, ToInt }
 import shapeless.syntax.sized._
-
-private[spark] object SparkImplicits {
-  implicit class RDDTuner[T](rdd: RDD[T]) {
-    def tunedDistinct(parameters: TunerParameters)(implicit ev: Ordering[T]): RDD[T] = parameters match {
-      case Reducers(reducers) => rdd.distinct(reducers)(ev)
-      case _ => rdd.distinct()
-    }
-
-    def redistribute(parameters: TunerParameters): RDD[T] = parameters match {
-      case Redistribute(reducers) => rdd.repartition(reducers)
-      case _ => rdd
-    }
-  }
-
-  implicit class PairRDDTuner[K, V](rdd: RDD[(K, V)])(implicit kt: ClassTag[K], vt: ClassTag[V]) {
-    def tunedJoin[W](parameters: TunerParameters, other: RDD[(K, W)]): RDD[(K, (V, W))] = parameters match {
-      case Reducers(reducers) => rdd.join(other, reducers)
-      case _ => rdd.join(other)
-    }
-
-    def tunedLeftJoin[W](parameters: TunerParameters, other: RDD[(K, W)]): RDD[(K, (V, Option[W]))] = parameters match {
-      case Reducers(reducers) => rdd.leftOuterJoin(other, reducers)
-      case _ => rdd.leftOuterJoin(other)
-    }
-
-    def tunedOuterJoin[
-      W
-    ](
-      parameters: TunerParameters,
-      other: RDD[(K, W)]
-    ): RDD[(K, (Option[V], Option[W]))] = parameters match {
-      case Reducers(reducers) => rdd.fullOuterJoin(other, reducers)
-      case _ => rdd.fullOuterJoin(other)
-    }
-
-    def tunedReduce(parameters: TunerParameters, reduction: (V, V) => V): RDD[(K, V)] = parameters match {
-      case Reducers(reducers) => rdd.reduceByKey(reduction, reducers)
-      case _ => rdd.reduceByKey(reduction)
-    }
-
-    def tunedGroupByKey(parameters: TunerParameters): RDD[(K, Iterable[V])] = parameters match {
-      case Reducers(reducers) => rdd.groupByKey(reducers)
-      case _ => rdd.groupByKey
-    }
-  }
-}
 
 /** Base trait for matrix operations using a `RDD[Cell[P]]`. */
 trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] with UserData {
@@ -137,7 +91,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     T <: Tuner : ChangeTuners
   ](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T = InMemory()
   )(
     positions: U[Position[slice.S]],
     schema: Content.Parser,
@@ -146,26 +100,28 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
   ): (U[Cell[P]], U[String]) = {
+    val msj = Option(SetMapSideJoin[Position[slice.S], Cell[P]]())
+
     val result = data
-      .keyBy(c => slice.selected(c.position))
-      .tunedLeftJoin(tuner.parameters, positions.keyBy(p => p))
-      .flatMap { case (_, (c, po)) =>
-        po match {
-          case Some(_) => schema(c.content.value.toShortString)
-            .map(con => List(Right(Cell(c.position, con))))
-            .getOrElse(writer(c).map(Left(_)))
-          case None => List(Right(c))
-        }
+      .map { case c => (slice.selected(c.position), c) }
+      .tunedLeftJoin(tuner, positions.map { case p => (p, ()) }, msj)
+      .flatMap {
+        case (_, (c, Some(_))) => schema(c.content.value.toShortString)
+          .map { case con => List(Right(Cell(c.position, con))) }
+          .getOrElse(writer(c).map { case e => Left(e) })
+        case (_, (c, None)) => List(Right(c))
       }
 
     (result.collect { case Right(cell) => cell }, result.collect { case Left(error) => error })
   }
 
-  type CompactTuners[T] = TP2[T]
-  def compact()(implicit ev: ClassTag[Position[P]]): E[Map[Position[P], Content]] = data
-    .map(c => (c.position, c.content))
-    .collectAsMap
-    .toMap
+  type CompactTuners[T] = TP1[T]
+  def compact()(implicit ev: ClassTag[Position[P]]): E[Map[Position[P], Content]] = {
+    data
+      .map { case c => (c.position, c.content) }
+      .collectAsMap
+      .toMap
+  }
 
   def compact[
     T <: Tuner : CompactTuners
@@ -177,15 +133,26 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[Position[slice.S]],
     ev3: Compactable[L, P],
     ev4: Diff.Aux[P, _1, L]
-  ): E[Map[Position[slice.S], ev3.C[slice.R]]] = data
-    .map(c => (slice.selected(c.position), ev3.toMap(slice)(c)))
-    .tunedReduce(tuner.parameters, (l, r) => ev3.combineMaps(slice)(l, r))
-    .values
-    .reduce { case (lm, rm) => lm ++ rm }
+  ): E[Map[Position[slice.S], ev3.C[slice.R]]] = {
+    data
+      .map { case c => (slice.selected(c.position), ev3.toMap(slice)(c)) }
+      .tunedReduce(tuner, (l, r) => ev3.combineMaps(slice)(l, r))
+      .values
+      .reduce { case (lm, rm) => lm ++ rm }
+  }
 
   type DomainTuners[T] = TP1[T]
+  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[P]] = naturalDomain(tuner)
 
-  type FillHeterogeneousTuners[T] = TP3[T]
+  type FillHeterogeneousTuners[T] = T In OneOf[Default[NoParameters]]#
+    Or[Ternary[InMemory[NoParameters], InMemory[NoParameters], Default[NoParameters]]]#
+    Or[Ternary[InMemory[NoParameters], Default[NoParameters], Default[NoParameters]]]#
+    Or[Ternary[InMemory[NoParameters], InMemory[NoParameters], Default[Reducers]]]#
+    Or[Ternary[InMemory[NoParameters], Default[NoParameters], Default[Reducers]]]#
+    Or[Ternary[InMemory[NoParameters], Default[Reducers], Default[Reducers]]]#
+    Or[Ternary[Default[NoParameters], Default[NoParameters], Default[Reducers]]]#
+    Or[Ternary[Default[NoParameters], Default[Reducers], Default[Reducers]]]#
+    Or[Ternary[Default[Reducers], Default[Reducers], Default[Reducers]]]
   def fillHeterogeneous[
     T <: Tuner : FillHeterogeneousTuners
   ](
@@ -198,46 +165,72 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[P]] = {
-    val (p1, p2) = tuner.parameters match {
-      case Sequence(f, s) => (f, s)
-      case p => (NoParameters(), p)
+    val msj = Option(MapMapSideJoin[Position[slice.S], Position[P], Content]())
+
+    val (dt, vt, jt) = tuner match {
+      case Ternary(f, s, t) => (f, s, t)
+      case _ => (Default(), Default(), Default())
     }
 
-    domain(Default())
-      .keyBy(p => slice.selected(p))
-      .tunedJoin(p1, values.keyBy(c => c.position))
-      .map { case (_, (p, c)) => (p, Cell(p, c.content)) }
-      .tunedLeftJoin(p2, data.keyBy(c => c.position))
+    naturalDomain(dt)
+      .map { case p => (slice.selected(p), p) }
+      .tunedJoin(vt, values.map { case c => (c.position, c.content) }, msj)
+      .map { case (_, (p, c)) => (p, Cell(p, c)) }
+      .tunedLeftJoin(jt, data.map { case c => (c.position, c) })
       .map { case (_, (c, co)) => co.getOrElse(c) }
   }
 
-  type FillHomogeneousTuners[T] = TP2[T]
+  type FillHomogeneousTuners[T] = T In OneOf[Default[NoParameters]]# // Default[NoParameters], Default[NoParameters]
+    Or[Binary[InMemory[NoParameters], Default[NoParameters]]]#
+    Or[Binary[InMemory[NoParameters], Default[Reducers]]]#
+    Or[Binary[InMemory[Reducers], Default[NoParameters]]]#
+    Or[Binary[InMemory[Reducers], Default[Reducers]]]#
+    Or[Binary[Default[NoParameters], Default[Reducers]]]#
+    Or[Binary[Default[Reducers], Default[NoParameters]]]#
+    Or[Binary[Default[Reducers], Default[Reducers]]]
   def fillHomogeneous[
     T <: Tuner : FillHomogeneousTuners
   ](
     value: Content,
     tuner: T = Default()
   )(implicit
-    ev1: ClassTag[Position[P]]
-  ): U[Cell[P]] = domain(Default())
-    .keyBy(p => p)
-    .tunedLeftJoin(tuner.parameters, data.keyBy(c => c.position))
-    .map { case (p, (_, co)) => co.getOrElse(Cell(p, value)) }
+    ev: ClassTag[Position[P]]
+  ): U[Cell[P]] = {
+    val (dt, jt) = tuner match {
+      case Binary(f, s) => (f, s)
+      case _ => (Default(), Default())
+    }
+
+    naturalDomain(dt)
+      .map { case p => (p, ()) }
+      .tunedLeftJoin(jt, data.map { case c => (c.position, c) })
+      .map { case (p, (_, co)) => co.getOrElse(Cell(p, value)) }
+  }
 
   type GetTuners[T] = TP2[T]
   def get[
     T <: Tuner : GetTuners
   ](
     positions: U[Position[P]],
-    tuner: T = Default()
+    tuner: T = InMemory()
   )(implicit
     ev: ClassTag[Position[P]]
-  ): U[Cell[P]] = data
-    .keyBy(c => c.position)
-    .tunedJoin(tuner.parameters, positions.keyBy(p => p))
-    .map { case (_, (c, _)) => c }
+  ): U[Cell[P]] = {
+    val msj = Option(SetMapSideJoin[Position[P], Cell[P]]())
 
-  type JoinTuners[T] = TP3[T]
+    data
+      .map { case c => (c.position, c) }
+      .tunedJoin(tuner, positions.map { case p => (p, ()) }, msj)
+      .map { case (_, (c, _)) => c }
+  }
+
+  type JoinTuners[T] = T In OneOf[InMemory[NoParameters]]#
+    Or[Default[NoParameters]]#
+    Or[Binary[InMemory[NoParameters], Default[NoParameters]]]#
+    Or[Binary[InMemory[NoParameters], Default[Reducers]]]#
+    Or[Binary[InMemory[Reducers], Default[Reducers]]]#
+    Or[Binary[Default[NoParameters], Default[Reducers]]]#
+    Or[Binary[Default[Reducers], Default[Reducers]]]
   def join[
     T <: Tuner : JoinTuners
   ](
@@ -250,30 +243,37 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[P]] = {
-    val (p1, p2) = tuner.parameters match {
-      case Sequence(f, s) => (f, s)
-      case p => (NoParameters(), p)
+    def msj[V] = Option(SetMapSideJoin[Position[slice.S], V]())
+
+    val (t1, t2) = tuner match {
+      case Binary(f, s) => (f, s)
+      case t => (t, t)
     }
 
     val keep = data
-      .map(c => slice.selected(c.position))
-      .tunedDistinct(tuner.parameters)
-      .map(p => (p, ()))
-      .tunedJoin(p1, that
-        .map(c => slice.selected(c.position))
-        .tunedDistinct(tuner.parameters)
-        .map(p => (p, ())))
+      .map { case c => slice.selected(c.position) }
+      .tunedDistinct(t1)
+      .map { case p => (p, ()) }
+      .tunedJoin(
+        t1,
+        that
+          .map { case c => slice.selected(c.position) }
+          .tunedDistinct(t1)
+          .map { case p => (p, ()) },
+        msj
+      )
+      .map { case (p, _) => (p, ()) }
 
     (data ++ that)
-      .keyBy(c => slice.selected(c.position))
-      .tunedJoin(p2, keep)
+      .map { case c => (slice.selected(c.position), c) }
+      .tunedJoin(t2, keep, msj)
       .map { case (_, (c, _)) => c }
   }
 
-  type MaterialiseTuners[T] = TP1[T]
+  type MaterialiseTuners[T] = T Is Default[NoParameters]
   def materialise[T <: Tuner : MaterialiseTuners](tuner: T = Default()): List[Cell[P]] = data.collect.toList
 
-  type NamesTuners[T] = TP2[T]
+  type NamesTuners[T] = TP1[T]
   def names[
     T <: Tuner : NamesTuners
   ](
@@ -284,15 +284,13 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[Position[slice.S]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Position[slice.S]] = data
-    .map(c => slice.selected(c.position))
-    .tunedDistinct(tuner.parameters)
+    .map { case c => slice.selected(c.position) }
+    .tunedDistinct(tuner)
 
-  type PairwiseTuners[T] = T In OneOf[Default[NoParameters]]#
-    Or[Default[Reducers]]#
-    Or[Default[Sequence[Reducers, Reducers]]]#
-    Or[Default[Sequence[Reducers, Sequence[Reducers, Reducers]]]]#
-    Or[Default[Sequence[Sequence[Reducers, Reducers], Reducers]]]#
-    Or[Default[Sequence[Sequence[Reducers, Reducers], Sequence[Reducers, Reducers]]]]
+  type PairwiseTuners[T] = T In OneOf[InMemory[NoParameters]]#
+    Or[Default[NoParameters]]#
+    Or[Ternary[InMemory[NoParameters], Default[Reducers], Default[Reducers]]]#
+    Or[Ternary[Default[Reducers], Default[Reducers], Default[Reducers]]]
   def pairwise[
     Q <: Nat,
     T <: Tuner : PairwiseTuners
@@ -336,7 +334,9 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
       if (operators.size == 1) operators.head else operators.toList
 
     pairwiseTuples(slice, comparer, data, data, tuner)
-      .flatMap { case (lc, rc) => operator.computeWithValue(lc, rc, value) }
+      .flatMapWithValue(value) { case ((lc, rc), vo) =>
+        vo.toList.flatMap { case v => operator.computeWithValue(lc, rc, v) }
+      }
   }
 
   def pairwiseBetween[
@@ -384,11 +384,13 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
       if (operators.size == 1) operators.head else operators.toList
 
     pairwiseTuples(slice, comparer, data, that, tuner)
-      .flatMap { case (lc, rc) => operator.computeWithValue(lc, rc, value) }
+      .flatMapWithValue(value) { case ((lc, rc), vo) =>
+        vo.toList.flatMap { case v => operator.computeWithValue(lc, rc, v) }
+      }
   }
 
   def relocate[Q <: Nat](locate: Locate.FromCell[P, Q])(implicit ev: GTEq[Q, P]): U[Cell[Q]] = data
-    .flatMap(c => locate(c).map(Cell(_, c.content)))
+    .flatMap { case c => locate(c).map { case p => Cell(p, c.content) } }
 
   def relocateWithValue[
     Q <: Nat,
@@ -398,9 +400,16 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     locate: Locate.FromCellWithValue[P, Q, W]
   )(implicit
     ev: GTEq[Q, P]
-  ): U[Cell[Q]] = data.flatMap(c => locate(c, value).map(Cell(_, c.content)))
+  ): U[Cell[Q]] = data.flatMapWithValue(value) { case (c, vo) =>
+    vo.flatMap { case v => locate(c, v).map { case p => Cell(p, c.content) } }
+  }
 
-  type SaveAsIVTuners[T] = PersistReduceAndParition[T]
+  type SaveAsIVTuners[T] = T In OneOf[Default[NoParameters]]#  // Default[NoParameters], Default[NoParameters]
+    Or[Binary[InMemory[NoParameters], Default[NoParameters]]]#
+    Or[Binary[InMemory[NoParameters], Redistribute]]#
+    Or[Binary[Default[NoParameters], Redistribute]]#
+    Or[Binary[Default[Reducers], Default[NoParameters]]]#
+    Or[Binary[Default[Reducers], Redistribute]]
 
   type SaveAsTextTuners[T] = PersistParition[T]
   def saveAsText[
@@ -412,7 +421,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     tuner: T = Default()
   ): U[Cell[P]] = saveText(ctx, file, writer, tuner)
 
-  type SetTuners[T] = TP2[T]
+  type SetTuners[T] = TP1[T]
   def set[
     T <: Tuner : SetTuners
   ](
@@ -421,18 +430,19 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   )(implicit
     ev: ClassTag[Position[P]]
   ): U[Cell[P]] = data
-    .keyBy(c => c.position)
-    .tunedOuterJoin(tuner.parameters, values.keyBy(c => c.position))
-    .map { case (_, (co, cn)) => cn.getOrElse(co.get) }
+    .map { case c => (c.position, c) }
+    .tunedOuterJoin(tuner, values.map { case c => (c.position, c) })
+    .flatMap { case (_, (co, cn)) => cn.orElse(co) }
 
-  type ShapeTuners[T] = TP2[T]
+  type ShapeTuners[T] = TP1[T]
   def shape[T <: Tuner : ShapeTuners](tuner: T = Default()): U[Cell[_1]] = data
-    .flatMap(c => c.position.coordinates.map(_.toString).zipWithIndex)
-    .tunedDistinct(tuner.parameters)
-    .groupBy { case (s, i) => i }
-    .map { case (i, s) => Cell(Position(i + 1), Content(DiscreteSchema[Long](), s.size)) }
+    .flatMap { case c => c.position.coordinates.map { case c => c.toString }.zipWithIndex }
+    .tunedDistinct(tuner)
+    .map { case (s, i) => i }
+    .tunedSize(tuner)
+    .map { case (i, c) => Cell(Position(i + 1), Content(DiscreteSchema[Long](), c)) }
 
-  type SizeTuners[T] = TP2[T]
+  type SizeTuners[T] = TP1[T]
   def size[
     T <: Tuner : SizeTuners
   ](
@@ -444,8 +454,8 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ToInt[dim.N],
     ev3: Witness.Aux[dim.N]
   ): U[Cell[_1]] = {
-    val coords = data.map(c => c.position(ev3.value))
-    val dist = if (distinct) coords else coords.tunedDistinct(tuner.parameters)(Value.ordering)
+    val coords = data.map { case c => c.position(ev3.value) }
+    val dist = if (distinct) coords else coords.tunedDistinct(tuner)(Value.ordering)
 
     dist
       .context
@@ -457,17 +467,21 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     T <: Tuner : SliceTuners
   ](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T = InMemory()
   )(
     keep: Boolean,
     positions: U[Position[slice.S]]
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[P]] = data
-    .keyBy(c => slice.selected(c.position))
-    .tunedLeftJoin(tuner.parameters, positions.map(p => (p, ())))
-    .collect { case (_, (c, o)) if (o.isEmpty != keep) => c }
+  ): U[Cell[P]] = {
+    val msj = Option(SetMapSideJoin[Position[slice.S], Cell[P]]())
+
+    data
+      .map { case c => (slice.selected(c.position), c) }
+      .tunedLeftJoin(tuner, positions.map { case p => (p, ()) }, msj)
+      .collect { case (_, (c, o)) if (o.isEmpty != keep) => c }
+  }
 
   type SlideTuners[T] = TP1[T]
   def slide[
@@ -489,21 +503,9 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     val window: Window[P, slice.S, slice.R, Q] = if (windows.size == 1) windows.head else windows.toList
 
     data
-      .map(c => (slice.selected(c.position), (slice.remainder(c.position), window.prepare(c))))
-      .groupByKey
-      .flatMap { case (p, itr) =>
-        itr
-          .toList
-          .sortBy { case (r, _) => r }(Position.ordering(ascending))
-          .scanLeft(Option.empty[(window.T, TraversableOnce[window.O])]) {
-            case (None, (r, i)) => Option(window.initialise(r, i))
-            case (Some((t, _)), (r, i)) => Option(window.update(r, i, t))
-          }
-          .flatMap {
-            case Some((_, o)) => o.flatMap(window.present(p, _))
-            case _ => List()
-          }
-      }
+      .map { case c => (slice.selected(c.position), (slice.remainder(c.position), window.prepare(c))) }
+      .tunedStream(tuner, (key, itr) => slideStream[slice.S, slice.R, Q, window.type](window, ascending)(key, itr))
+      .flatMap { case (p, o) => window.present(p, o) }
   }
 
   def slideWithValue[
@@ -528,27 +530,17 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
       if (windows.size == 1) windows.head else windows.toList
 
     data
-      .map(c => (slice.selected(c.position), (slice.remainder(c.position), window.prepareWithValue(c, value))))
-      .groupByKey
-      .flatMap { case (p, itr) =>
-        itr
-          .toList
-          .sortBy { case (r, _) => r }(Position.ordering(ascending))
-          .scanLeft(Option.empty[(window.T, TraversableOnce[window.O])]) {
-            case (None, (r, i)) => Option(window.initialise(r, i))
-            case (Some((t, _)), (r, i)) => Option(window.update(r, i, t))
-          }
-          .flatMap {
-            case Some((_, o)) => o.flatMap(window.presentWithValue(p, _, value))
-            case _ => List()
-          }
+      .flatMapWithValue(value) { case (c, vo) =>
+        vo.map { case v => (slice.selected(c.position), (slice.remainder(c.position), window.prepareWithValue(c, v))) }
       }
+      .tunedStream(tuner, (key, itr) => slideStream[slice.S, slice.R, Q, window.type](window, ascending)(key, itr))
+      .flatMapWithValue(value) { case ((p, o), vo) => vo.toList.flatMap { case v => window.presentWithValue(p, o, v) } }
   }
 
   def split[I](partitioners: Partitioner[P, I]*): U[(I, Cell[P])] = {
     val partitioner: Partitioner[P, I] = if (partitioners.size == 1) partitioners.head else partitioners.toList
 
-    data.flatMap(c => partitioner.assign(c).map(q => (q, c)))
+    data.flatMap { case c => partitioner.assign(c).map { case q => (q, c) } }
   }
 
   def splitWithValue[
@@ -561,7 +553,9 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     val partitioner: PartitionerWithValue[P, I] { type V >: W } =
       if (partitioners.size == 1) partitioners.head else partitioners.toList
 
-    data.flatMap(c => partitioner.assignWithValue(c, value).map(q => (q, c)))
+    data.flatMapWithValue(value) { case (c, vo) =>
+      vo.toList.flatMap { case v => partitioner.assignWithValue(c, v).map { case q => (q, c) } }
+    }
   }
 
   type StreamTuners[T] = T Is Default[Reducers]
@@ -579,15 +573,16 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     val reducers = tuner.parameters match { case Reducers(r) => r }
 
     val result = data
-      .flatMap(c => writer(c).map(s => (hash(c.position) % reducers, s)))
-      .tunedGroupByKey(tuner.parameters)
-      .flatMap { case (key, itr) => Stream.delegate(command, files)(key, itr.toIterator) }
-      .flatMap(parser)
+      .flatMap { case c => writer(c).map { case s => (hash(c.position) % reducers, s) } }
+      .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })
 
-    (result.collect { case Right(c) => c }, result.collect { case Left(e) => e })
+    (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
   }
 
-  def streamByPosition[Q <: Nat, T <: Tuner : StreamTuners](
+  def streamByPosition[
+    Q <: Nat,
+    T <: Tuner : StreamTuners
+  ](
     slice: Slice[L, P],
     tuner: T
   )(
@@ -602,17 +597,15 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   ): (U[Cell[Q]], U[String]) = {
     val reducers = tuner.parameters match { case Reducers(r) => r }
     val murmur = new scala.util.hashing.MurmurHash3.ArrayHashing[Value]()
-    val (rows, _) = pivot(slice, tuner.parameters)
+    val (rows, _) = pivot(slice, tuner)
 
     val result = rows
       .flatMap { case (key, list) =>
-        writer(list.map(_._2)).map(s => (murmur.hash(key.coordinates.toArray) % reducers, s))
+        writer(list.map { case (_, v) => v }).map { case s => (murmur.hash(key.coordinates.toArray) % reducers, s) }
       }
-      .tunedGroupByKey(tuner.parameters)
-      .flatMap { case (key, itr) => Stream.delegate(command, files)(key, itr.toIterator) }
-      .flatMap(parser)
+      .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })
 
-    (result.collect { case Right(c) => c }, result.collect { case Left(e) => e })
+    (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
   }
 
   def subset(samplers: Sampler[P]*): U[Cell[P]] = {
@@ -624,10 +617,10 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   def subsetWithValue[W](value: E[W], samplers: SamplerWithValue[P] { type V >: W }*): U[Cell[P]] = {
     val sampler: SamplerWithValue[P] { type V >: W } = if (samplers.size == 1) samplers.head else samplers.toList
 
-    data.filter { case c => sampler.selectWithValue(c, value) }
+    data.filterWithValue(value) { case (c, vo) => vo.map { case v => sampler.selectWithValue(c, v) }.getOrElse(false) }
   }
 
-  type SummariseTuners[T] = TP2[T]
+  type SummariseTuners[T] = TP1[T]
   def summarise[
     Q <: Nat,
     T <: Tuner : SummariseTuners
@@ -647,8 +640,8 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     implicit val tag = aggregator.tTag
 
     data
-      .flatMap(c => aggregator.prepare(c).map(t => (slice.selected(c.position), t)))
-      .tunedReduce(tuner.parameters, (lt, rt) => aggregator.reduce(lt, rt))
+      .flatMap { case c => aggregator.prepare(c).map { case t => (slice.selected(c.position), t) } }
+      .tunedReduce(tuner, (lt, rt) => aggregator.reduce(lt, rt))
       .flatMap { case (p, t) => aggregator.present(p, t) }
   }
 
@@ -673,14 +666,19 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     implicit val tag = aggregator.tTag
 
     data
-      .flatMap(c => aggregator.prepareWithValue(c, value).map(t => (slice.selected(c.position), t)))
-      .tunedReduce(tuner.parameters, (lt, rt) => aggregator.reduce(lt, rt))
-      .flatMap { case (p, t) => aggregator.presentWithValue(p, t, value) }
+      .flatMapWithValue(value) { case (c, vo) =>
+        vo.flatMap { case v => aggregator.prepareWithValue(c, v).map { case t => (slice.selected(c.position), t) } }
+      }
+      .tunedReduce(tuner, (lt, rt) => aggregator.reduce(lt, rt))
+      .flatMapWithValue(value) { case ((p, t), vo) =>
+        vo.toList.flatMap { case v => aggregator.presentWithValue(p, t, v) }
+      }
   }
 
-  def toSequence[K <: Writable, V <: Writable](writer: SequenceWriter[K, V]): U[(K, V)] = data.flatMap(writer(_))
+  def toSequence[K <: Writable, V <: Writable](writer: SequenceWriter[K, V]): U[(K, V)] = data
+    .flatMap { case c => writer(c) }
 
-  def toText(writer: TextWriter): U[String] = data.flatMap(writer(_))
+  def toText(writer: TextWriter): U[String] = data.flatMap { case c => writer(c) }
 
   def toVector(melt: (List[Value]) => Value): U[Cell[_1]] = data
     .map { case Cell(p, c) => Cell(Position(melt(p.coordinates)), c) }
@@ -688,7 +686,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
   def transform[Q <: Nat](transformers: Transformer[P, Q]*)(implicit ev: GTEq[Q, P]): U[Cell[Q]] = {
     val transformer: Transformer[P, Q] = if (transformers.size == 1) transformers.head else transformers.toList
 
-    data.flatMap(c => transformer.present(c))
+    data.flatMap { case c => transformer.present(c) }
   }
 
   def transformWithValue[
@@ -703,10 +701,10 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     val transformer: TransformerWithValue[P, Q] { type V >: W } =
       if (transformers.size == 1) transformers.head else transformers.toList
 
-    data.flatMap(c => transformer.presentWithValue(c, value))
+    data.flatMapWithValue(value) { case (c, vo) => vo.toList.flatMap { case v => transformer.presentWithValue(c, v) } }
   }
 
-  type TypesTuners[T] = TP2[T]
+  type TypesTuners[T] = TP1[T]
   def types[
     T <: Tuner : TypesTuners
   ](
@@ -720,16 +718,16 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[slice.S]] = data
     .map { case Cell(p, c) => (slice.selected(p), c.schema.classification) }
-    .tunedReduce(tuner.parameters, (lt, rt) => lt.getCommonType(rt))
+    .tunedReduce(tuner, (lt, rt) => lt.getCommonType(rt))
     .map { case (p, t) => Cell(p, Content(NominalSchema[Type](), if (specific) t else t.getRootType)) }
 
-  type UniqueTuners[T] = TP2[T]
+  type UniqueTuners[T] = TP1[T]
   def unique[T <: Tuner : UniqueTuners](tuner: T = Default()): U[Content] = {
     val ordering = new Ordering[Content] { def compare(l: Content, r: Content) = l.toString.compare(r.toString) }
 
     data
-      .map(_.content)
-      .tunedDistinct(tuner.parameters)(ordering)
+      .map { case c => c.content }
+      .tunedDistinct(tuner)(ordering)
   }
 
   def uniqueByPosition[
@@ -747,7 +745,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
 
     data
       .map { case Cell(p, c) => Cell(slice.selected(p), c) }
-      .tunedDistinct(tuner.parameters)(ordering)
+      .tunedDistinct(tuner)(ordering)
       .map { case Cell(p, c) => (p, c) }
   }
 
@@ -759,7 +757,7 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     T <: Tuner : WhichTuners
   ](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T = InMemory()
   )(
     predicates: List[(U[Position[slice.S]], Cell.Predicate[P])]
   )(implicit
@@ -767,15 +765,35 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev2: ClassTag[Position[P]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Position[P]] = {
+    val msj = Option(MapMapSideJoin[Position[slice.S], Cell[P], List[Cell.Predicate[P]]]())
+
     val pp = predicates
-      .map { case (pos, pred) => pos.map(p => (p, pred)) }
+      .map { case (pos, pred) => pos.map { case p => (p, pred) } }
       .reduce((l, r) => l ++ r)
+      .map { case (pos, pred) => (pos, List(pred)) }
+      .tunedReduce(tuner, _ ++ _)
 
     data
-      .keyBy(c => slice.selected(c.position))
-      .tunedJoin(tuner.parameters, pp.keyBy { case (p, pred) => p })
-      .collect { case (_, (c, (_, predicate))) if predicate(c) => c.position }
+      .map { case c => (slice.selected(c.position), c) }
+      .tunedJoin(tuner, pp, msj)
+      .collect { case (_, (c, lst)) if (lst.exists(pred => pred(c))) => c.position }
   }
+
+  protected def coordinates[
+    D <: Nat : ToInt
+  ](
+    dim: D,
+    tuner: Tuner
+  )(implicit
+    ev: LTEq[D, P]
+  ): U[Value] = data.map { case c => c.position(dim) }.tunedDistinct(tuner)(Value.ordering)
+
+  protected def getSaveAsIVTuners(tuner: Tuner): (Tuner, Tuner) = tuner match {
+    case Binary(j, r) => (j, r)
+    case _ => (Default(), Default())
+  }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[P]]
 
   protected def saveDictionary[
     D <: Nat : ToInt
@@ -784,21 +802,22 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     dim: D,
     file: String,
     dictionary: String,
-    separator: String
+    separator: String,
+    tuner: Tuner
   )(implicit
-    ev1: LTEq[dim.N, P],
+    ev1: LTEq[D, P],
     ev2: Witness.Aux[dim.N],
     ev3: ToInt[dim.N],
     ev4: Diff.Aux[P, L, _1],
     ev5: Diff.Aux[P, _1, L]
   ): U[(Position[_1], Long)] = {
-    val numbered = names(Over(dim))
+    val numbered = coordinates(dim, tuner)
       .zipWithIndex
+      .map { case (c, i) => (Position(c), i) }
 
     numbered
       .map { case (Position(c), i) => c.toShortString + separator + i }
-      .redistribute(Redistribute(1))
-      .saveAsTextFile(dictionary.format(file, Nat.toInt[D]))
+      .tunedSaveAsText(ctx, Redistribute(1), dictionary.format(file, Nat.toInt[D]))
 
     numbered
   }
@@ -815,47 +834,86 @@ trait Matrix[L <: Nat, P <: Nat] extends FwMatrix[L, P] with Persist[Cell[P]] wi
     ev1: ClassTag[Position[slice.S]],
     ev2: Diff.Aux[P, _1, L]
   ): U[(Cell[P], Cell[P])] = {
-    val (rr, rj, lr, lj) = tuner.parameters match {
-      case Sequence(Sequence(rr, rj), Sequence(lr, lj)) => (rr, rj, lr, lj)
-      case Sequence(rj @ Reducers(_), Sequence(lr, lj)) => (NoParameters(), rj, lr, lj)
-      case Sequence(Sequence(rr, rj), lj @ Reducers(_)) => (rr, rj, NoParameters(), lj)
-      case Sequence(rj @ Reducers(_), lj @ Reducers(_)) => (NoParameters(), rj, NoParameters(), lj)
-      case lj @ Reducers(_) => (NoParameters(), NoParameters(), NoParameters(), lj)
-      case _ => (NoParameters(), NoParameters(), NoParameters(), NoParameters())
-    }
+    tuner match {
+      case InMemory(_) =>
+        ldata
+          .tunedCross[Cell[P]](
+            tuner,
+            (lc, rc) => comparer.keep(slice.selected(lc.position), slice.selected(rc.position)),
+            rdata
+          )
+      case _ =>
+        def msj[V] = Option(MapMapSideJoin[Position[slice.S], Cell[P], V]())
 
-    ldata
-      .map(c => slice.selected(c.position))
-      .tunedDistinct(lr)
-      .cartesian(rdata.map(c => slice.selected(c.position)).tunedDistinct(rr))
-      .collect { case (l, r) if comparer.keep(l, r) => (l, r) }
-      .keyBy { case (l, _) => l }
-      .tunedJoin(lj, ldata.keyBy { case Cell(p, _) => slice.selected(p) })
-      .keyBy { case (_, ((_, r),  _)) => r }
-      .tunedJoin(rj, rdata.keyBy { case Cell(p, _) => slice.selected(p) })
-      .map { case (_, ((_, (_, lc)), rc)) => (lc, rc) }
+        val (ct, lt, rt) = tuner match {
+          case Ternary(a, s, r) => (a, s, r)
+          case _ => (Default(), Default(), Default())
+        }
+
+        ldata
+          .map { case c => (slice.selected(c.position), c) }
+          .tunedJoin(
+            lt,
+            ldata
+              .map { case Cell(p, _) => slice.selected(p) }
+              .tunedDistinct(lt)
+              .tunedCross[Position[slice.S]](
+                ct,
+                (lp, rp) => comparer.keep(lp, rp),
+                rdata.map { case Cell(p, _) => slice.selected(p) }.tunedDistinct(rt)
+              ),
+            msj
+          )
+          .map { case (_, (lc, rp)) => (rp, lc) }
+          .tunedJoin(rt, rdata.map { case c => (slice.selected(c.position), c) }, msj)
+          .map { case (_, (lc, rc)) => (lc, rc) }
+    }
   }
 
   protected def pivot(
     slice: Slice[L, P],
-    parameters: TunerParameters
+    tuner: Tuner
   )(implicit
     ev: Diff.Aux[P, _1, L]
   ): (U[(Position[slice.S], List[(Position[slice.R], Option[Cell[P]])])], U[List[Position[slice.R]]]) = {
     val columns = data
-      .map(c => ((), HashSet(slice.remainder(c.position))))
+      .map { case c => ((), Set(slice.remainder(c.position))) }
       .reduceByKey(_ ++ _)
-      .map { case (_, set) => set.toList.sorted }
-
-    val dict = columns.first
+      .map { case (_, s) => s.toList.sorted }
 
     val pivoted = data
-      .map(c => (slice.selected(c.position), Map(slice.remainder(c.position) -> c)))
-      .tunedReduce(parameters, _ ++ _)
-      .map { case (key, map) => (key, dict.map(c => (c, map.get(c)))) }
+      .map { case c => (slice.selected(c.position), Map(slice.remainder(c.position) -> c)) }
+      .tunedReduce(tuner, _ ++ _)
+      .flatMapWithValue(columns.first) { case ((key, map), opt) =>
+        opt.map { case cols => (key, cols.map { case c => (c, map.get(c)) }) }
+      }
 
     (pivoted, columns)
   }
+
+  private def slideStream[
+    S <: Nat,
+    R <: Nat,
+    Q <: Nat,
+    W <: WindowWithValue[P, S, R, Q]
+  ](
+    window: W,
+    ascending: Boolean
+  )(
+    key: Position[S],
+    itr: Iterator[(Position[R], window.I)]
+  ) = itr
+    .toList
+    .sortBy { case (r, _) => r }(Position.ordering(ascending))
+    .scanLeft(Option.empty[(window.T, TraversableOnce[window.O])]) {
+      case (None, (r, i)) => Option(window.initialise(r, i))
+      case (Some((t, _)), (r, i)) => Option(window.update(r, i, t))
+    }
+    .flatMap {
+      case Some((_, to)) => to
+      case _ => List()
+    }
+
 }
 
 /** Base trait for methods that reduce the number of dimensions or that can be filled using a `RDD[Cell[P]]`. */
@@ -874,7 +932,7 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[L]] = data.map { case Cell(p, c) => Cell(p.melt(dim, into, merge), c) }
 
-  type SquashTuners[T] = TP2[T]
+  type SquashTuners[T] = TP1[T]
   def squash[
     D <: Nat : ToInt,
     T <: Tuner : SquashTuners
@@ -887,12 +945,12 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     ev2: ClassTag[Position[L]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[L]] = {
-    implicit val tag: ClassTag[squasher.T] = squasher.tTag
+    implicit val tag = squasher.tTag
 
     data
-      .flatMap(c => squasher.prepare(c, dim).map(t => (c.position.remove(dim), t)))
-      .tunedReduce(tuner.parameters, (lt, rt) => squasher.reduce(lt, rt))
-      .flatMap { case (p, t) => squasher.present(t).map(c => Cell(p, c)) }
+      .flatMap { case c => squasher.prepare(c, dim).map { case t => (c.position.remove(dim), t) } }
+      .tunedReduce(tuner, (lt, rt) => squasher.reduce(lt, rt))
+      .flatMap { case (p, t) => squasher.present(t).map { case c => Cell(p, c) } }
   }
 
   def squashWithValue[
@@ -909,12 +967,16 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] extends FwReducibleMatrix[L, P] { self
     ev2: ClassTag[Position[L]],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[L]] = {
-    implicit val tag: ClassTag[squasher.T] = squasher.tTag
+    implicit val tag = squasher.tTag
 
     data
-      .flatMap(c => squasher.prepareWithValue(c, dim, value).map(t => (c.position.remove(dim), t)))
-      .tunedReduce(tuner.parameters, (lt, rt) => squasher.reduce(lt, rt))
-      .flatMap { case (p, t) => squasher.presentWithValue(t, value).map(c => Cell(p, c)) }
+      .flatMapWithValue(value) { case (c, vo) =>
+        vo.flatMap { case v => squasher.prepareWithValue(c, dim, v).map { case t => (c.position.remove(dim), t) } }
+      }
+      .tunedReduce(tuner, (lt, rt) => squasher.reduce(lt, rt))
+      .flatMapWithValue(value) { case ((p, t), vo) =>
+        vo.flatMap { case v => squasher.presentWithValue(t, v).map { case c => Cell(p, c) } }
+      }
   }
 }
 
@@ -936,229 +998,23 @@ trait ReshapeableMatrix[L <: Nat, P <: Nat] extends FwReshapeableMatrix[L, P] { 
     ev3: ClassTag[Position[L]],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
+    val msj = Option(MapMapSideJoin[Position[L], Cell[P], Value]())
+
     val keys = data
       .collect[(Position[L], Value)] { case c if (c.position(dim) equ coordinate) =>
         (c.position.remove(dim), c.content.value)
       }
 
     data
-      .collect[(Position[L], Cell[P])] { case c if (c.position(dim) neq coordinate) =>
-        (c.position.remove(dim), c)
-      }
-      .tunedLeftJoin(tuner.parameters, keys)
-      .flatMap { case (_, (c, v)) => locate(c, v).map(Cell(_, c.content)) }
-  }
-}
-
-// TODO: Make this work on more than 2D matrices and share with Scalding
-trait MatrixDistance { self: Matrix[_1, _2] with ReducibleMatrix[_1, _2] =>
-
-  import commbank.grimlock.library.aggregate._
-  import commbank.grimlock.library.pairwise._
-  import commbank.grimlock.library.transform._
-  import commbank.grimlock.library.window._
-
-  import commbank.grimlock.spark.environment.Context._
-
-  /**
-   * Compute correlations.
-   *
-   * @param slice  Encapsulates the dimension for which to compute correlations.
-   * @param stuner The summarise tuner for the job.
-   * @param ptuner The pairwise tuner for the job.
-   *
-   * @return A `U[Cell[_1]]` with all pairwise correlations.
-   */
-  def correlation[
-    ST <: Tuner : SummariseTuners,
-    PT <: Tuner : PairwiseTuners
-  ](
-    slice: Slice[_1, _2],
-    stuner: ST = Default(),
-    ptuner: PT = Default()
-  )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: ClassTag[Position[slice.R]],
-    ev3: ToInt[slice.dimension.N],
-    ev: Witness.Aux[slice.dimension.N]
-  ): U[Cell[_1]] = {
-    implicit def x(data: U[Cell[slice.S]]): Matrix1D = Matrix1D(data.asInstanceOf[U[Cell[_1]]])
-    implicit def y(data: U[Cell[Succ[slice.R]]]): Matrix2D = Matrix2D(data.asInstanceOf[U[Cell[_2]]])
-    implicit val z = new LTEq[slice.dimension.N, _2] { }
-
-    val mean = data
-      .summarise(slice, stuner)(Mean())
-      .compact(Over(_1))
-
-    val centered = data
-      .transformWithValue(
-        mean,
-        Subtract(ExtractWithDimension[_2, Content](slice.dimension).andThenPresent(_.value.asDouble))
-      )
-
-    val denom = centered
-      .transform(Power(2))
-      .summarise(slice, stuner)(Sum())
-      .pairwise(Over(_1), ptuner)(
-        Lower,
-        Times(Locate.PrependPairwiseSelectedStringToRemainder(Over(_1), "(%1$s*%2$s)"))
-      )
-      .transform(SquareRoot())
-      .compact(Over(_1))
-
-    centered
-      .pairwise(slice, ptuner)(
-        Lower,
-        Times(Locate.PrependPairwiseSelectedStringToRemainder(slice, "(%1$s*%2$s)"))
-      )
-      .summarise(Over(_1), stuner)(Sum())
-      .transformWithValue(denom, Fraction(ExtractWithDimension[_1, Content](_1).andThenPresent(_.value.asDouble)))
-  }
-
-  /**
-   * Compute mutual information.
-   *
-   * @param slice  Encapsulates the dimension for which to compute mutual information.
-   * @param stuner The summarise tuner for the job.
-   * @param ptuner The pairwise tuner for the job.
-   *
-   * @return A `U[Cell[_1]]` with all pairwise mutual information.
-   */
-  def mutualInformation[
-    ST <: Tuner : SummariseTuners,
-    PT <: Tuner : PairwiseTuners
-  ](
-    slice: Slice[_1, _2],
-    stuner: ST = Default(),
-    ptuner: PT = Default()
-  )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: ClassTag[Position[slice.R]],
-    ev3: ToInt[slice.dimension.N]
-  ): U[Cell[_1]] = {
-    implicit def x(data: U[Cell[Succ[slice.R]]]): Matrix2D = Matrix2D(data.asInstanceOf[U[Cell[_2]]])
-
-    val first = _1
-    val second = _2
-
-    val dim = Nat.toInt(slice.dimension)
-
-    val s = slice match {
-      case Over(_) if (dim == 1) => Along[_2, _3](second)
-      case Over(_) => Along[_2, _3](first)
-      case Along(_) if (dim == 1) => Along[_2, _3](first)
-      case Along(_) => Along[_2, _3](second)
-    }
-
-    val extractor = ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble)
-
-    val mhist = data
-      .relocate(c => c.position.append(c.content.value.toShortString).toOption)
-      .summarise(s, stuner)(Count())
-
-    val mcount = mhist
-      .summarise(Over(_1), stuner)(Sum())
-      .compact()
-
-    val marginal = mhist
-      .summariseWithValue(Over(_1), stuner)(
-        mcount,
-        Entropy(extractor).andThenRelocate(_.position.append("marginal").toOption)
-      )
-      .pairwise(Over(_1), ptuner)(
-        Upper,
-        Plus(Locate.PrependPairwiseSelectedStringToRemainder[_1, _2](Over(_1), "%s,%s"))
-      )
-
-    val jhist = data
-      .pairwise(slice, ptuner)(
-        Upper,
-        Concatenate(Locate.PrependPairwiseSelectedStringToRemainder(slice, "%s,%s"))
-      )
-      .relocate(c => c.position.append(c.content.value.toShortString).toOption)
-      .summarise(Along(_2), stuner)(Count())
-
-    val jcount = jhist
-      .summarise(Over(_1), stuner)(Sum())
-      .compact()
-
-    val joint = jhist
-      .summariseWithValue(Over(_1), stuner)(
-        jcount,
-        Entropy(extractor, negate = true).andThenRelocate(_.position.append("joint").toOption)
-      )
-
-    (marginal ++ joint)
-      .summarise(Over(_1), stuner)(Sum())
-  }
-
-  /**
-   * Compute Gini index.
-   *
-   * @param slice  Encapsulates the dimension for which to compute the Gini index.
-   * @param stuner The summarise tuner for the job.
-   * @param wtuner The window tuner for the job.
-   * @param ptuner The pairwise tuner for the job.
-   *
-   * @return A `U[Cell[_1]]` with all pairwise Gini indices.
-   */
-  def gini[
-    ST <: Tuner : SummariseTuners,
-    WT <: Tuner : SlideTuners,
-    PT <: Tuner : PairwiseTuners
-  ](
-    slice: Slice[_1, _2],
-    stuner: ST = Default(),
-    wtuner: WT = Default(),
-    ptuner: PT = Default()
-  )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: ClassTag[Position[slice.R]]
-  ): U[Cell[_1]] = {
-    implicit def x(data: U[Cell[slice.S]]): Matrix1D = Matrix1D(data.asInstanceOf[U[Cell[_1]]])
-    implicit def y(data: U[Cell[Succ[slice.S]]]): Matrix2D = Matrix2D(data.asInstanceOf[U[Cell[_2]]])
-
-    def isPositive = (cell: Cell[_2]) => cell.content.value.asDouble.map(_ > 0).getOrElse(false)
-    def isNegative = (cell: Cell[_2]) => cell.content.value.asDouble.map(_ <= 0).getOrElse(false)
-
-    val extractor = ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble)
-
-    val pos = data
-      .transform(Compare(isPositive))
-      .summarise(slice, stuner)(Sum(false))
-      .compact(Over(_1))
-
-    val neg = data
-      .transform(Compare(isNegative))
-      .summarise(slice, stuner)(Sum(false))
-      .compact(Over(_1))
-
-    val tpr = data
-      .transform(Compare(isPositive))
-      .slide(slice, wtuner)(true, CumulativeSum(Locate.AppendRemainderString()))
-      .transformWithValue(pos, Fraction(extractor))
-      .slide(Over(_1), wtuner)(true, BinOp((l, r) => r + l, Locate.AppendPairwiseString("%2$s.%1$s")))
-
-    val fpr = data
-      .transform(Compare(isNegative))
-      .slide(slice, wtuner)(true, CumulativeSum(Locate.AppendRemainderString()))
-      .transformWithValue(neg, Fraction(extractor))
-      .slide(Over(_1), wtuner)(true, BinOp((l, r) => r - l, Locate.AppendPairwiseString("%2$s.%1$s")))
-
-    tpr
-      .pairwiseBetween(Along(_1), ptuner)(
-        Diagonal,
-        fpr,
-        Times(Locate.PrependPairwiseSelectedStringToRemainder[_1, _2](Along(_1), "(%1$s*%2$s)"))
-      )
-      .summarise(Along(_1), stuner)(Sum())
-      .transformWithValue(Map(Position("one") -> 1.0), Subtract(ExtractWithKey[_1, Double]("one"), true))
+      .collect { case c if (c.position(dim) neq coordinate) => (c.position.remove(dim), c) }
+      .tunedLeftJoin(tuner, keys, msj)
+      .flatMap { case (_, (c, v)) => locate(c, v).map { case p => Cell(p, c.content) } }
   }
 }
 
 object Matrix extends Consume with DistributedData with Environment {
   def loadText[P <: Nat](ctx: C, file: String, parser: Cell.TextParser[P]): (U[Cell[P]], U[String]) = {
-    val rdd = ctx.context.textFile(file).flatMap(parser(_))
+    val rdd = ctx.context.textFile(file).flatMap { case s => parser(s) }
 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
@@ -1172,9 +1028,9 @@ object Matrix extends Consume with DistributedData with Environment {
     file: String,
     parser: Cell.SequenceParser[K, V, P]
   ): (U[Cell[P]], U[String]) = {
-    val pipe = ctx.context.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
+    val rdd = ctx.context.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
 
-    (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
+    (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 
   def loadParquet[
@@ -1189,7 +1045,7 @@ object Matrix extends Consume with DistributedData with Environment {
 
     ParquetInputFormat.setReadSupportClass(job, classOf[ScroogeReadSupport[T]])
 
-    val pipe = ctx.context.newAPIHadoopFile(
+    val rdd = ctx.context.newAPIHadoopFile(
       file,
       classOf[ParquetInputFormat[T]],
       classOf[Void],
@@ -1197,7 +1053,7 @@ object Matrix extends Consume with DistributedData with Environment {
       job.getConfiguration
     ).flatMap { case (_, v) => parser(v) }
 
-    (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
+    (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 }
 
@@ -1210,9 +1066,8 @@ case class Matrix1D(
   data: RDD[Cell[_1]]
 ) extends FwMatrix1D
   with Matrix[_0, _1]
-  with ApproximateDistribution[_0, _1] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_1]] = names(Over(_1), tuner)
-
+  with ApproximateDistribution[_0, _1]
+  with Statistics[_0, _1] {
   def saveAsIV[
     T <: Tuner : SaveAsIVTuners
   ](
@@ -1222,22 +1077,21 @@ case class Matrix1D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_1]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy(c => c.position)
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
+      .map { case c => (c.position, c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => i + separator + c.content.value.toShortString }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_1]] = coordinates(_1, tuner)
+    .map { case c1 => Position(c1) }
 }
 
 /**
@@ -1251,13 +1105,9 @@ case class Matrix2D(
   with Matrix[_1, _2]
   with ReducibleMatrix[_1, _2]
   with ReshapeableMatrix[_1, _2]
-  with MatrixDistance
-  with ApproximateDistribution[_1, _2] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_2]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .map { case (c1, c2) => Position(c1, c2) }
-
+  with ApproximateDistribution[_1, _2]
+  with PairwiseDistance[_1, _2]
+  with Statistics[_1, _2] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt
@@ -1269,12 +1119,15 @@ case class Matrix2D(
     ev2: LTEq[D2, _2],
     ev3: D1 =:!= D2
   ): U[Cell[_2]] = {
-    val l = List(Nat.toInt[D1], Nat.toInt[D2]).zipWithIndex.sortBy(_._1).map(_._2)
+    val l = List(Nat.toInt[D1], Nat.toInt[D2]).zipWithIndex.sortBy { case (d, _) => d }.map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(2).get), c) }
   }
 
-  type SaveAsCSVTuners[T] = PersistReduceAndParition[T]
+  type SaveAsCSVTuners[T] = T In OneOf[Default[NoParameters]]# // Default[NoParameters], Default[NoParameters]
+    Or[Default[Reducers]]#                                     // Default[Reducers],     Default[NoParameters]
+    Or[Redistribute]#                                          // Default[NoParameters], Redistribute
+    Or[Binary[Default[Reducers], Redistribute]]
   def saveAsCSV[
     T <: Tuner : SaveAsCSVTuners
   ](
@@ -1292,33 +1145,31 @@ case class Matrix2D(
   )(implicit
     ev: ClassTag[Position[slice.S]]
   ): U[Cell[_2]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
+    val (pt, rt) = tuner match {
+      case Binary(p, r) => (p, r)
+      case r @ Redistribute(_) => (Default(), r)
+      case p @ Default(_) => (p, Default())
+      case _ => (Default(), Default())
     }
 
-    val (pivoted, columns) = pivot(slice, rc)
+    val (pivoted, columns) = pivot(slice, pt)
 
     if (writeHeader)
       columns
         .map { case lst =>
           (if (writeRowId) escapee.escape(rowId) + separator else "") + lst
-            .map(p => escapee.escape(p.coordinates.head.toShortString))
+            .map { case p => escapee.escape(p.coordinates.head.toShortString) }
             .mkString(separator)
         }
-        .redistribute(Redistribute(1))
-        .saveAsTextFile(header.format(file))
+        .tunedSaveAsText(ctx, Redistribute(1), header.format(file))
 
     pivoted
       .map { case (p, lst) =>
         (if (writeRowId) escapee.escape(p.coordinates.head.toShortString) + separator else "") + lst
-          .map(_._2.map(c => escapee.escape(c.content.value.toShortString)).getOrElse(""))
+          .map { case (_, v) => v.map { case c => escapee.escape(c.content.value.toShortString) }.getOrElse("") }
           .mkString(separator)
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
@@ -1332,27 +1183,31 @@ case class Matrix2D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_2]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => i + separator + j + separator + c.content.value.toShortString }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
 
-  type SaveAsVWTuners[T] = PersistReduceAndParition[T]
+  type SaveAsVWTuners[T] = T In OneOf[Default[NoParameters]]#      // Def[NoParam], Def[NoParam], Def[NoParam]
+    Or[Default[Reducers]]#                                         // Def[Red], Def[Red], Def[NoParam]
+    Or[Binary[Default[Reducers], Redistribute]]#                   // Def[Red], Def[Red], Redis
+    Or[Binary[Default[NoParameters], Redistribute]]#               // Def[NoParam], Def[NoParam], Redis
+    Or[Binary[Default[NoParameters], InMemory[NoParameters]]]#     // Def[NoParam], InMem[NoParam], Def[NoParam]
+    Or[Binary[Default[NoParameters], Default[Reducers]]]#          // Def[NoParam], Def[Red], Def[NoParam]
+    Or[Ternary[Default[NoParameters], InMemory[NoParameters], Redistribute]]#
+    Or[Ternary[Default[NoParameters], Default[Reducers], Redistribute]]#
+    Or[Ternary[Default[Reducers], InMemory[NoParameters], Default[NoParameters]]]#
+    Or[Ternary[Default[Reducers], InMemory[NoParameters], Redistribute]]
   def saveAsVW[
     T <: Tuner : SaveAsVWTuners
   ](
@@ -1382,7 +1237,7 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: ClassTag[Position[slice.S]]
-  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, Some(labels), None, tag, dictionary, separator)
+  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, Option(labels), None, tag, dictionary, separator)
 
   def saveAsVWWithImportance[
     T <: Tuner : SaveAsVWTuners
@@ -1398,7 +1253,7 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: ClassTag[Position[slice.S]]
-  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, None, Some(importance), tag, dictionary, separator)
+  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, None, Option(importance), tag, dictionary, separator)
 
   def saveAsVWWithLabelsAndImportance[
     T <: Tuner : SaveAsVWTuners
@@ -1415,7 +1270,7 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: ClassTag[Position[slice.S]]
-  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, Some(labels), Some(importance), tag, dictionary, separator)
+  ): U[Cell[_2]] = saveVW(slice, tuner)(ctx, file, Option(labels), Option(importance), tag, dictionary, separator)
 
   private def saveVW[
     T <: Tuner : SaveAsVWTuners
@@ -1433,54 +1288,61 @@ case class Matrix2D(
   )(implicit
     ev: ClassTag[Position[slice.S]]
   ): U[Cell[_2]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
+    val msj = Option(MapMapSideJoin[Position[slice.S], String, Cell[slice.S]]())
+
+    val (pt, jt, rt) = tuner match {
+      case Ternary(f, s, t) => (f, s, t)
+      case Binary(t @ Default(_), r @ Redistribute(_)) => (t, t, r)
+      case Binary(p, j) => (p, j, Default())
+      case t @ Default(Reducers(_)) => (t, t, Default())
+      case _ => (Default(), Default(), Default())
     }
 
-    val (pivoted, columns) = pivot(slice, rc)
-    val dict = columns.map(_.zipWithIndex.toMap)
+    val (pivoted, columns) = pivot(slice, pt)
+    val dict = columns.map { case l => l.zipWithIndex.toMap }
 
     dict
-      .flatMap(_.map { case (p, i) => p.coordinates.head.toShortString + separator + i })
-      .redistribute(Redistribute(1))
-      .saveAsTextFile(dictionary.format(file))
-
-    val d = dict.first
+      .flatMap { case m => m.map { case (p, i) => p.coordinates.head.toShortString + separator + i } }
+      .tunedSaveAsText(ctx, Redistribute(1), dictionary.format(file))
 
     val features = pivoted
-      .map { case (key, lst) =>
-        (
-          key,
-          lst
-            .flatMap { case (p, c) => c.flatMap(_.content.value.asDouble.map(v => d(p) + ":" + v)) }
-            .mkString((if (tag) key.coordinates.head.toShortString else "") + "| ", " ", "")
-        )
+      .flatMapWithValue(dict.first) { case ((key, lst), dct) =>
+        dct.map { case d =>
+          (
+            key,
+            lst
+              .flatMap { case (p, v) =>
+                v.flatMap { case c => c.content.value.asDouble.map { case w => d(p) + ":" + w } }
+              }
+              .mkString((if (tag) key.coordinates.head.toShortString else "") + "| ", " ", "")
+          )
+        }
       }
 
     val weighted = importance match {
       case Some(imp) => features
-        .join(imp.keyBy { case c => c.position })
+        .tunedJoin(jt, imp.map { case c => (c.position, c) }, msj)
         .flatMap { case (p, (s, c)) => c.content.value.asDouble.map { case i => (p, i + " " + s) } }
       case None => features
     }
 
     val examples = labels match {
       case Some(lab) => weighted
-        .join(lab.keyBy { case c => c.position })
+        .tunedJoin(jt, lab.map { case c => (c.position, c) }, msj)
         .flatMap { case (p, (s, c)) => c.content.value.asDouble.map { case l => (p, l + " " + s) } }
       case None => weighted
     }
 
     examples
       .map { case (p, s) => s }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_2]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .map { case (c1, c2) => Position(c1, c2) }
 }
 
 /**
@@ -1494,13 +1356,9 @@ case class Matrix3D(
   with Matrix[_2, _3]
   with ReducibleMatrix[_2, _3]
   with ReshapeableMatrix[_2, _3]
-  with ApproximateDistribution[_2, _3] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_3]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .map { case ((c1, c2), c3) => Position(c1, c2, c3) }
-
+  with ApproximateDistribution[_2, _3]
+  with PairwiseDistance[_2, _3]
+  with Statistics[_2, _3] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1515,7 +1373,10 @@ case class Matrix3D(
     ev3: LTEq[D3, _3],
     ev4: Distinct[(D1, D2, D3)]
   ): U[Cell[_3]] = {
-    val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3]).zipWithIndex.sortBy(_._1).map(_._2)
+    val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3])
+      .zipWithIndex
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(3).get), c) }
   }
@@ -1529,28 +1390,27 @@ case class Matrix3D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_3]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, i, j) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => i + separator + j + separator + k + separator + c.content.value.toShortString }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_3]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .map { case ((c1, c2), c3) => Position(c1, c2, c3) }
 }
 
 /**
@@ -1564,14 +1424,9 @@ case class Matrix4D(
   with Matrix[_3, _4]
   with ReducibleMatrix[_3, _4]
   with ReshapeableMatrix[_3, _4]
-  with ApproximateDistribution[_3, _4] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_4]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .map { case (((c1, c2), c3), c4) => Position(c1, c2, c3, c4) }
-
+  with ApproximateDistribution[_3, _4]
+  with PairwiseDistance[_3, _4]
+  with Statistics[_3, _4] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1589,7 +1444,10 @@ case class Matrix4D(
     ev4: LTEq[D4, _4],
     ev5: Distinct[(D1, D2, D3, D4)]
   ): U[Cell[_4]] = {
-    val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3], Nat.toInt[D4]).zipWithIndex.sortBy(_._1).map(_._2)
+    val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3], Nat.toInt[D4])
+      .zipWithIndex
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(4).get), c) }
   }
@@ -1603,33 +1461,32 @@ case class Matrix4D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_4]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, i, j) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, p) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) =>
         i + separator + j + separator + k + separator + l + separator + c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_4]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .map { case (((c1, c2), c3), c4) => Position(c1, c2, c3, c4) }
 }
 
 /**
@@ -1643,15 +1500,9 @@ case class Matrix5D(
   with Matrix[_4, _5]
   with ReducibleMatrix[_4, _5]
   with ReshapeableMatrix[_4, _5]
-  with ApproximateDistribution[_4, _5] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_5]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_5), tuner).map { case Position(c) => c })
-    .map { case ((((c1, c2), c3), c4), c5) => Position(c1, c2, c3, c4, c5) }
-
+  with ApproximateDistribution[_4, _5]
+  with PairwiseDistance[_4, _5]
+  with Statistics[_4, _5] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1674,7 +1525,8 @@ case class Matrix5D(
   ): U[Cell[_5]] = {
     val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3], Nat.toInt[D4], Nat.toInt[D5])
       .zipWithIndex
-      .sortBy(_._1).map(_._2)
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(5).get), c) }
   }
@@ -1688,36 +1540,35 @@ case class Matrix5D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_5]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, pi, pj) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, k) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k), l)) => (c, i, j, k, l) }
-      .keyBy { case (c, i, j, k, l) => Position(c.position(_5)) }
-      .tunedJoin(rc, saveDictionary(ctx, _5, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
+      .tunedJoin(jt, saveDictionary(ctx, _5, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) =>
         i + separator + j + separator + k + separator + l + separator + m + separator + c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_5]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_5, tuner))
+    .map { case ((((c1, c2), c3), c4), c5) => Position(c1, c2, c3, c4, c5) }
 }
 
 /**
@@ -1731,16 +1582,9 @@ case class Matrix6D(
   with Matrix[_5, _6]
   with ReducibleMatrix[_5, _6]
   with ReshapeableMatrix[_5, _6]
-  with ApproximateDistribution[_5, _6] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_6]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_5), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_6), tuner).map { case Position(c) => c })
-    .map { case (((((c1, c2), c3), c4), c5), c6) => Position(c1, c2, c3, c4, c5, c6) }
-
+  with ApproximateDistribution[_5, _6]
+  with PairwiseDistance[_5, _6]
+  with Statistics[_5, _6] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1766,7 +1610,8 @@ case class Matrix6D(
   ): U[Cell[_6]] = {
     val l = List(Nat.toInt[D1], Nat.toInt[D2], Nat.toInt[D3], Nat.toInt[D4], Nat.toInt[D5], Nat.toInt[D6])
       .zipWithIndex
-      .sortBy(_._1).map(_._2)
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(6).get), c) }
   }
@@ -1780,31 +1625,23 @@ case class Matrix6D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_6]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, pi, pj) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, k) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k), l)) => (c, i, j, k, l) }
-      .keyBy { case (c, i, j, k, l) => Position(c.position(_5)) }
-      .tunedJoin(rc, saveDictionary(ctx, _5, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l), m)) => (c, i, j, k, l, m) }
-      .keyBy { case (c, i, j, k, l, m) => Position(c.position(_6)) }
-      .tunedJoin(rc, saveDictionary(ctx, _6, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
+      .tunedJoin(jt, saveDictionary(ctx, _5, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
+      .tunedJoin(jt, saveDictionary(ctx, _6, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m), n)) =>
         i + separator +
         j + separator +
@@ -1814,11 +1651,18 @@ case class Matrix6D(
         n + separator +
         c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_6]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_5, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_6, tuner))
+    .map { case (((((c1, c2), c3), c4), c5), c6) => Position(c1, c2, c3, c4, c5, c6) }
 }
 
 /**
@@ -1832,17 +1676,9 @@ case class Matrix7D(
   with Matrix[_6, _7]
   with ReducibleMatrix[_6, _7]
   with ReshapeableMatrix[_6, _7]
-  with ApproximateDistribution[_6, _7] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_7]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_5), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_6), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_7), tuner).map { case Position(c) => c })
-    .map { case ((((((c1, c2), c3), c4), c5), c6), c7) => Position(c1, c2, c3, c4, c5, c6, c7) }
-
+  with ApproximateDistribution[_6, _7]
+  with PairwiseDistance[_6, _7]
+  with Statistics[_6, _7] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1879,7 +1715,8 @@ case class Matrix7D(
         Nat.toInt[D7]
       )
       .zipWithIndex
-      .sortBy(_._1).map(_._2)
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(7).get), c) }
   }
@@ -1893,34 +1730,25 @@ case class Matrix7D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_7]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, pi, pj) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, k) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k), l)) => (c, i, j, k, l) }
-      .keyBy { case (c, i, j, k, l) => Position(c.position(_5)) }
-      .tunedJoin(rc, saveDictionary(ctx, _5, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l), m)) => (c, i, j, k, l, m) }
-      .keyBy { case (c, i, j, k, l, m) => Position(c.position(_6)) }
-      .tunedJoin(rc, saveDictionary(ctx, _6, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m), n)) => (c, i, j, k, l, m, n) }
-      .keyBy { case (c, i, j, k, l, m, n) => Position(c.position(_7)) }
-      .tunedJoin(rc, saveDictionary(ctx, _7, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
+      .tunedJoin(jt, saveDictionary(ctx, _5, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
+      .tunedJoin(jt, saveDictionary(ctx, _6, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
+      .tunedJoin(jt, saveDictionary(ctx, _7, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n), o)) =>
         i + separator +
         j + separator +
@@ -1931,11 +1759,19 @@ case class Matrix7D(
         o + separator +
         c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_7]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_5, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_6, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_7, tuner))
+    .map { case ((((((c1, c2), c3), c4), c5), c6), c7) => Position(c1, c2, c3, c4, c5, c6, c7) }
 }
 
 /**
@@ -1949,18 +1785,9 @@ case class Matrix8D(
   with Matrix[_7, _8]
   with ReducibleMatrix[_7, _8]
   with ReshapeableMatrix[_7, _8]
-  with ApproximateDistribution[_7, _8] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_8]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_5), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_6), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_7), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_8), tuner).map { case Position(c) => c })
-    .map { case (((((((c1, c2), c3), c4), c5), c6), c7), c8) => Position(c1, c2, c3, c4, c5, c6, c7, c8) }
-
+  with ApproximateDistribution[_7, _8]
+  with PairwiseDistance[_7, _8]
+  with Statistics[_7, _8] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -2001,7 +1828,8 @@ case class Matrix8D(
         Nat.toInt[D8]
       )
       .zipWithIndex
-      .sortBy(_._1).map(_._2)
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(8).get), c) }
   }
@@ -2015,37 +1843,27 @@ case class Matrix8D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_8]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, pi, pj) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, k) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k), l)) => (c, i, j, k, l) }
-      .keyBy { case (c, i, j, k, l) => Position(c.position(_5)) }
-      .tunedJoin(rc, saveDictionary(ctx, _5, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l), m)) => (c, i, j, k, l, m) }
-      .keyBy { case (c, i, j, k, l, m) => Position(c.position(_6)) }
-      .tunedJoin(rc, saveDictionary(ctx, _6, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m), n)) => (c, i, j, k, l, m, n) }
-      .keyBy { case (c, i, j, k, l, m, n) => Position(c.position(_7)) }
-      .tunedJoin(rc, saveDictionary(ctx, _7, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m, n), o)) => (c, i, j, k, l, m, n, o) }
-      .keyBy { case (c, i, j, k, l, m, n, o) => Position(c.position(_8)) }
-      .tunedJoin(rc, saveDictionary(ctx, _8, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
+      .tunedJoin(jt, saveDictionary(ctx, _5, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
+      .tunedJoin(jt, saveDictionary(ctx, _6, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
+      .tunedJoin(jt, saveDictionary(ctx, _7, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m, n), o)) => (Position(c.position(_8)), (c, i, j, k, l, m, n, o)) }
+      .tunedJoin(jt, saveDictionary(ctx, _8, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n, o), p)) =>
         i + separator +
         j + separator +
@@ -2057,11 +1875,20 @@ case class Matrix8D(
         p + separator +
         c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_8]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_5, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_6, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_7, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_8, tuner))
+    .map { case (((((((c1, c2), c3), c4), c5), c6), c7), c8) => Position(c1, c2, c3, c4, c5, c6, c7, c8) }
 }
 
 /**
@@ -2074,19 +1901,9 @@ case class Matrix9D(
 ) extends FwMatrix9D
   with Matrix[_8, _9]
   with ReducibleMatrix[_8, _9]
-  with ApproximateDistribution[_8, _9] {
-  def domain[T <: Tuner : DomainTuners](tuner: T = Default()): U[Position[_9]] = names(Over(_1), tuner)
-    .map { case Position(c) => c }
-    .cartesian(names(Over(_2), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_3), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_4), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_5), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_6), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_7), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_8), tuner).map { case Position(c) => c })
-    .cartesian(names(Over(_9), tuner).map { case Position(c) => c })
-    .map { case ((((((((c1, c2), c3), c4), c5), c6), c7), c8), c9) => Position(c1, c2, c3, c4, c5, c6, c7, c8, c9) }
-
+  with ApproximateDistribution[_8, _9]
+  with PairwiseDistance[_8, _9]
+  with Statistics[_8, _9] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -2131,7 +1948,8 @@ case class Matrix9D(
         Nat.toInt[D9]
       )
       .zipWithIndex
-      .sortBy(_._1).map(_._2)
+      .sortBy { case (d, _) => d }
+      .map { case (_, i) => i }
 
     data.map { case Cell(p, c) => Cell(p.permute(ListSet(l:_*).sized(9).get), c) }
   }
@@ -2145,40 +1963,29 @@ case class Matrix9D(
     separator: String,
     tuner: T = Default()
   ): U[Cell[_9]] = {
-    val (rc, rd) = tuner.parameters match {
-      case Sequence(c, d) => (c, d)
-      case c @ Reducers(_) => (c, NoParameters())
-      case d @ Redistribute(_) => (NoParameters(), d)
-      case _ => (NoParameters(), NoParameters())
-    }
+    def msj[V] = Option(MapMapSideJoin[Position[_1], V, Long]())
+
+    val (jt, rt) = getSaveAsIVTuners(tuner)
 
     data
-      .keyBy { case c => Position(c.position(_1)) }
-      .tunedJoin(rc, saveDictionary(ctx, _1, file, dictionary, separator))
-      .values
-      .keyBy { case (c, i) => Position(c.position(_2)) }
-      .tunedJoin(rc, saveDictionary(ctx, _2, file, dictionary, separator))
-      .map { case (_, ((c, i), j)) => (c, i, j) }
-      .keyBy { case (c, pi, pj) => Position(c.position(_3)) }
-      .tunedJoin(rc, saveDictionary(ctx, _3, file, dictionary, separator))
-      .map { case (_, ((c, i, j), k)) => (c, i, j, k) }
-      .keyBy { case (c, i, j, k) => Position(c.position(_4)) }
-      .tunedJoin(rc, saveDictionary(ctx, _4, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k), l)) => (c, i, j, k, l) }
-      .keyBy { case (c, i, j, k, l) => Position(c.position(_5)) }
-      .tunedJoin(rc, saveDictionary(ctx, _5, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l), m)) => (c, i, j, k, l, m) }
-      .keyBy { case (c, i, j, k, l, m) => Position(c.position(_6)) }
-      .tunedJoin(rc, saveDictionary(ctx, _6, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m), n)) => (c, i, j, k, l, m, n) }
-      .keyBy { case (c, i, j, k, l, m, n) => Position(c.position(_7)) }
-      .tunedJoin(rc, saveDictionary(ctx, _7, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m, n), o)) => (c, i, j, k, l, m, n, o) }
-      .keyBy { case (c, i, j, k, l, m, n, o) => Position(c.position(_8)) }
-      .tunedJoin(rc, saveDictionary(ctx, _8, file, dictionary, separator))
-      .map { case (_, ((c, i, j, k, l, m, n, o), p)) => (c, i, j, k, l, m, n, o, p) }
-      .keyBy { case (c, i, j, k, l, m, n, o, p) => Position(c.position(_9)) }
-      .tunedJoin(rc, saveDictionary(ctx, _9, file, dictionary, separator))
+      .map { case c => (Position(c.position(_1)), c) }
+      .tunedJoin(jt, saveDictionary(ctx, _1, file, dictionary, separator, jt), msj)
+      .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
+      .tunedJoin(jt, saveDictionary(ctx, _2, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
+      .tunedJoin(jt, saveDictionary(ctx, _3, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
+      .tunedJoin(jt, saveDictionary(ctx, _4, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
+      .tunedJoin(jt, saveDictionary(ctx, _5, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
+      .tunedJoin(jt, saveDictionary(ctx, _6, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
+      .tunedJoin(jt, saveDictionary(ctx, _7, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m, n), o)) => (Position(c.position(_8)), (c, i, j, k, l, m, n, o)) }
+      .tunedJoin(jt, saveDictionary(ctx, _8, file, dictionary, separator, jt), msj)
+      .map { case (_, ((c, i, j, k, l, m, n, o), p)) => (Position(c.position(_9)), (c, i, j, k, l, m, n, o, p)) }
+      .tunedJoin(jt, saveDictionary(ctx, _9, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n, o, p), q)) =>
         i + separator +
         j + separator +
@@ -2191,10 +1998,20 @@ case class Matrix9D(
         q + separator +
         c.content.value.toShortString
       }
-      .redistribute(rd)
-      .saveAsTextFile(file)
+      .tunedSaveAsText(ctx, rt, file)
 
     data
   }
+
+  protected def naturalDomain(tuner: Tuner): U[Position[_9]] = coordinates(_1, tuner)
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_2, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_3, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_4, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_5, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_6, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_7, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_8, tuner))
+    .tunedCross[Value](tuner, (_, _) => true, coordinates(_9, tuner))
+    .map { case ((((((((c1, c2), c3), c4), c5), c6), c7), c8), c9) => Position(c1, c2, c3, c4, c5, c6, c7, c8, c9) }
 }
 

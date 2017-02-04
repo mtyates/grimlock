@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -166,7 +166,7 @@ class InstanceCentricTfIdf(args: Args) extends Job(args) {
   // the sums over all events.
   val tf = data
     .transform(WordCounts(stopwords = List()))
-    .summarise(Along(_1))(Sum())
+    .summarise(Along(_1))(Sums())
 
   // Get the number of instances (i.e. documents)
   val n = tf
@@ -181,7 +181,7 @@ class InstanceCentricTfIdf(args: Args) extends Job(args) {
   //  2/ Apply Idf transformation (using document count);
   //  3/ Compact into a Map for use in Tf-Idf below.
   val idf = tf
-    .summarise(Along(_1))(Count())
+    .summarise(Along(_1))(Counts())
     .transformWithValue(n, Idf(extractN, (df, n) => math.log10(n / df)))
     .compact(Over(_1))
 
@@ -195,7 +195,7 @@ class InstanceCentricTfIdf(args: Args) extends Job(args) {
     //.transform(BooleanTf())
     //.transform(LogarithmicTf())
     //.transformWithValue(
-    //  tf.summarise(Along(_2))(Max()).compact(Over(_1)),
+    //  tf.summarise(Along(_2))(Maximum()).compact(Over(_1)),
     //  AugmentedTf(ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble))
     //)
     .transformWithValue(idf, TfIdf(extractIdf))

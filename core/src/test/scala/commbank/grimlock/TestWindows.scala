@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock
+package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
@@ -437,16 +437,16 @@ class TestCumulativeSum extends TestWindow {
   def createCell(value: Double) = List(Cell(Position("foo", "bar|baz"), Content(ContinuousSchema[Double](), value)))
 
   "A CumulativeSum" should "prepare correctly" in {
-    CumulativeSum(Locate.AppendRemainderString[_1, _2](), true).prepare(cell1) shouldBe in1
-    CumulativeSum(Locate.AppendRemainderString[_1, _2](), false).prepare(cell1) shouldBe in1
-    CumulativeSum(Locate.AppendRemainderString[_1, _2](), true)
+    CumulativeSums(Locate.AppendRemainderString[_1, _2](), true).prepare(cell1) shouldBe in1
+    CumulativeSums(Locate.AppendRemainderString[_1, _2](), false).prepare(cell1) shouldBe in1
+    CumulativeSums(Locate.AppendRemainderString[_1, _2](), true)
       .prepare(cell2)
       .map(_.compare(Double.NaN)) shouldBe Option(0)
-    CumulativeSum(Locate.AppendRemainderString[_1, _2](), false).prepare(cell2) shouldBe in2f
+    CumulativeSums(Locate.AppendRemainderString[_1, _2](), false).prepare(cell2) shouldBe in2f
   }
 
   it should "initialise correctly" in {
-    val obj = CumulativeSum(Locate.AppendRemainderString[_1, _2](), true)
+    val obj = CumulativeSums(Locate.AppendRemainderString[_1, _2](), true)
 
     obj.initialise(rem, Option(1.0)) shouldBe ((Option(1.0), List((rem, 1.0))))
     obj.initialise(rem, None) shouldBe ((None, List()))
@@ -457,7 +457,7 @@ class TestCumulativeSum extends TestWindow {
   }
 
   it should "update correctly strict" in {
-    val obj = CumulativeSum(Locate.AppendRemainderString[_1, _2](), true)
+    val obj = CumulativeSums(Locate.AppendRemainderString[_1, _2](), true)
 
     val init = obj.initialise(rem, in1)
     init shouldBe ((Option(1.0), List((rem, 1.0))))
@@ -475,7 +475,7 @@ class TestCumulativeSum extends TestWindow {
   }
 
   it should "update correctly strict on first" in {
-    val obj = CumulativeSum(Locate.AppendRemainderString[_1, _2](), true)
+    val obj = CumulativeSums(Locate.AppendRemainderString[_1, _2](), true)
 
     val init = obj.initialise(rem, in2t)
     init._1.map(_.compare(Double.NaN)) shouldBe (Option(0))
@@ -495,7 +495,7 @@ class TestCumulativeSum extends TestWindow {
   }
 
   it should "update correctly non-strict" in {
-    val obj = CumulativeSum(Locate.AppendRemainderString[_1, _2](), false)
+    val obj = CumulativeSums(Locate.AppendRemainderString[_1, _2](), false)
 
     val init = obj.initialise(rem, in1)
     init shouldBe ((Option(1.0), List((rem, 1.0))))
@@ -511,7 +511,7 @@ class TestCumulativeSum extends TestWindow {
   }
 
   it should "update correctly non-strict on first" in {
-    val obj = CumulativeSum(Locate.AppendRemainderString[_1, _2](), false)
+    val obj = CumulativeSums(Locate.AppendRemainderString[_1, _2](), false)
 
     val init = obj.initialise(rem, in2f)
     init shouldBe ((None, List()))
@@ -527,7 +527,7 @@ class TestCumulativeSum extends TestWindow {
   }
 
   it should "present correctly strict" in {
-    CumulativeSum(Locate.AppendRemainderString[_1, _2](), true).present(sel, (rem, 1.0)) shouldBe createCell(1.0)
+    CumulativeSums(Locate.AppendRemainderString[_1, _2](), true).present(sel, (rem, 1.0)) shouldBe createCell(1.0)
   }
 }
 

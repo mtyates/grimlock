@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package commbank.grimlock.framework
 
 import commbank.grimlock.framework.aggregate._
 import commbank.grimlock.framework.content._
+import commbank.grimlock.framework.distance._
 import commbank.grimlock.framework.distribution._
 import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.environment._
@@ -24,6 +25,7 @@ import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.sample._
 import commbank.grimlock.framework.squash._
+import commbank.grimlock.framework.statistics._
 import commbank.grimlock.framework.transform._
 import commbank.grimlock.framework.utility._
 import commbank.grimlock.framework.window._
@@ -1043,13 +1045,15 @@ trait ReshapeableMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
 }
 
 /** Base trait for 1D specific operations. */
-trait Matrix1D extends Matrix[_0, _1] with ApproximateDistribution[_0, _1] { }
+trait Matrix1D extends Matrix[_0, _1] with ApproximateDistribution[_0, _1] with Statistics[_0, _1] { }
 
 /** Base trait for 2D specific operations. */
 trait Matrix2D extends Matrix[_1, _2]
   with ReducibleMatrix[_1, _2]
   with ReshapeableMatrix[_1, _2]
-  with ApproximateDistribution[_1, _2] {
+  with ApproximateDistribution[_1, _2]
+  with PairwiseDistance[_1, _2]
+  with Statistics[_1, _2] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1240,7 +1244,9 @@ trait Matrix2D extends Matrix[_1, _2]
 trait Matrix3D extends Matrix[_2, _3]
   with ReducibleMatrix[_2, _3]
   with ReshapeableMatrix[_2, _3]
-  with ApproximateDistribution[_2, _3] {
+  with ApproximateDistribution[_2, _3]
+  with PairwiseDistance[_2, _3]
+  with Statistics[_2, _3] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1268,7 +1274,9 @@ trait Matrix3D extends Matrix[_2, _3]
 trait Matrix4D extends Matrix[_3, _4]
   with ReducibleMatrix[_3, _4]
   with ReshapeableMatrix[_3, _4]
-  with ApproximateDistribution[_3, _4] {
+  with ApproximateDistribution[_3, _4]
+  with PairwiseDistance[_3, _4]
+  with Statistics[_3, _4] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1300,7 +1308,9 @@ trait Matrix4D extends Matrix[_3, _4]
 trait Matrix5D extends Matrix[_4, _5]
   with ReducibleMatrix[_4, _5]
   with ReshapeableMatrix[_4, _5]
-  with ApproximateDistribution[_4, _5] {
+  with ApproximateDistribution[_4, _5]
+  with PairwiseDistance[_4, _5]
+  with Statistics[_4, _5] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1336,7 +1346,9 @@ trait Matrix5D extends Matrix[_4, _5]
 trait Matrix6D extends Matrix[_5, _6]
   with ReducibleMatrix[_5, _6]
   with ReshapeableMatrix[_5, _6]
-  with ApproximateDistribution[_5, _6] {
+  with ApproximateDistribution[_5, _6]
+  with PairwiseDistance[_5, _6]
+  with Statistics[_5, _6] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1376,7 +1388,9 @@ trait Matrix6D extends Matrix[_5, _6]
 trait Matrix7D extends Matrix[_6, _7]
   with ReducibleMatrix[_6, _7]
   with ReshapeableMatrix[_6, _7]
-  with ApproximateDistribution[_6, _7] {
+  with ApproximateDistribution[_6, _7]
+  with PairwiseDistance[_6, _7]
+  with Statistics[_6, _7] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1420,7 +1434,9 @@ trait Matrix7D extends Matrix[_6, _7]
 trait  Matrix8D extends Matrix[_7, _8]
   with ReducibleMatrix[_7, _8]
   with ReshapeableMatrix[_7, _8]
-  with ApproximateDistribution[_7, _8] {
+  with ApproximateDistribution[_7, _8]
+  with PairwiseDistance[_7, _8]
+  with Statistics[_7, _8] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1465,7 +1481,11 @@ trait  Matrix8D extends Matrix[_7, _8]
 }
 
 /** Base trait for 9D specific operations. */
-trait Matrix9D extends Matrix[_8, _9] with ReducibleMatrix[_8, _9] with ApproximateDistribution[_8, _9] {
+trait Matrix9D extends Matrix[_8, _9]
+  with ReducibleMatrix[_8, _9]
+  with ApproximateDistribution[_8, _9]
+  with PairwiseDistance[_8, _9]
+  with Statistics[_8, _9] {
   /**
    * Permute the order of the coordinates in a position.
    *

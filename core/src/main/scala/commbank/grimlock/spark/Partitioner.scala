@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
 
 package commbank.grimlock.spark.partition
 
-import commbank.grimlock.framework.{ Cell, Default, NoParameters, Reducers, Tuner }
+import commbank.grimlock.framework.{ Cell, Default, Tuner }
+import commbank.grimlock.framework.DefaultTuners.TP1
 import commbank.grimlock.framework.partition.{ Partitions => FwPartitions }
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
 import commbank.grimlock.spark.Persist
 import commbank.grimlock.spark.SparkImplicits._
@@ -39,9 +39,9 @@ case class Partitions[
   data: RDD[(I, Cell[P])]
 ) extends FwPartitions[P, I]
   with Persist[(I, Cell[P])] {
-  def add(id: I, partition: U[Cell[P]]): U[(I, Cell[P])] = data ++ (partition.map(c => (id, c)))
+  def add(id: I, partition: U[Cell[P]]): U[(I, Cell[P])] = data ++ (partition.map { case c => (id, c) })
 
-  type ForAllTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
+  type ForAllTuners[T] = TP1[T]
   def forAll[
     Q <: Nat,
     T <: Tuner : ForAllTuners
@@ -51,18 +51,18 @@ case class Partitions[
     tuner: T = Default()
   )(implicit
     ev1: ClassTag[I]
-  ): U[(I, Cell[Q])] = forEach(ids(tuner).toLocalIterator.toList.filter(!exclude.contains(_)), fn)
+  ): U[(I, Cell[Q])] = forEach(ids(tuner).toLocalIterator.toList.filter { case i => !exclude.contains(i) }, fn)
 
   def forEach[Q <: Nat](ids: List[I], fn: (I, U[Cell[P]]) => U[Cell[Q]]): U[(I, Cell[Q])] = ids
-    .map(i => fn(i, get(i)).map(c => (i, c)))
+    .map { case i => fn(i, get(i)).map { case c => (i, c) } }
     .reduce[U[(I, Cell[Q])]]((x, y) => x ++ y)
 
   def get(id: I): U[Cell[P]] = data.collect { case (i, c) if (id == i) => c }
 
-  type IdsTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
+  type IdsTuners[T] = TP1[T]
   def ids[T <: Tuner : IdsTuners](tuner: T = Default())(implicit ev1: ClassTag[I]): U[I] = data
-    .keys
-    .tunedDistinct(tuner.parameters)
+    .map { case (i, _) => i }
+    .tunedDistinct(tuner)
 
   def merge(ids: List[I]): U[Cell[P]] = data.collect { case (i, c) if (ids.contains(i)) => c }
 

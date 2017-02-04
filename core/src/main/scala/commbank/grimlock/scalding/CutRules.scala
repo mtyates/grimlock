@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,28 +27,28 @@ import shapeless.nat._1
 /** Implement cut rules using Scalding. */
 object CutRules extends FwCutRules with UserData {
   def fixed(ext: E[Stats], min: Position[_1], max: Position[_1], k: Long): E[Map[Position[_1], List[Double]]] = ext
-    .map(stats => fixedFromStats(stats, min, max, k))
+    .map { case stats => fixedFromStats(stats, min, max, k) }
 
   def squareRootChoice(
     ext: E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = ext.map(stats => squareRootChoiceFromStats(stats, count, min, max))
+  ): E[Map[Position[_1], List[Double]]] = ext.map { case stats => squareRootChoiceFromStats(stats, count, min, max) }
 
   def sturgesFormula(
     ext: E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = ext.map(stats => sturgesFormulaFromStats(stats, count, min, max))
+  ): E[Map[Position[_1], List[Double]]] = ext.map { case stats => sturgesFormulaFromStats(stats, count, min, max) }
 
   def riceRule(
     ext: E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = ext.map(stats => riceRuleFromStats(stats, count, min, max))
+  ): E[Map[Position[_1], List[Double]]] = ext.map { case stats => riceRuleFromStats(stats, count, min, max) }
 
   def doanesFormula(
     ext: E[Stats],
@@ -56,7 +56,8 @@ object CutRules extends FwCutRules with UserData {
     min: Position[_1],
     max: Position[_1],
     skewness: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = ext.map(stats => doanesFormulaFromStats(stats, count, min, max, skewness))
+  ): E[Map[Position[_1], List[Double]]] = ext
+    .map { case stats => doanesFormulaFromStats(stats, count, min, max, skewness) }
 
   def scottsNormalReferenceRule(
     ext: E[Stats],
@@ -65,7 +66,7 @@ object CutRules extends FwCutRules with UserData {
     max: Position[_1],
     sd: Position[_1]
   ): E[Map[Position[_1], List[Double]]] = ext
-    .map(stats => scottsNormalReferenceRuleFromStats(stats, count, min, max, sd))
+    .map { case stats => scottsNormalReferenceRuleFromStats(stats, count, min, max, sd) }
 
   def breaks[P <% Position[_1]](range: Map[P, List[Double]]): E[Map[Position[_1], List[Double]]] = new LiteralValue(
     breaksFromMap(range)

@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock
+package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.encoding._
@@ -631,7 +631,7 @@ class TestScaldingPositions extends TestPositions {
 
   "A Positions of Position2D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_1), Default())
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result2
   }
 
@@ -643,7 +643,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_1), Default())
+      .names(Along(_1), Default(12))
       .toList.sorted shouldBe result4
   }
 
@@ -655,7 +655,7 @@ class TestScaldingPositions extends TestPositions {
 
   "A Positions of Position3D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_1), Default())
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result6
   }
 
@@ -667,7 +667,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_3), Default())
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result8
   }
 
@@ -679,7 +679,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_2), Default())
+      .names(Along(_2), Default(12))
       .toList.sorted shouldBe result10
   }
 
@@ -691,7 +691,7 @@ class TestScaldingPositions extends TestPositions {
 
   "A Positions of Position4D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_1), Default())
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result12
   }
 
@@ -703,7 +703,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_3), Default())
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result14
   }
 
@@ -715,7 +715,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _1 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_1), Default())
+      .names(Along(_1), Default(12))
       .toList.sorted shouldBe result16
   }
 
@@ -727,7 +727,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _3 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_3), Default())
+      .names(Along(_3), Default(12))
       .toList.sorted shouldBe result18
   }
 
@@ -739,7 +739,7 @@ class TestScaldingPositions extends TestPositions {
 
   "A Positions of Position5D" should "return its _1 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_1), Default())
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result20
   }
 
@@ -751,7 +751,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_3), Default())
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result22
   }
 
@@ -763,7 +763,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _5 over names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_5), Default())
+      .names(Over(_5), Default(12))
       .toList.sorted shouldBe result24
   }
 
@@ -775,7 +775,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _2 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_2), Default())
+      .names(Along(_2), Default(12))
       .toList.sorted shouldBe result26
   }
 
@@ -787,7 +787,7 @@ class TestScaldingPositions extends TestPositions {
 
   it should "return its _4 along names" in {
     toPipe(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_4), Default())
+      .names(Along(_4), Default(12))
       .toList.sorted shouldBe result28
   }
 
@@ -808,7 +808,7 @@ class TestSparkPositions extends TestPositions {
 
   "A Positions of Position2D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Over(_1), Default(Reducers(12)))
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result2
   }
 
@@ -820,7 +820,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i) })
-      .names(Along(_1), Default(Reducers(12)))
+      .names(Along(_1), Default(12))
       .toList.sorted shouldBe result4
   }
 
@@ -832,7 +832,7 @@ class TestSparkPositions extends TestPositions {
 
   "A Positions of Position3D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_1), Default(Reducers(12)))
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result6
   }
 
@@ -844,7 +844,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Over(_3), Default(Reducers(12)))
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result8
   }
 
@@ -856,7 +856,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1) })
-      .names(Along(_2), Default(Reducers(12)))
+      .names(Along(_2), Default(12))
       .toList.sorted shouldBe result10
   }
 
@@ -868,7 +868,7 @@ class TestSparkPositions extends TestPositions {
 
   "A Positions of Position4D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_1), Default(Reducers(12)))
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result12
   }
 
@@ -880,7 +880,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Over(_3), Default(Reducers(12)))
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result14
   }
 
@@ -892,7 +892,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _1 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_1), Default(Reducers(12)))
+      .names(Along(_1), Default(12))
       .toList.sorted shouldBe result16
   }
 
@@ -904,7 +904,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _3 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2) })
-      .names(Along(_3), Default(Reducers(12)))
+      .names(Along(_3), Default(12))
       .toList.sorted shouldBe result18
   }
 
@@ -916,7 +916,7 @@ class TestSparkPositions extends TestPositions {
 
   "A Positions of Position5D" should "return its _1 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_1), Default(Reducers(12)))
+      .names(Over(_1), Default(12))
       .toList.sorted shouldBe result20
   }
 
@@ -928,7 +928,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _3 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_3), Default(Reducers(12)))
+      .names(Over(_3), Default(12))
       .toList.sorted shouldBe result22
   }
 
@@ -940,7 +940,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _5 over names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Over(_5), Default(Reducers(12)))
+      .names(Over(_5), Default(12))
       .toList.sorted shouldBe result24
   }
 
@@ -952,7 +952,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _2 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_2), Default(Reducers(12)))
+      .names(Along(_2), Default(12))
       .toList.sorted shouldBe result26
   }
 
@@ -964,7 +964,7 @@ class TestSparkPositions extends TestPositions {
 
   it should "return its _4 along names" in {
     toRDD(data.map { case (s, i) => Position(s, i, i + 1, i + 2, i + 3) })
-      .names(Along(_4), Default(Reducers(12)))
+      .names(Along(_4), Default(12))
       .toList.sorted shouldBe result28
   }
 

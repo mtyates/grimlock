@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ object PipelineDataPreparation {
     // Compute descriptive statistics on the training data.
     val descriptive = train
       .summarise(Along(_1))(
-        Count().andThenRelocate(_.position.append("count").toOption),
+        Counts().andThenRelocate(_.position.append("count").toOption),
         Moments(
           _.append("mean").toOption,
           _.append("sd").toOption,
@@ -83,7 +83,7 @@ object PipelineDataPreparation {
           _.append("kurtosis").toOption
         ),
         Limits(_.append("min").toOption, _.append("max").toOption),
-        MaxAbs().andThenRelocate(_.position.append("max.abs").toOption)
+        MaximumAbsolute().andThenRelocate(_.position.append("max.abs").toOption)
       )
 
     // Compute histogram on the categorical features in the training data.
@@ -92,7 +92,7 @@ object PipelineDataPreparation {
 
     // Compute the counts for each categorical features.
     val counts = histogram
-      .summarise(Over(_1))(Sum())
+      .summarise(Over(_1))(Sums())
       .compact()
 
     // Define extractor to extract counts from the map.
@@ -102,7 +102,7 @@ object PipelineDataPreparation {
     val summary = histogram
       .summariseWithValue(Over(_1))(
         counts,
-        Count().andThenRelocate(_.position.append("num.cat").toOption),
+        Counts().andThenRelocate(_.position.append("num.cat").toOption),
         Entropy(extractCount).andThenRelocate(_.position.append("entropy").toOption),
         FrequencyRatio().andThenRelocate(_.position.append("freq.ratio").toOption)
       )

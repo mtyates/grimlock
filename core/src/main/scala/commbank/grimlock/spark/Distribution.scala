@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import commbank.grimlock.framework.{
 }
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.content.metadata.DiscreteSchema
-import commbank.grimlock.framework.DefaultTuners.TP2
+import commbank.grimlock.framework.DefaultTuners.{ TP1, TP3 }
 import commbank.grimlock.framework.distribution.{
   ApproximateDistribution => FwApproximateDistribution,
   CountMap,
@@ -36,6 +36,7 @@ import commbank.grimlock.framework.distribution.{
 import commbank.grimlock.framework.position.{ Position, Slice }
 import commbank.grimlock.framework.utility.=:!=
 
+import commbank.grimlock.spark.MapMapSideJoin
 import commbank.grimlock.spark.Matrix
 import commbank.grimlock.spark.SparkImplicits._
 
@@ -46,7 +47,7 @@ import shapeless.nat.{ _0, _1 }
 import shapeless.ops.nat.{ Diff, GT }
 
 trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribution[L, P] { self: Matrix[L, P] =>
-  type HistogramTuners[T] = TP2[T]
+  type HistogramTuners[T] = TP1[T]
   def histogram[
     Q <: Nat,
     T <: Tuner : HistogramTuners
@@ -62,11 +63,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
     .filter { case c => (!filter || c.content.schema.classification.isOfType(CategoricalType)) }
-    .flatMap { case c => name(slice.selected(c.position), c.content).map((_, 1L)) }
-    .tunedReduce(tuner.parameters, _ + _)
+    .flatMap { case c => name(slice.selected(c.position), c.content) }
+    .tunedSize(tuner)
     .map { case (p, s) => Cell(p, Content(DiscreteSchema[Long](), s)) }
 
-  type QuantileTuners[T] = TP2[T]
+  type QuantileTuners[T] = TP3[T]
   def quantile[
     Q <: Nat,
     T <: Tuner : QuantileTuners
@@ -85,30 +86,22 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev3: GT[Q, slice.S],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
-    val q = QuantileImpl[P, slice.S, Q](probs, quantiser, name, nan)
+    val msj = Option(MapMapSideJoin[Position[slice.S], Double, Long]())
+    val qnt = QuantileImpl[P, slice.S, Q](probs, quantiser, name, nan)
 
     val prep = data
       .collect { case c if (!filter || c.content.schema.classification.isOfType(NumericType)) =>
-        (slice.selected(c.position), q.prepare(c))
+        (slice.selected(c.position), qnt.prepare(c))
       }
 
     prep
-      .tunedJoin(tuner.parameters, prep.map { case (s, _) => (s, 1L) }.tunedReduce(tuner.parameters, _ + _))
-      .map { case (s, (d, c)) => ((s, c), d) }
-      .groupByKey
-      .flatMap { case ((p, count), itr) =>
-        val lst = itr.toList.sorted
-        val first = lst.head
-        val (t, c, o) = q.initialise(first, count)
-
-        o.flatMap(q.present(p, _)) ++ lst
-          .tail
-          .scanLeft((t, List[q.O]())) { case ((t, _), i) => q.update(i, t, c) }
-          .flatMap { case (_, o) => o.flatMap(q.present(p, _)) }
-      }
+      .tunedJoin(tuner, prep.map { case (sel, _) => sel }.tunedSize(tuner), msj)
+      .map { case (s, (q, c)) => ((s, c), q) }
+      .tunedStream(tuner, (key, itr) => QuantileImpl.stream(qnt, key, itr.toList.sorted.toIterator))
+      .map { case (_, c) => c }
   }
 
-  type CountMapQuantilesTuners[T] = TP2[T]
+  type CountMapQuantilesTuners[T] = TP1[T]
   def countMapQuantiles[
     Q <: Nat,
     T <: Tuner : CountMapQuantilesTuners
@@ -133,10 +126,10 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
       else
         None
     }
-    .tunedReduce(tuner.parameters, CountMap.reduce)
+    .tunedReduce(tuner, CountMap.reduce)
     .flatMap { case (pos, t) => CountMap.toCells(t, probs, pos, quantiser, name, nan) }
 
-  type TDigestQuantilesTuners[T] = TP2[T]
+  type TDigestQuantilesTuners[T] = TP1[T]
   def tDigestQuantiles[
     Q <: Nat,
     T <: Tuner : TDigestQuantilesTuners
@@ -158,15 +151,15 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     .flatMap { case c =>
       if (!filter || c.content.schema.classification.isOfType(NumericType))
         c.content.value.asDouble.flatMap { case d =>
-          TDigest.from(d, compression).map(td => (slice.selected(c.position), td))
+          TDigest.from(d, compression).map { case td => (slice.selected(c.position), td) }
         }
       else
         None
     }
-    .tunedReduce(tuner.parameters, TDigest.reduce)
+    .tunedReduce(tuner, TDigest.reduce)
     .flatMap { case (pos, t) => TDigest.toCells(t, probs, pos, name, nan) }
 
-  type UniformQuantilesTuners[T] = TP2[T]
+  type UniformQuantilesTuners[T] = TP1[T]
   def uniformQuantiles[
     Q <: Nat,
     T <: Tuner : UniformQuantilesTuners
@@ -186,11 +179,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
   ): U[Cell[Q]] = data
     .flatMap { case c =>
       if (!filter || c.content.schema.classification.isOfType(NumericType))
-        c.content.value.asDouble.map(d =>(slice.selected(c.position), StreamingHistogram.from(d, count)))
+        c.content.value.asDouble.map { case d =>(slice.selected(c.position), StreamingHistogram.from(d, count)) }
       else
         None
     }
-    .tunedReduce(tuner.parameters, StreamingHistogram.reduce)
+    .tunedReduce(tuner, StreamingHistogram.reduce)
     .flatMap { case (pos, t) => StreamingHistogram.toCells(t, count, pos, name, nan) }
 }
 

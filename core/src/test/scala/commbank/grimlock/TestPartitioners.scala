@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock
+package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
@@ -388,7 +388,7 @@ class TestScaldingPartitions extends TestPartitions {
       .forAll(
         TestPartitions.doubleT,
         List("train", "not.there"),
-        Default(Sequence(Reducers(123), Execution(scaldingCtx)))
+        Default(Pair(Reducers(123), Execution(scaldingCtx)))
       )
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
@@ -398,7 +398,7 @@ class TestSparkPartitions extends TestPartitions {
 
   "A Partitions" should "return its ids" in {
     toRDD(data)
-      .ids(Default(Reducers(12)))
+      .ids(Default(12))
       .toList.sorted shouldBe result1
   }
 
@@ -434,7 +434,7 @@ class TestSparkPartitions extends TestPartitions {
 
   it should "forall should apply to selected partitions with reducers" in {
     toRDD(data)
-      .forAll(TestPartitions.doubleR, List("train", "not.there"), Default(Reducers(10)))
+      .forAll(TestPartitions.doubleR, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }

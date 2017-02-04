@@ -1,4 +1,4 @@
-// Copyright 2016 Commonwealth Bank of Australia
+// Copyright 2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -340,7 +340,7 @@ object Context {
   )(implicit
     ctx: Context,
     ev: ClassTag[Position[_1]]
-  ): RDD[Position[_1]] = ctx.context.parallelize(t.map(Position(_)))
+  ): RDD[Position[_1]] = ctx.context.parallelize(t.map { case c => Position(c) })
 
   /** Converts a `Position[T]` to a `RDD[Position[T]]`. */
   implicit def positionToRDD[
@@ -377,7 +377,7 @@ object Context {
     def toUnit(): Unit = ()
 
     /** Specifies tuners permitted on a call to `saveAsText`. */
-    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Default[Redistribute]]
+    type SaveAsTextTuners[T] = T In OneOf[Default[NoParameters]]#Or[Redistribute]
 
     /**
      * Persist to disk.
@@ -396,8 +396,7 @@ object Context {
       tuner: T = Default()
     ): RDD[String] = {
       data
-        .redistribute(tuner.parameters)
-        .saveAsTextFile(file)
+        .tunedSaveAsText(ctx, tuner, file)
 
       data
     }

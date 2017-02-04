@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.distribution._
 import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.statistics._
 
 import com.twitter.algebird.{ Moments => AlgeMoments, Monoid }
 
@@ -156,28 +157,8 @@ private[aggregate] trait MomentsPresent[
   protected def missing(t: T): Boolean = false
 }
 
-/** Companion object to `MomentsPresent`. */
-private[aggregate] object MomentsPresent {
-  /**
-   * Return the standard deviation.
-   *
-   * @param t      Algebird moments object to get standard deviation from.
-   * @param biased Indicates if the biased estimate should be return or not.
-   */
-  def sd(t: AlgeMoments, biased: Boolean): Double =
-    if (t.count > 1) { if (biased) t.stddev else t.stddev * math.sqrt(t.count / (t.count - 1.0)) } else Double.NaN
-
-  /**
-   * Return the kurtosis.
-   *
-   * @param t      Algebird moments object to get kurtosis from.
-   * @param excess Indicates if the excess kurtosis should be return or not.
-   */
-  def kurtosis(t: AlgeMoments, excess: Boolean): Double = if (excess) t.kurtosis else t.kurtosis + 3
-}
-
 /** Count reductions. */
-case class Count[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
+case class Counts[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
   type T = Long
   type O[A] = Single[A]
 
@@ -190,7 +171,7 @@ case class Count[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
 }
 
 /** Distinct count reductions. */
-case class DistinctCount[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
+case class DistinctCounts[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
   type T = Set[Value]
   type O[A] = Single[A]
 
@@ -207,7 +188,7 @@ case class DistinctCount[P <: Nat, S <: Nat]() extends Aggregator[P, S, S] {
  *
  * @param predicte Function to be applied to content.
  */
-case class PredicateCount[P <: Nat, S <: Nat](predicate: (Content) => Boolean) extends Aggregator[P, S, S] {
+case class PredicateCounts[P <: Nat, S <: Nat](predicate: (Content) => Boolean) extends Aggregator[P, S, S] {
   type T = Long
   type O[A] = Single[A]
 
@@ -272,9 +253,9 @@ case class Moments[
       Multiple(
         List(
           mean(pos).map(Cell(_, Content(ContinuousSchema[Double](), t.mean))),
-          sd(pos).map(Cell(_, Content(ContinuousSchema[Double](), MomentsPresent.sd(t, biased)))),
+          sd(pos).map(Cell(_, Content(ContinuousSchema[Double](), Statistics.sd(t, biased)))),
           skewness(pos).map(Cell(_, Content(ContinuousSchema[Double](), t.skewness))),
-          kurtosis(pos).map(Cell(_, Content(ContinuousSchema[Double](), MomentsPresent.kurtosis(t, excess))))
+          kurtosis(pos).map(Cell(_, Content(ContinuousSchema[Double](), Statistics.kurtosis(t, excess))))
         )
         .flatten
       )
@@ -325,7 +306,7 @@ case class StandardDeviation[
 ) extends Aggregator[P, S, S]
   with MomentsPrepareReduce[P, S, S]
   with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = MomentsPresent.sd(t, biased)
+  protected def asDouble(t: T): Double = Statistics.sd(t, biased)
 }
 
 /**
@@ -373,7 +354,7 @@ case class Kurtosis[
 ) extends Aggregator[P, S, S]
   with MomentsPrepareReduce[P, S, S]
   with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = MomentsPresent.kurtosis(t, excess)
+  protected def asDouble(t: T): Double = Statistics.kurtosis(t, excess)
 }
 
 /**
@@ -443,7 +424,7 @@ case class Limits[
  * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
  *               data).
  */
-case class Min[
+case class Minimum[
   P <: Nat,
   S <: Nat
 ](
@@ -465,7 +446,7 @@ case class Min[
  * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
  *               data).
  */
-case class Max[
+case class Maximum[
   P <: Nat,
   S <: Nat
 ](
@@ -487,7 +468,7 @@ case class Max[
  * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
  *               data).
  */
-case class MaxAbs[
+case class MaximumAbsolute[
   P <: Nat,
   S <: Nat
 ](
@@ -509,7 +490,7 @@ case class MaxAbs[
  * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
  *               data).
  */
-case class Sum[
+case class Sums[
   P <: Nat,
   S <: Nat
 ](
@@ -532,7 +513,7 @@ case class Sum[
  * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
  *               data).
  */
-case class WeightedSum[
+case class WeightedSums[
   P <: Nat,
   S <: Nat,
   W

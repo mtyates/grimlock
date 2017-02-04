@@ -144,27 +144,15 @@ Usage - Scalding
 
 ### Setting up REPL
 
-The examples below are executed in the Scalding REPL. Note that the Scalding REPL only works in [local](https://github.com/twitter/scalding/issues/1195) mode for scala 2.11. To use grimlock in the REPL follow the following steps:
+The examples below are executed in the Scalding REPL. To use grimlock in the REPL follow the following steps:
 
 1. Install Scalding; follow [these](https://github.com/twitter/scalding/wiki/Getting-Started) instructions.
-2. Check out tag (0.13.1); git checkout 0.13.1.
-3. Update `project/Build.scala` of the scalding project:
-    * Update the `scalaVersion` under `sharedSettings` to `scalaVersion := "2.11.5"`;
-    * For the module `scaldingRepl`, comment out `skip in compile := !isScala210x(scalaVersion.value),`;
-    * For the module `scaldingRepl`, add `grimlock` as a dependency:
-        + Under the `libraryDependencies` add,
-            `"au.com.cba.omnia" %% "grimlock-core" % "<version-string>"`;
-    * Optionally uncomment `test in assembly := {}`.
-4. Update `project/plugins.sbt` to add the 'commbank-ext' repository.
-
-    ```
-    resolvers ++= Seq(
-      "jgit-repo" at "http://download.eclipse.org/jgit/maven",
-      "sonatype-releases"  at "https://oss.sonatype.org/content/repositories/releases",
-      "commbank-ext" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local-ivy"
-    )
-    ```
-5. Start REPL; ./sbt scalding-repl/console.
+2. Check out tag (0.16); `git checkout 0.16`.
+3. Update `build.sbt` of the scalding project. For the module `scaldingRepl`, add `grimlock` as a dependency under the `libraryDependencies`:
+    `"au.com.cba.omnia" %% "grimlock-core" % "<version-string>"`;
+4. Update `project/plugins.sbt` to add the 'commbank-ext' repository to the `resolvers`:
+    `"commbank-ext" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local-ivy"`
+5. Start REPL; `./sbt scalding-repl/console`.
 
 After the last command, the console should appear as follows:
 
@@ -176,7 +164,7 @@ After the last command, the console should appear as follows:
 import com.twitter.scalding._
 import com.twitter.scalding.ReplImplicits._
 import com.twitter.scalding.ReplImplicitContext._
-Welcome to Scala version 2.11.5 (Java HotSpot(TM) 64-Bit Server VM, Java 1.7.0_75).
+Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.7.0_75).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -262,7 +250,7 @@ Position(StringValue(iid:0444510,StringCodec),StringValue(fid:D,StringCodec))
 Now for something a little more interesting. Let's compute the number of features for each instance and then compute the moments of the distribution of counts:
 
 ```
-scala> val counts = data.summarise(Over(_1))(Count())
+scala> val counts = data.summarise(Over(_1))(Counts())
 
 scala> counts.dump
 Cell(Position(StringValue(iid:0064402,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
@@ -290,11 +278,13 @@ Cell(Position(StringValue(kurtosis,StringCodec)),Content(ContinuousSchema[Double
 Computing the moments can also be achieved more concisely as follows:
 
 ```
-scala> counts.summarise(Along(_1))(Moments(
-  _.append("mean").toOption,
-  _.append("sd").toOption,
-  _.append("skewness").toOption,
-  _.append("kurtosis").toOption)
+scala> counts.summarise(Along(_1))(
+  Moments(
+    _.append("mean").toOption,
+    _.append("sd").toOption,
+    _.append("skewness").toOption,
+    _.append("kurtosis").toOption
+  )
 ).dump
 
 ```
@@ -309,9 +299,9 @@ Usage - Spark
 The examples below are executed in the Spark REPL. To use grimlock in the REPL follow the following steps:
 
 1. Download the latest source code release for Spark from [here](http://spark.apache.org/downloads.html).
-2. Compile Spark for Scala 2.11, see [here](http://spark.apache.org/docs/latest/building-spark.html#building-for-scala-211). Note that if `mvn` (maven) is not installed then one might be able to use the `build/mvn` binary in the build directory.
-3. You can, optionally, suppress much of the console INFO output. Follow [these](http://stackoverflow.com/questions/28189408/how-to-reduce-the-verbosity-of-sparks-runtime-output) instructions.
-4. Start REPL; ./bin/spark-shell --master local --jars <path to>/grimlock.jar
+2. You can, optionally, suppress much of the console INFO output. Follow [these](http://stackoverflow.com/questions/28189408/how-to-reduce-the-verbosity-of-sparks-runtime-output) instructions.
+3. Update the shapeless jar (in the `jars` folder) to version: `shapeless_2.11-2.3.0.jar`.
+4. Start REPL; `./bin/spark-shell --master local --jars <path to>/grimlock.jar`.
 
 After the last command, the console should appear as follows:
 
@@ -324,10 +314,10 @@ Welcome to
       ____              __
      / __/__  ___ _____/ /__
     _\ \/ _ \/ _ `/ __/  '_/
-   /___/ .__/\_,_/_/ /_/\_\   version 1.6.2
+   /___/ .__/\_,_/_/ /_/\_\   version 2.1.0
       /_/
 
-Using Scala version 2.11.7 (OpenJDK 64-Bit Server VM, Java 1.7.0_101)
+Using Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.7.0_101)
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -413,7 +403,7 @@ Position(StringValue(iid:0444510,StringCodec),StringValue(fid:D,StringCodec))
 Now for something a little more interesting. Let's compute the number of features for each instance and then compute the moments of the distribution of counts:
 
 ```
-scala> val counts = data.summarise(Over(_1))(Count())
+scala> val counts = data.summarise(Over(_1))(Counts())
 
 scala> counts.foreach(println)
 Cell(Position(StringValue(iid:0064402,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
@@ -441,11 +431,13 @@ Cell(Position(StringValue(kurtosis,StringCodec)),Content(ContinuousSchema[Double
 Computing the moments can also be achieved more concisely as follows:
 
 ```
-scala> counts.summarise(Along(_1))(Moments(
-  _.append("mean").toOption,
-  _.append("sd").toOption,
-  _.append("skewness").toOption,
-  _.append("kurtosis").toOption)
+scala> counts.summarise(Along(_1))(
+  Moments(
+    _.append("mean").toOption,
+    _.append("sd").toOption,
+    _.append("skewness").toOption,
+    _.append("kurtosis").toOption
+  )
 ).foreach(println)
 ```
 

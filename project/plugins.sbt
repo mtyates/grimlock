@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ resolvers ++= Seq(
   "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
 )
 
-val uniformVersion = "1.11.0-20160606065816-8e595be"
+val uniformVersion = "1.14.2-20161220001943-4f352b6"
 
 addSbtPlugin("au.com.cba.omnia" % "uniform-core"       % uniformVersion)
 addSbtPlugin("au.com.cba.omnia" % "uniform-dependency" % uniformVersion)

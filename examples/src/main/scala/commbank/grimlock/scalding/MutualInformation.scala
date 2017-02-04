@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ class MutualInformation(args: Args) extends Job(args) {
       Cell.parse3DWithDictionary(dictionary, _2, third = DateCodec())
     )
     .data
-    .squash(_3, PreservingMinPosition())
+    .squash(_3, PreservingMinimumPosition())
     .transform(CeilingBucketing())
 
   // Define extractor for extracting count from histogram count map.
@@ -85,7 +85,7 @@ class MutualInformation(args: Args) extends Job(args) {
 
   // Compute count of histogram elements.
   val mcount = mhist
-    .summarise(Over(_1))(Sum())
+    .summarise(Over(_1))(Sums())
     .compact()
 
   // Compute sum of marginal entropy
@@ -107,7 +107,7 @@ class MutualInformation(args: Args) extends Job(args) {
 
   // Compute count of histogram elements.
   val jcount = jhist
-    .summarise(Over(_1))(Sum())
+    .summarise(Over(_1))(Sums())
     .compact()
 
   // Compute joint entropy
@@ -121,7 +121,7 @@ class MutualInformation(args: Args) extends Job(args) {
   // 1/ Sum marginal and negated joint entropy
   // 2/ Persist mutual information.
   (marginal ++ joint)
-    .summarise(Over(_1))(Sum())
+    .summarise(Over(_1))(Sums())
     .saveAsText(ctx, s"./demo.${output}/mi.out")
     .toUnit
 }

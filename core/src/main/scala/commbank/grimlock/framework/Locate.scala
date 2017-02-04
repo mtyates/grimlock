@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ import shapeless.ops.nat.{ Diff, LTEq, ToInt }
 object Locate {
   /** Extract position. */
   type FromPosition[P <: Nat, Q <: Nat] = (Position[P]) => Option[Position[Q]]
+
+  /** Extract position for left and right positions. */
+  type FromPairwisePositions[P <: Nat, Q <: Nat] = (Position[P], Position[P]) => Option[Position[Q]]
 
   /** Extract position from cell. */
   type FromCell[P <: Nat, Q <: Nat] = (Cell[P]) => Option[Position[Q]]

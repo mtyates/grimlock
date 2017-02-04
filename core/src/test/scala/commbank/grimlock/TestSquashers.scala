@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock
+package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
@@ -33,10 +33,10 @@ trait TestSquashers extends TestGrimlock {
   val cell2 = Cell(Position(2, "a", DateValue(dfmt.parse("2002-01-01"), DateCodec())), con2)
 }
 
-class TestPreservingMaxPosition extends TestSquashers {
+class TestPreservingMaximumPosition extends TestSquashers {
 
-  "A PreservingMaxPosition" should "return the second cell for the first dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+  "A PreservingMaximumPosition" should "return the second cell for the first dimension when greater" in {
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
     t1 shouldBe Option((cell1.position(_1), cell1.content))
@@ -50,7 +50,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the first dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
     t1 shouldBe Option((cell2.position(_1), cell2.content))
@@ -64,7 +64,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the first dimension when equal" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
     t1 shouldBe Option((cell2.position(_1), cell2.content))
@@ -78,7 +78,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the second dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
     t1 shouldBe Option((cell1.position(_2), cell1.content))
@@ -92,7 +92,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the second cell for the second dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
     t1 shouldBe Option((cell2.position(_2), cell2.content))
@@ -106,7 +106,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the second dimension when equal" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
     t1 shouldBe Option((cell1.position(_2), cell1.content))
@@ -120,7 +120,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the second cell for the third dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
     t1 shouldBe Option((cell1.position(_3), cell1.content))
@@ -134,7 +134,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the third dimension when greater" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
     t1 shouldBe Option((cell2.position(_3), cell2.content))
@@ -148,7 +148,7 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 
   it should "return the first cell for the third dimension when equal" in {
-    val squash = PreservingMaxPosition[_3]()
+    val squash = PreservingMaximumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
     t1 shouldBe Option((cell2.position(_3), cell2.content))
@@ -162,10 +162,10 @@ class TestPreservingMaxPosition extends TestSquashers {
   }
 }
 
-class TestPreservingMinPosition extends TestSquashers {
+class TestPreservingMinimumPosition extends TestSquashers {
 
-  "A PreservingMinPosition" should "return the first cell for the first dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+  "A PreservingMinimumPosition" should "return the first cell for the first dimension when less" in {
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
     t1 shouldBe Option((cell1.position(_1), cell1.content))
@@ -179,7 +179,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the second cell for the first dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _1)
     t1 shouldBe Option((cell2.position(_1), cell2.content))
@@ -193,7 +193,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the first cell for the first dimension when equal" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _1)
     t1 shouldBe Option((cell1.position(_1), cell1.content))
@@ -207,7 +207,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the second cell for the second dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _2)
     t1 shouldBe Option((cell1.position(_2), cell1.content))
@@ -221,7 +221,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the first cell for the second dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
     t1 shouldBe Option((cell2.position(_2), cell2.content))
@@ -235,7 +235,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the first cell for the second dimension when equal" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _2)
     t1 shouldBe Option((cell2.position(_2), cell2.content))
@@ -249,7 +249,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the first cell for the third dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
     t1 shouldBe Option((cell1.position(_3), cell1.content))
@@ -263,7 +263,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the second cell for the third dimension when less" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell2, _3)
     t1 shouldBe Option((cell2.position(_3), cell2.content))
@@ -277,7 +277,7 @@ class TestPreservingMinPosition extends TestSquashers {
   }
 
   it should "return the first cell for the third dimension when equal" in {
-    val squash = PreservingMinPosition[_3]()
+    val squash = PreservingMinimumPosition[_3]()
 
     val t1 = squash.prepare(cell1, _3)
     t1 shouldBe Option((cell1.position(_3), cell1.content))

@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,13 @@ import commbank.grimlock.framework.{
   CategoricalType,
   Cell,
   Default,
-  InMemory,
   Locate,
-  NoParameters,
   NumericType,
-  Reducers,
   Tuner
 }
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.content.metadata.DiscreteSchema
-import commbank.grimlock.framework.DefaultTuners.TP2
+import commbank.grimlock.framework.DefaultTuners.{ TP1, TP5 }
 import commbank.grimlock.framework.distribution.{
   ApproximateDistribution => FwApproximateDistribution,
   CountMap,
@@ -38,8 +35,8 @@ import commbank.grimlock.framework.distribution.{
 }
 import commbank.grimlock.framework.position.{ Position, Slice }
 import commbank.grimlock.framework.utility.=:!=
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
+import commbank.grimlock.scalding.MapMapSideJoin
 import commbank.grimlock.scalding.Matrix
 import commbank.grimlock.scalding.ScaldingImplicits._
 
@@ -50,7 +47,7 @@ import shapeless.nat.{ _0, _1 }
 import shapeless.ops.nat.{ Diff, GT }
 
 trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribution[L, P] { self: Matrix[L, P] =>
-  type HistogramTuners[T] = TP2[T]
+  type HistogramTuners[T] = TP1[T]
   def histogram[
     Q <: Nat,
     T <: Tuner : HistogramTuners
@@ -65,17 +62,12 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev2: GT[Q, slice.S],
     ev3: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = data
-    .filter(c => (!filter || c.content.schema.classification.isOfType(CategoricalType)))
-    .flatMap(c => name(slice.selected(c.position), c.content))
-    .asKeys
-    .tuneReducers(tuner.parameters)
-    .size
+    .filter { case c => (!filter || c.content.schema.classification.isOfType(CategoricalType)) }
+    .flatMap { case c => name(slice.selected(c.position), c.content) }
+    .tunedSize(tuner)
     .map { case (p, s) => Cell(p, Content(DiscreteSchema[Long](), s)) }
 
-  type QuantileTuners[T] = T In OneOf[InMemory[NoParameters]]#
-    Or[InMemory[Reducers]]#
-    Or[Default[NoParameters]]#
-    Or[Default[Reducers]]
+  type QuantileTuners[T] = TP5[T]
   def quantile[
     Q <: Nat,
     T <: Tuner : QuantileTuners
@@ -94,46 +86,24 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
     ev3: GT[Q, slice.S],
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[Q]] = {
-    val q = QuantileImpl[P, slice.S, Q](probs, quantiser, name, nan)
+    val msj = Option(MapMapSideJoin[Position[slice.S], Double, Long]())
+    val qnt = QuantileImpl[P, slice.S, Q](probs, quantiser, name, nan)
 
     val prep = data
       .collect { case c if (!filter || c.content.schema.classification.isOfType(NumericType)) =>
-        (slice.selected(c.position), q.prepare(c))
+        (slice.selected(c.position), qnt.prepare(c))
       }
-      .group
 
-    val grouped = (tuner match {
-      case InMemory(_) =>
-        prep
-          .flatMapWithValue(prep.size.map { case (k, v) => Map(k -> v) }.sum) { case ((s, d), c) =>
-            c.map(m => ((s, m(s)), d))
-          }
-      case _ =>
-        prep
-          .tunedJoin(tuner, tuner.parameters, prep.size)
-          .map { case (s, (d, c)) => ((s, c), d) }
-      })
-      .group
-
-    val tuned = tuner.parameters match {
-      case Reducers(reducers) => grouped.withReducers(reducers)
-      case _ => grouped
-    }
-
-    tuned
+    prep
+      .tunedJoin(tuner, prep.map { case (sel, _) => sel }.tunedSize(tuner), msj)
+      .map { case (s, (q, c)) => ((s, c), q) }
+      .tuneReducers(tuner)
       .sorted
-      .mapGroup { case ((_, count), itr) =>
-        val first = itr.next
-        val (t, c, o) = q.initialise(first, count)
-
-        o.toIterator ++ itr
-          .scanLeft((t, List[q.O]())) { case ((t, _), i) => q.update(i, t, c) }
-          .flatMap { case (_, o) => o }
-      }
-      .flatMap { case ((p, _), o) => q.present(p, o) }
+      .tunedStream(tuner, (key, itr) => QuantileImpl.stream(qnt, key, itr).toIterator)
+      .map { case (_, c) => c }
   }
 
-  type CountMapQuantilesTuners[T] = TP2[T]
+  type CountMapQuantilesTuners[T] = TP1[T]
   def countMapQuantiles[
     Q <: Nat,
     T <: Tuner : CountMapQuantilesTuners
@@ -158,12 +128,10 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
       else
         None
     }
-    .group
-    .tuneReducers(tuner.parameters)
-    .reduce(CountMap.reduce)
+    .tunedReduce(tuner, CountMap.reduce)
     .flatMap { case (pos, t) => CountMap.toCells(t, probs, pos, quantiser, name, nan) }
 
-  type TDigestQuantilesTuners[T] = TP2[T]
+  type TDigestQuantilesTuners[T] = TP1[T]
   def tDigestQuantiles[
     Q <: Nat,
     T <: Tuner : TDigestQuantilesTuners
@@ -184,16 +152,16 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
   ): U[Cell[Q]] = data
     .flatMap { case c =>
       if (!filter || c.content.schema.classification.isOfType(NumericType))
-        c.content.value.asDouble.flatMap(d => TDigest.from(d, compression).map(td => (slice.selected(c.position), td)))
+        c.content.value.asDouble.flatMap { case d =>
+          TDigest.from(d, compression).map { case td => (slice.selected(c.position), td) }
+        }
       else
         None
     }
-    .group
-    .tuneReducers(tuner.parameters)
-    .reduce(TDigest.reduce)
+    .tunedReduce(tuner, TDigest.reduce)
     .flatMap { case (pos, t) => TDigest.toCells(t, probs, pos, name, nan) }
 
-  type UniformQuantilesTuners[T] = TP2[T]
+  type UniformQuantilesTuners[T] = TP1[T]
   def uniformQuantiles[
     Q <: Nat,
     T <: Tuner : UniformQuantilesTuners
@@ -213,13 +181,11 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] extends FwApproximateDistribut
   ): U[Cell[Q]] = data
     .flatMap { case c =>
       if (!filter || c.content.schema.classification.isOfType(NumericType))
-        c.content.value.asDouble.map(d =>(slice.selected(c.position), StreamingHistogram.from(d, count)))
+        c.content.value.asDouble.map { case d => (slice.selected(c.position), StreamingHistogram.from(d, count)) }
       else
         None
     }
-    .group
-    .tuneReducers(tuner.parameters)
-    .reduce(StreamingHistogram.reduce)
+    .tunedReduce(tuner, StreamingHistogram.reduce)
     .flatMap { case (pos, t) => StreamingHistogram.toCells(t, count, pos, name, nan) }
 }
 
