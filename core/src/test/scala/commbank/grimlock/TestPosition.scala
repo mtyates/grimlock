@@ -14,14 +14,13 @@
 
 package commbank.grimlock.test
 
-import commbank.grimlock.framework._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.position.Position._
 
-import commbank.grimlock.scalding.environment.Context._
+import commbank.grimlock.scalding.environment._
 
-import commbank.grimlock.spark.environment.Context._
+import commbank.grimlock.spark.environment._
 
 import scala.collection.immutable.ListSet
 

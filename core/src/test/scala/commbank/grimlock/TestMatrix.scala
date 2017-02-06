@@ -17,8 +17,10 @@ package commbank.grimlock.test
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.aggregate._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.environment.tuner._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.pairwise._
 import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
@@ -31,10 +33,10 @@ import commbank.grimlock.library.pairwise._
 import commbank.grimlock.library.squash._
 import commbank.grimlock.library.transform._
 
-import commbank.grimlock.scalding._
-import commbank.grimlock.scalding.environment.Context._
+import commbank.grimlock.scalding.environment._
+import commbank.grimlock.scalding.environment.tuner._
 
-import commbank.grimlock.spark.environment.Context._
+import commbank.grimlock.spark.environment._
 
 import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
 
@@ -10471,7 +10473,7 @@ trait TestMatrixMaterialise extends TestMatrix {
 class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tupleToScaldingMatrix2(data)
+    tupleToPipeMatrix2(data)
       .materialise(Default(Execution(scaldingCtx)))
       .sortBy(_.position) shouldBe result.sortBy(_.position)
   }
@@ -10480,7 +10482,7 @@ class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 class TestSparkMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tupleToSparkMatrix2(data)
+    tupleToRDDMatrix2(data)
       .materialise(Default())
       .sortBy(_.position) shouldBe result.sortBy(_.position)
   }

@@ -16,8 +16,8 @@ package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.window._
 
@@ -531,36 +531,36 @@ class TestCumulativeSum extends TestWindow {
   }
 }
 
-class TestBinOp extends TestWindow {
+class TestBinaryOperator extends TestWindow {
 
   def createCell(value: Double) = List(
     Cell(Position("foo", "p(bar|baz, bar|baz)"), Content(ContinuousSchema[Double](), value))
   )
 
-  "A BinOp" should "prepare correctly" in {
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true).prepare(cell1) shouldBe in1
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false).prepare(cell1) shouldBe in1
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
+  "A BinaryOperator" should "prepare correctly" in {
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true).prepare(cell1) shouldBe in1
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false).prepare(cell1) shouldBe in1
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
       .prepare(cell2)
       .map(_.compare(Double.NaN)) shouldBe Option(0)
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false).prepare(cell2) shouldBe in2f
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false).prepare(cell2) shouldBe in2f
   }
 
   it should "initialise correctly" in {
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
       .initialise(rem, in1) shouldBe (((in1, rem), List()))
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
       .initialise(rem, in1) shouldBe (((in1, rem), List()))
-    val init = BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true).initialise(rem, in2t)
+    val init = BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true).initialise(rem, in2t)
     init._1._1.map(_.compare(Double.NaN)) shouldBe Option(0)
     init._1._2 shouldBe rem
     init._2 shouldBe List()
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
       .initialise(rem, in2f) shouldBe (((None, rem), List()))
   }
 
   it should "update correctly strict" in {
-    val obj = BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
+    val obj = BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
 
     val init = obj.initialise(rem, in1)
     init shouldBe (((Option(1.0), rem), List()))
@@ -580,7 +580,7 @@ class TestBinOp extends TestWindow {
   }
 
   it should "update correctly strict on first" in {
-    val obj = BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
+    val obj = BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), true)
 
     val init = obj.initialise(rem, in2t)
     init._1._1.map(_.compare(Double.NaN)) shouldBe Option(0)
@@ -604,7 +604,7 @@ class TestBinOp extends TestWindow {
   }
 
   it should "update correctly non-strict" in {
-    val obj = BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
+    val obj = BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
 
     val init = obj.initialise(rem, in1)
     init shouldBe (((Option(1.0), rem), List()))
@@ -620,7 +620,7 @@ class TestBinOp extends TestWindow {
   }
 
   it should "update correctly non-strict on first" in {
-    val obj = BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
+    val obj = BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
 
     val init = obj.initialise(rem, in2f)
     init shouldBe (((None, rem), List()))
@@ -636,7 +636,7 @@ class TestBinOp extends TestWindow {
   }
 
   it should "present correctly" in {
-    BinOp(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
+    BinaryOperator(_ + _, Locate.AppendPairwiseString[_1, _2]("p(%1$s, %2$s)"), false)
       .present(sel, (1.0, rem, rem)) shouldBe createCell(1.0)
   }
 }

@@ -185,8 +185,6 @@ import commbank.grimlock.framework._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.Context._
-import commbank.grimlock.scalding.Matrix._
 
 import shapeless.nat.{ _1, _2 }
 
@@ -201,8 +199,7 @@ scala> implicit val context = Context()
 The next step is to read in data (be sure to change <path to> to the correct path to the grimlock repo):
 
 ```
-scala> val (data, _) = loadText(
-  context,
+scala> val (data, _) = context.loadText(
   "<path to>/grimlock/examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
   Cell.parse2D()
 )
@@ -338,8 +335,6 @@ import commbank.grimlock.framework._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.library.aggregate._
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
-import commbank.grimlock.spark.Matrix._
 
 import shapeless.nat.{ _1, _2 }
 
@@ -354,8 +349,7 @@ scala> implicit val context = Context(sc)
 The next step is to read in data (be sure to change <path to> to the correct path to the grimlock repo):
 
 ```
-scala> val (data, _) = loadText(
-  context,
+scala> val (data, _) = context.loadText(
   "<path to>/grimlock/examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
   Cell.parse2D()
 )

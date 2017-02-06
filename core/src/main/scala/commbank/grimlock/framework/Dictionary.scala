@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.framework.content.metadata
+package commbank.grimlock.framework.metadata
 
 import commbank.grimlock.framework.content.Content
 

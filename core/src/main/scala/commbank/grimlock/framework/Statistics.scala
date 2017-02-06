@@ -14,9 +14,11 @@
 
 package commbank.grimlock.framework.statistics
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.{ Cell, Matrix }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.position.{ Position, Slice }
 
 import com.twitter.algebird.Moments
 
@@ -27,10 +29,7 @@ import shapeless.nat._1
 import shapeless.ops.nat.Diff
 
 /** Trait for computing common statistics from a matrix. */
-trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
-  /** Specifies tuners permitted on a call to `counts`. */
-  type CountsTuners[_]
-
+trait Statistics[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] { self: Matrix[L, P, U, E, C] =>
   /**
    * Compute counts.
    *
@@ -40,17 +39,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the counts.
    */
   def counts[
-    T <: Tuner : CountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.CountsTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `distinctCounts`. */
-  type DistinctCountsTuners[_]
 
   /**
    * Compute distinct value counts.
@@ -61,17 +58,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the distinct counts.
    */
   def distinctCounts[
-    T <: Tuner : DistinctCountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.DistinctCountsTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `predicateCount`. */
-  type PredicateCountsTuners[_]
 
   /**
    * Compute predicate counts.
@@ -83,7 +78,7 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the predicate counts.
    */
   def predicateCounts[
-    T <: Tuner : PredicateCountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -91,11 +86,9 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     predicate: (Content) => Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.PredicateCountsTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `mean`. */
-  type MeanTuners[_]
 
   /**
    * Compute mean values.
@@ -106,17 +99,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the mean values.
    */
   def mean[
-    T <: Tuner : MeanTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.MeanTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `standardDeviation`. */
-  type StandardDeviationTuners[_]
 
   /**
    * Compute standard deviation.
@@ -128,7 +119,7 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the standard deviations.
    */
   def standardDeviation[
-    T <: Tuner : StandardDeviationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -136,11 +127,9 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     biased: Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.StandardDeviationTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `skewness`. */
-  type SkewnessTuners[_]
 
   /**
    * Compute skewness values.
@@ -151,17 +140,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the skewness values.
    */
   def skewness[
-    T <: Tuner : SkewnessTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.SkewnessTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `kurtosis`. */
-  type KurtosisTuners[_]
 
   /**
    * Compute kurtosis values.
@@ -173,7 +160,7 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the kurtosis values.
    */
   def kurtosis[
-    T <: Tuner : KurtosisTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -181,11 +168,9 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     excess: Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.KurtosisTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `minimum`. */
-  type MinimumTuners[_]
 
   /**
    * Compute minimum values.
@@ -196,17 +181,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the minimum values.
    */
   def minimum[
-    T <: Tuner : MinimumTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.MinimumTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `maximum`. */
-  type MaximumTuners[_]
 
   /**
    * Compute maximum values.
@@ -217,17 +200,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the maximum values.
    */
   def maximum[
-    T <: Tuner : MaximumTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.MaximumTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `maximumAbsolute`. */
-  type MaximumAbsoluteTuners[_]
 
   /**
    * Compute maximum absolute values.
@@ -238,17 +219,15 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the maximum absolute values.
    */
   def maximumAbsolute[
-    T <: Tuner : MaximumAbsoluteTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.MaximumAbsoluteTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `sums`. */
-  type SumsTuners[_]
 
   /**
    * Compute sum values.
@@ -259,18 +238,52 @@ trait Statistics[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    * @return A `U[Cell[slice.S]]` with the sum values.
    */
   def sums[
-    T <: Tuner : SumsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Statistics.SumsTuners[U, T]
   ): U[Cell[slice.S]]
 }
 
 /** Companion object to `Statistics`. */
 object Statistics {
+  /** Trait for tuners permitted on a call to `counts`. */
+  trait CountsTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `distinctCounts`. */
+  trait DistinctCountsTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `predicateCount`. */
+  trait PredicateCountsTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `mean`. */
+  trait MeanTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `standardDeviation`. */
+  trait StandardDeviationTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `skewness`. */
+  trait SkewnessTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `kurtosis`. */
+  trait KurtosisTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `minimum`. */
+  trait MinimumTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `maximum`. */
+  trait MaximumTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `maximumAbsolute`. */
+  trait MaximumAbsoluteTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `sums`. */
+  trait SumsTuners[U[_], T <: Tuner]
+
   /**
    * Return the mean.
    *

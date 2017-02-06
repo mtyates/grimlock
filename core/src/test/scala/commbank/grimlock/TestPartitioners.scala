@@ -16,20 +16,21 @@ package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.environment.tuner._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 
 import commbank.grimlock.library.partition._
 
-import commbank.grimlock.scalding._
-import commbank.grimlock.scalding.environment.Context._
+import commbank.grimlock.scalding.environment._
+import commbank.grimlock.scalding.environment.tuner._
 
-import commbank.grimlock.spark.environment.Context._
+import commbank.grimlock.spark.environment._
 
 import com.twitter.scalding.typed.TypedPipe
 
-import org.apache.spark.rdd._
+import org.apache.spark.rdd.RDD
 
 import shapeless.nat.{ _1, _2 }
 

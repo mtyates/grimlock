@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,30 +14,23 @@
 
 package commbank.grimlock.library.pairwise
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.pairwise._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.metadata.{ ContinuousSchema, NominalSchema }
+import commbank.grimlock.framework.pairwise.Operator
 
 import shapeless.Nat
 
-/** Convenience trait for operators that apply to `Double` values. */
-trait DoubleOperator[P <: Nat, Q <: Nat] extends Operator[P, Q] {
-  /** Function to extract result position. */
-  val pos: Locate.FromPairwiseCells[P, Q]
-
-  /** Indicator if pairwise operator `f()` should be called as `f(l, r)` or as `f(r, l)`. */
-  val inverse: Boolean
-
-  /**
-   * Indicate if the cell is selected as part of the sample.
-   *
-   * @param left  The left cell to compute with.
-   * @param right The right cell to compute with.
-   */
-  def compute(
+private[pairwise] object DoubleOperator {
+  def compute[
+    P <: Nat,
+    Q <: Nat
+  ](
     left: Cell[P],
-    right: Cell[P]
+    right: Cell[P],
+    pos: Locate.FromPairwiseCells[P, Q],
+    inverse: Boolean,
+    compute: (Double, Double) => Double
   ): TraversableOnce[Cell[Q]] = (pos(left, right), left.content.value.asDouble, right.content.value.asDouble) match {
     case (Some(p), Some(l), Some(r)) => List(
       Cell(p, Content(ContinuousSchema[Double](), if (inverse) compute(r, l) else compute(l, r)))
@@ -45,41 +38,68 @@ trait DoubleOperator[P <: Nat, Q <: Nat] extends Operator[P, Q] {
     case _ => List()
   }
 
-  protected def compute(l: Double, r: Double): Double
 }
 
-/** Add two values. */
-case class Plus[P <: Nat, Q <: Nat](pos: Locate.FromPairwiseCells[P, Q]) extends DoubleOperator[P, Q] {
-  val inverse: Boolean = false
-  protected def compute(l: Double, r: Double): Double = l + r
+/**
+ * Add two values.
+ *
+ * @param pos Function to extract result position.
+ */
+case class Plus[P <: Nat, Q <: Nat](pos: Locate.FromPairwiseCells[P, Q]) extends Operator[P, Q] {
+  def compute(
+    left: Cell[P],
+    right: Cell[P]
+  ): TraversableOnce[Cell[Q]] = DoubleOperator.compute(left, right, pos, false, (l, r) => l + r)
 }
 
-/** Subtract two values. */
+/**
+ * Subtract two values.
+ *
+ * @param pos     Function to extract result position.
+ * @param inverse Indicator if pairwise operator `f()` should be called as `f(l, r)` or as `f(r, l)`.
+ */
 case class Minus[
   P <: Nat,
   Q <: Nat
 ](
   pos: Locate.FromPairwiseCells[P, Q],
   inverse: Boolean = false
-) extends DoubleOperator[P, Q] {
-  protected def compute(l: Double, r: Double): Double = l - r
+) extends Operator[P, Q] {
+  def compute(
+    left: Cell[P],
+    right: Cell[P]
+  ): TraversableOnce[Cell[Q]] = DoubleOperator.compute(left, right, pos, inverse, (l, r) => l - r)
 }
 
-/** Multiply two values. */
-case class Times[P <: Nat, Q <: Nat](pos: Locate.FromPairwiseCells[P, Q]) extends DoubleOperator[P, Q] {
-  val inverse: Boolean = false
-  protected def compute(l: Double, r: Double): Double = l * r
+/**
+ * Multiply two values.
+ *
+ * @param pos     Function to extract result position.
+ */
+case class Times[P <: Nat, Q <: Nat](pos: Locate.FromPairwiseCells[P, Q]) extends Operator[P, Q] {
+  def compute(
+    left: Cell[P],
+    right: Cell[P]
+  ): TraversableOnce[Cell[Q]] = DoubleOperator.compute(left, right, pos, false, (l, r) => l * r)
 }
 
-/** Divide two values. */
+/**
+ * Divide two values.
+ *
+ * @param pos     Function to extract result position.
+ * @param inverse Indicator if pairwise operator `f()` should be called as `f(l, r)` or as `f(r, l)`.
+ */
 case class Divide[
   P <: Nat,
   Q <: Nat
 ](
   pos: Locate.FromPairwiseCells[P, Q],
   inverse: Boolean = false
-) extends DoubleOperator[P, Q] {
-  protected def compute(l: Double, r: Double): Double = l / r
+) extends Operator[P, Q] {
+  def compute(
+    left: Cell[P],
+    right: Cell[P]
+  ): TraversableOnce[Cell[Q]] = DoubleOperator.compute(left, right, pos, inverse, (l, r) => l / r)
 }
 
 /**
@@ -97,7 +117,7 @@ case class Concatenate[
   value: String = "%1$s,%2$s"
 ) extends Operator[P, Q] {
   def compute(left: Cell[P], right: Cell[P]): TraversableOnce[Cell[Q]] = pos(left, right)
-    .map(p =>
+    .map { case p =>
       Cell(
         p,
         Content(
@@ -105,7 +125,6 @@ case class Concatenate[
           value.format(left.content.value.toShortString, right.content.value.toShortString)
         )
       )
-    )
-    .toList
+    }
 }
 

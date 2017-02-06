@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
 
 package commbank.grimlock.framework.aggregate
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.position.Position
 
 import scala.reflect.{ classTag, ClassTag }
 
 import shapeless.Nat
 import shapeless.ops.nat.{ GT, GTEq }
 
-/** Base trait that encapsulates the result of an aggregation. */
+/** Trait that encapsulates the result of an aggregation. */
 trait Result[A, T[X] <: Result[X, T]] {
   /** Map over result. */
   def map[B](f: (A) => B): T[B]
@@ -98,7 +98,7 @@ private object Validate {
       throw new Exception("Only a single aggregator, returning a single value can be used when slice.S =:= Q")
 }
 
-/** Base trait for aggregations. */
+/** Trait for aggregations. */
 trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S, Q] { self =>
   type V = Any
 
@@ -266,7 +266,7 @@ object Aggregator {
   }
 }
 
-/** Base trait for aggregations with a user supplied value. */
+/** Trait for aggregations with a user supplied value. */
 trait AggregatorWithValue[P <: Nat, S <: Nat, Q <: Nat] extends java.io.Serializable { self =>
   /** Type of the state being aggregated. */
   type T

@@ -14,19 +14,36 @@
 
 package commbank.grimlock.spark
 
-import commbank.grimlock.framework.{ Persist => FwPersist, Tuner }
+import commbank.grimlock.framework.{ Persist => FwPersist, SaveStringsAsText => FwSaveStringsAsText }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 
-import commbank.grimlock.spark.environment.{ DistributedData, Environment }
-import commbank.grimlock.spark.SparkImplicits._
+import commbank.grimlock.spark.environment.Context
+import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 
-/** Trait for peristing a Spark `RDD`. */
-trait Persist[X] extends FwPersist[X] with DistributedData with Environment {
-  protected def saveText[T <: Tuner : PersistParition](ctx: C, file: String, writer: TextWriter, tuner: T): U[X] = {
+/** Trait for peristing a `RDD`. */
+trait Persist[X] extends FwPersist[X, Context.U, Context.E, Context] {
+  protected def saveText[T <: Tuner](file: String, writer: FwPersist.TextWriter[X], tuner: T): Context.U[X] = {
     data
       .flatMap { case x => writer(x) }
-      .tunedSaveAsText(ctx, tuner, file)
+      .tunedSaveAsText(context, tuner, file)
 
     data
   }
+}
+
+/** Case class that enriches a `RDD` of strings with saveAsText functionality. */
+case class SaveStringsAsText(
+  context: Context,
+  data: Context.U[String]
+) extends FwSaveStringsAsText[Context.U, Context.E, Context]
+  with Persist[String] {
+  def saveAsText[
+    T <: Tuner
+  ](
+    file: String,
+    tuner: T = Default()
+  )(implicit
+    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+  ): Context.U[String] = saveText(file, Option(_), tuner)
 }
 

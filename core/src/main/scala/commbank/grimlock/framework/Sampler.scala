@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
 
 package commbank.grimlock.framework.sample
 
-import commbank.grimlock.framework._
+import commbank.grimlock.framework.Cell
 
 import shapeless.Nat
 
-/** Base trait for sampling. */
+/** Trait for sampling. */
 trait Sampler[P <: Nat] extends SamplerWithValue[P] { self =>
   type V = Any
 
@@ -56,7 +56,7 @@ object Sampler {
   }
 }
 
-/** Base trait for selecting samples with a user provided value. */
+/** Trait for selecting samples with a user provided value. */
 trait SamplerWithValue[P <: Nat] extends java.io.Serializable { self =>
   /** Type of the external value. */
   type V

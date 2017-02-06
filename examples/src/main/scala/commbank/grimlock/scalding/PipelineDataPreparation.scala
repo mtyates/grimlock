@@ -16,7 +16,8 @@ package commbank.grimlock.scalding.examples
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-//import commbank.grimlock.framework.content.metadata._
+import commbank.grimlock.framework.extract._
+//import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
 
@@ -24,8 +25,6 @@ import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.Context._
-import commbank.grimlock.scalding.Matrix._
 
 import com.twitter.scalding.{ Args, Job }
 import com.twitter.scalding.typed.TypedPipe
@@ -62,7 +61,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
   val output = "scalding"
 
   // Read the data (ignoring errors). This returns a 2D matrix (instance x feature).
-  val (data, _) = loadText(ctx, s"${path}/exampleInput.txt", Cell.parse2D())
+  val (data, _) = ctx.loadText(s"${path}/exampleInput.txt", Cell.parse2D())
 
   // Perform a split of the data into a training and test set.
   val parts = data
@@ -109,7 +108,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
   // Combine all statistics and write result to file
   val stats = (descriptive ++ histogram ++ summary)
-    .saveAsText(ctx, s"./demo.${output}/stats.out")
+    .saveAsText(s"./demo.${output}/stats.out")
 
   // Determine which features to filter based on statistics. In this case remove all features that occur for 2 or
   // fewer instances. These are removed first to prevent indicator features from being created.
@@ -163,7 +162,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
     (ind ++ csb)
       //.fillHomogeneous(Content(ContinuousSchema[Double](), 0.0))
-      .saveAsCSV(Over(_1))(ctx, s"./demo.${output}/${key}.csv")
+      .saveAsCSV(Over(_1))(s"./demo.${output}/${key}.csv")
   }
 
   // Prepare each partition.

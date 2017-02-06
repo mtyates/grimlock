@@ -16,8 +16,9 @@ package commbank.grimlock.spark.examples
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.pairwise._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.transform._
@@ -27,8 +28,6 @@ import commbank.grimlock.library.pairwise._
 import commbank.grimlock.library.squash._
 
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
-import commbank.grimlock.spark.Matrix._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 
@@ -67,8 +66,7 @@ object MutualInformation {
     // 3/ Squash the 3rd dimension, keeping values with minimum (earlier) coordinates. The result is a 2D matrix
     //    (instance x feature).
     // 4/ Bucket all continuous variables by rounding them.
-    val data = loadText(
-        ctx,
+    val data = ctx.loadText(
         s"${path}/exampleMutual.txt",
         Cell.parse3DWithDictionary(dictionary, _2, third = DateCodec())
       )
@@ -122,7 +120,7 @@ object MutualInformation {
     // 2/ Persist mutual information.
     (marginal ++ joint)
       .summarise(Over(_1))(Sums())
-      .saveAsText(ctx, s"./demo.${output}/mi.out")
+      .saveAsText(s"./demo.${output}/mi.out")
       .toUnit
   }
 }

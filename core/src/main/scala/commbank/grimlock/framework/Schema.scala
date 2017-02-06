@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.framework.content.metadata
+package commbank.grimlock.framework.metadata
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.encoding.{ Codec, Value }
 
 import java.util.Date
 
 import scala.reflect.{ classTag, ClassTag }
 
-/** Base trait for variable schemas. */
+/** Trait for variable schemas. */
 trait Schema { self =>
   /** Type of the schema's data. */
   type D
@@ -107,7 +106,7 @@ private object SchemaParameters {
     }
 }
 
-/** Base trait for schemas for numerical variables. */
+/** Trait for schemas for numerical variables. */
 trait NumericalSchema[T] extends Schema { self =>
   type D = T
 
@@ -306,7 +305,7 @@ object DiscreteSchema {
   } yield DiscreteSchema(low, upp, stp)(tag, ev)
 }
 
-/** Base trait for schemas for categorical variables. */
+/** Trait for schemas for categorical variables. */
 trait CategoricalSchema[T] extends Schema { self =>
   type D = T
 

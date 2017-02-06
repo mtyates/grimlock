@@ -14,59 +14,95 @@
 
 package commbank.grimlock.library.window
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.window._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.metadata.ContinuousSchema
+import commbank.grimlock.framework.position.Position
+import commbank.grimlock.framework.window.Window
 
 import shapeless.Nat
 
-/** Base trait for computing a moving average. */
-trait MovingAverage[P <: Nat, S <: Nat, R <: Nat, Q <: Nat] extends Window[P, S, R, Q] {
+private[window] object MovingAverage {
   type I = Double
-  type O = (Position[R], Double)
+  type O[R <: Nat] = (Position[R], Double)
 
-  /** Function to extract result position. */
-  val position: Locate.FromSelectedAndRemainder[S, R, Q]
+  def prepare[P <: Nat](cell: Cell[P]): I = cell.content.value.asDouble.getOrElse(Double.NaN)
 
-  def prepare(cell: Cell[P]): I = cell.content.value.asDouble.getOrElse(Double.NaN)
-
-  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = position(pos, out._1)
-    .map(Cell(_, Content(ContinuousSchema[Double](), out._2)))
+  def present[
+    S <: Nat,
+    R <: Nat,
+    Q <: Nat
+  ](
+    position: Locate.FromSelectedAndRemainder[S, R, Q]
+  )(
+    pos: Position[S],
+    out: O[R]
+  ): TraversableOnce[Cell[Q]] = position(pos, out._1).map(Cell(_, Content(ContinuousSchema[Double](), out._2)))
 }
 
-/**
- * Trait for computing moving average in batch mode; that is, keep the last N values and compute the moving average
- * from it.
- */
-trait BatchMovingAverage[P <: Nat, S <: Nat, R <: Nat, Q <: Nat] extends MovingAverage[P, S, R, Q] {
-  type T = List[(Position[R], Double)]
+private[window] object BatchMovingAverage {
+  type T[R <: Nat] = List[(Position[R], Double)]
 
-  /** Size of the window. */
-  val window: Int
+  def initialise[
+    R <: Nat
+  ](
+    all: Boolean
+  )(
+    rem: Position[R],
+    in: MovingAverage.I
+  ): (T[R], TraversableOnce[MovingAverage.O[R]]) = (List((rem, in)), if (all) List((rem, in)) else List())
 
-  /** Indicates if averages should be output when a full window isn't available yet. */
-  val all: Boolean
-
-  protected val idx: Int
-
-  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = (
-    List((rem, in)),
-    if (all) List((rem, in)) else List()
-  )
-
-  def update(rem: Position[R], in: I, t: T): (T, TraversableOnce[O]) = {
+  def update[
+    R <: Nat
+  ](
+    window: Int,
+    all: Boolean,
+    idx: Int,
+    compute: (T[R]) => Double
+  )(
+    rem: Position[R],
+    in: MovingAverage.I,
+    t: T[R]
+  ): (T[R], TraversableOnce[MovingAverage.O[R]]) = {
     val lst = (if (t.size == window) t.tail else t) :+ ((rem, in))
     val out = if (all || lst.size == window) List((lst(math.min(idx, lst.size - 1))._1, compute(lst))) else List()
 
     (lst, out)
   }
-
-  protected def compute(lst: T): Double
 }
 
-/** Compute simple moving average over last `window` values. */
+private[window] object OnlineMovingAverage {
+  type T = (Double, Long)
+
+  def initialise[
+    R <: Nat
+  ](
+    rem: Position[R],
+    in: MovingAverage.I
+  ): (T, TraversableOnce[MovingAverage.O[R]]) = ((in, 1), List((rem, in)))
+
+  def update[
+    R <: Nat
+  ](
+    compute: (Double, T) => Double
+  )(
+    rem: Position[R],
+    in: MovingAverage.I,
+    t: T
+  ): (T, TraversableOnce[MovingAverage.O[R]]) = {
+    val curr = compute(in, t)
+
+    ((curr, t._2 + 1), List((rem, curr)))
+  }
+}
+
+/**
+ * Compute simple moving average over last `window` values.
+ *
+ * @param window   Size of the window.
+ * @param position Function to extract result position.
+ * @param all      Indicates if averages should be output when a full window isn't available yet.
+ */
 case class SimpleMovingAverage[
   P <: Nat,
   S <: Nat,
@@ -76,13 +112,32 @@ case class SimpleMovingAverage[
   window: Int,
   position: Locate.FromSelectedAndRemainder[S, R, Q],
   all: Boolean = false
-) extends BatchMovingAverage[P, S, R, Q] {
-  protected val idx = window - 1
+) extends Window[P, S, R, Q] {
+  type I = MovingAverage.I
+  type T = BatchMovingAverage.T[R]
+  type O = MovingAverage.O[R]
 
-  protected def compute(lst: T): Double = lst.foldLeft(0.0)((c, p) => p._2 + c) / lst.size
+  def prepare(cell: Cell[P]): I = MovingAverage.prepare(cell)
+
+  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = BatchMovingAverage.initialise(all)(rem, in)
+
+  def update(
+    rem: Position[R],
+    in: I,
+    t: T
+  ): (T, TraversableOnce[O]) = BatchMovingAverage.update(window, all, window - 1, compute)(rem, in, t)
+
+  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = MovingAverage.present(position)(pos, out)
+
+  private def compute(lst: T): Double = lst.foldLeft(0.0)((c, p) => p._2 + c) / lst.size
 }
 
-/** Compute centered moving average over last `2 * width + 1` values. */
+/**
+ * Compute centered moving average over last `2 * width + 1` values.
+ *
+ * @param width    Width of bands around centered value.
+ * @param position Function to extract result position.
+ */
 case class CenteredMovingAverage[
   P <: Nat,
   S <: Nat,
@@ -91,15 +146,33 @@ case class CenteredMovingAverage[
 ](
   width: Int,
   position: Locate.FromSelectedAndRemainder[S, R, Q]
-) extends BatchMovingAverage[P, S, R, Q] {
-  val window = 2 * width + 1
-  val all = false
-  protected val idx = width
+) extends Window[P, S, R, Q] {
+  type I = MovingAverage.I
+  type T = BatchMovingAverage.T[R]
+  type O = MovingAverage.O[R]
 
-  protected def compute(lst: T): Double = lst.foldLeft(0.0)((c, p) => p._2 + c) / lst.size
+  def prepare(cell: Cell[P]): I = MovingAverage.prepare(cell)
+
+  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = BatchMovingAverage.initialise(false)(rem, in)
+
+  def update(
+    rem: Position[R],
+    in: I,
+    t: T
+  ): (T, TraversableOnce[O]) = BatchMovingAverage.update(2 * width + 1, false, width, compute)(rem, in, t)
+
+  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = MovingAverage.present(position)(pos, out)
+
+  private def compute(lst: T): Double = lst.foldLeft(0.0)((c, p) => p._2 + c) / lst.size
 }
 
-/** Compute weighted moving average over last `window` values. */
+/**
+ * Compute weighted moving average over last `window` values.
+ *
+ * @param window   Size of the window.
+ * @param position Function to extract result position.
+ * @param all      Indicates if averages should be output when a full window isn't available yet.
+ */
 case class WeightedMovingAverage[
   P <: Nat,
   S <: Nat,
@@ -109,32 +182,35 @@ case class WeightedMovingAverage[
   window: Int,
   position: Locate.FromSelectedAndRemainder[S, R, Q],
   all: Boolean = false
-) extends BatchMovingAverage[P, S, R, Q] {
-  protected val idx = window - 1
+) extends Window[P, S, R, Q] {
+  type I = MovingAverage.I
+  type T = BatchMovingAverage.T[R]
+  type O = MovingAverage.O[R]
 
-  protected def compute(lst: T): Double = {
+  def prepare(cell: Cell[P]): I = MovingAverage.prepare(cell)
+
+  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = BatchMovingAverage.initialise(all)(rem, in)
+
+  def update(
+    rem: Position[R],
+    in: I,
+    t: T
+  ): (T, TraversableOnce[O]) = BatchMovingAverage.update(window, all, window - 1, compute)(rem, in, t)
+
+  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = MovingAverage.present(position)(pos, out)
+
+  private def compute(lst: T): Double = {
     val curr = lst.zipWithIndex.foldLeft((0.0, 0))((c, p) => ((p._2 + 1) * p._1._2 + c._1, c._2 + p._2 + 1))
 
     curr._1 / curr._2
   }
 }
 
-/** Trait for computing moving average in online mode. */
-trait OnlineMovingAverage[P <: Nat, S <: Nat, R <: Nat, Q <: Nat] extends MovingAverage[P, S, R, Q] {
-  type T = (Double, Long)
-
-  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = ((in, 1), List((rem, in)))
-
-  def update(rem: Position[R], in: I, t: T): (T, TraversableOnce[O]) = {
-    val curr = compute(in, t)
-
-    ((curr, t._2 + 1), List((rem, curr)))
-  }
-
-  protected def compute(curr: Double, t: T): Double
-}
-
-/** Compute cumulatve moving average. */
+/**
+ * Compute cumulatve moving average.
+ *
+ * @param position Function to extract result position.
+ */
 case class CumulativeMovingAverage[
   P <: Nat,
   S <: Nat,
@@ -142,11 +218,25 @@ case class CumulativeMovingAverage[
   Q <: Nat
 ](
   position: Locate.FromSelectedAndRemainder[S, R, Q]
-) extends OnlineMovingAverage[P, S, R, Q] {
-  protected def compute(curr: Double, t: T): Double = (curr + t._2 * t._1) / (t._2 + 1)
+) extends Window[P, S, R, Q] {
+  type I = MovingAverage.I
+  type T = OnlineMovingAverage.T
+  type O = MovingAverage.O[R]
+
+  def prepare(cell: Cell[P]): I = MovingAverage.prepare(cell)
+  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = OnlineMovingAverage.initialise(rem, in)
+  def update(rem: Position[R], in: I, t: T): (T, TraversableOnce[O]) = OnlineMovingAverage.update(compute)(rem, in, t)
+  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = MovingAverage.present(position)(pos, out)
+
+  private def compute(curr: Double, t: T): Double = (curr + t._2 * t._1) / (t._2 + 1)
 }
 
-/** Compute exponential moving average. */
+/**
+ * Compute exponential moving average.
+ *
+ * @param alpha    Degree of weighting.
+ * @param position Function to extract result position.
+ */
 case class ExponentialMovingAverage[
   P <: Nat,
   S <: Nat,
@@ -155,8 +245,17 @@ case class ExponentialMovingAverage[
 ](
   alpha: Double,
   position: Locate.FromSelectedAndRemainder[S, R, Q]
-) extends OnlineMovingAverage[P, S, R, Q] {
-  protected def compute(curr: Double, t: T): Double = alpha * curr + (1 - alpha) * t._1
+) extends Window[P, S, R, Q] {
+  type I = MovingAverage.I
+  type T = OnlineMovingAverage.T
+  type O = MovingAverage.O[R]
+
+  def prepare(cell: Cell[P]): I = MovingAverage.prepare(cell)
+  def initialise(rem: Position[R], in: I): (T, TraversableOnce[O]) = OnlineMovingAverage.initialise(rem, in)
+  def update(rem: Position[R], in: I, t: T): (T, TraversableOnce[O]) = OnlineMovingAverage.update(compute)(rem, in, t)
+  def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = MovingAverage.present(position)(pos, out)
+
+  private def compute(curr: Double, t: T): Double = alpha * curr + (1 - alpha) * t._1
 }
 
 /**
@@ -205,7 +304,7 @@ case class CumulativeSums[
  * @param position Function to extract result position.
  * @param strict   Indicates is non-numeric values should result in NaN.
  */
-case class BinOp[
+case class BinaryOperator[
   P <: Nat,
   S <: Nat,
   R <: Nat,

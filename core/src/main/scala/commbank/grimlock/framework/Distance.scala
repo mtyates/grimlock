@@ -14,10 +14,12 @@
 
 package commbank.grimlock.framework.distance
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.{ Cell, Locate, Matrix }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.metadata.{ CategoricalType, ContinuousSchema, NumericType }
+import commbank.grimlock.framework.position.{ Position, Slice }
 
 import scala.reflect.ClassTag
 
@@ -26,10 +28,7 @@ import shapeless.nat._1
 import shapeless.ops.nat.Diff
 
 /** Trait for computing pairwise distances from a matrix. */
-trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
-  /** Specifies tuners permitted on a call to `correlation`. */
-  type CorrelationTuners[_]
-
+trait PairwiseDistance[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends { self: Matrix[L, P, U, E, C] =>
   /**
    * Compute correlations.
    *
@@ -39,29 +38,24 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
    * @param filter Indicator if categorical values shoud be filtered or not.
    * @param strict Indicates if strict data handling is required. If so then any non-numeric value fails the
    *               computation. If not then non-numeric values are silently ignored.
-   * @param nan    Indicator if 'NaN' string should be output if the reduction failed (for example due to non-numeric
-   *               data).
    *
    * @return A `U[Cell[Q]]` with all pairwise correlations.
    */
   def correlation[
     Q <: Nat,
-    T <: Tuner : CorrelationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean = true,
-    strict: Boolean = true,
-    nan: Boolean = false
+    strict: Boolean = true
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: PairwiseDistance.CorrelationTuners[U, T]
   ): U[Cell[Q]]
-
-  /** Specifies tuners permitted on a call to `mutualInformation`. */
-  type MutualInformationTuners[_]
 
   /**
    * Compute mutual information.
@@ -76,20 +70,33 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
    */
   def mutualInformation[
     Q <: Nat,
-    T <: Tuner : MutualInformationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
-    tuner: T = Default()
+    tuner: T
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean = true,
     log: (Double) => Double = (x: Double) => math.log(x) / math.log(2)
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: PairwiseDistance.MutualInformationTuners[U, T]
   ): U[Cell[Q]]
+}
 
-  protected def prepareCorrelation(
+/** Companion object to `PairwiseDistance` with types, implicits, etc. */
+object PairwiseDistance {
+  /** Trait for tuners permitted on a call to `correlation`. */
+  trait CorrelationTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `mutualInformation`. */
+  trait MutualInformationTuners[U[_], T <: Tuner]
+
+  private[grimlock] def prepareCorrelation[
+    L <: Nat,
+    P <: Nat
+  ](
     slice: Slice[L, P],
     cell: Cell[P],
     filter: Boolean,
@@ -106,7 +113,7 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
       None
   }
 
-  protected def presentCorrelation[
+  private[grimlock] def presentCorrelation[
     S <: Nat,
     Q <: Nat
   ](
@@ -114,18 +121,14 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
     lval: Double,
     rsel: Position[S],
     rval: Double,
-    name: Locate.FromPairwisePositions[S, Q],
-    nan: Boolean
-  ): Option[Cell[Q]] = {
-    val cor = lval / rval
+    name: Locate.FromPairwisePositions[S, Q]
+  ): Option[Cell[Q]] = name(lsel, rsel)
+    .map { case pos => Cell(pos, Content(ContinuousSchema[Double](), lval / rval)) }
 
-    if (cor.isNaN && !nan)
-      None
-    else
-      name(lsel, rsel).map { case pos => Cell(pos, Content(ContinuousSchema[Double](), cor)) }
-  }
-
-  protected def prepareMutualInformation(
+  private[grimlock] def prepareMutualInformation[
+    L <: Nat,
+    P <: Nat
+  ](
     slice: Slice[L, P],
     cell: Cell[P],
     filter: Boolean
@@ -138,7 +141,7 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
       None
   }
 
-  protected def presentMutualInformation[
+  private[grimlock] def presentMutualInformation[
     S <: Nat,
     Q <: Nat
   ](
@@ -148,13 +151,13 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends { self: Matrix[L, P] =>
     name: Locate.FromPairwisePositions[S, Q]
   ): Option[Cell[Q]] = name(lsel, rsel).map { case pos => Cell(pos, Content(ContinuousSchema[Double](), mi)) }
 
-  protected def partialEntropy(count: Long, total: Long, log: (Double) => Double, negate: Boolean): Double = {
+  private[grimlock] def partialEntropy(count: Long, total: Long, log: (Double) => Double, negate: Boolean): Double = {
     val pe = (count.toDouble / total) * log(count.toDouble / total)
 
     if (negate) - pe else pe
   }
 
-  protected def upper[V, S <: Nat] = (l: (Position[S], V), r: (Position[S], V)) => l._1.compare(r._1) > 0
-  protected def keyedUpper[K, V, S <: Nat] = (k: K, l: (Position[S], V), r: (Position[S], V)) => upper(l, r)
+  private[grimlock] def upper[V, S <: Nat] = (l: (Position[S], V), r: (Position[S], V)) => l._1.compare(r._1) > 0
+  private[grimlock] def keyedUpper[K, V, S <: Nat] = (k: K, l: (Position[S], V), r: (Position[S], V)) => upper(l, r)
 }
 

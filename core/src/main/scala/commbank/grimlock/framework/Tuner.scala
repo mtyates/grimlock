@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.framework
-
-import commbank.grimlock.framework.utility.UnionTypes._
+package commbank.grimlock.framework.environment.tuner
 
 import scala.reflect.ClassTag
 
-/** Base trait for tuner parameters. */
+/** Trait for tuner parameters. */
 trait Parameters extends java.io.Serializable { }
 
 /** Indicates that no special operations are to be performed. */
@@ -39,7 +37,7 @@ case class Reducers(reducers: Int) extends Parameters { }
  */
 case class Pair[F <: Parameters, S <: Parameters](first: F, second: S) extends Parameters { }
 
-/** Base trait that indicates size/shape of the data for tuning. */
+/** Trait that indicates size/shape of the data for tuning. */
 sealed trait Tuner extends java.io.Serializable {
   /** The parameters used for tuning. */
   val parameters: Parameters
@@ -140,32 +138,6 @@ case class Binary[F <: Tuner, S <: Tuner](first: F, second: S) extends Tuner {
  */
 case class Ternary[F <: Tuner, S <: Tuner, T <: Tuner](first: F, second: S, third: T) extends Tuner {
   val parameters = NoParameters()
-}
-
-/** Some common sets of default permitted tuners. */
-private[grimlock] object DefaultTuners {
-
-  type TP1[T] = T In OneOf[Default[NoParameters]]#Or[Default[Reducers]]
-
-  type TP2[T] = T In OneOf[InMemory[NoParameters]]#
-    Or[Default[NoParameters]]#
-    Or[Default[Reducers]]
-
-  type TP3[T] = T In OneOf[InMemory[NoParameters]]#
-    Or[InMemory[Reducers]]#
-    Or[Default[NoParameters]]#
-    Or[Default[Reducers]]
-
-  type TP4[T] = T In OneOf[InMemory[NoParameters]]#
-    Or[Default[NoParameters]]#
-    Or[Default[Reducers]]#
-    Or[Unbalanced[Reducers]]
-
-  type TP5[T] = T In OneOf[InMemory[NoParameters]]#
-    Or[InMemory[Reducers]]#
-    Or[Default[NoParameters]]#
-    Or[Default[Reducers]]#
-    Or[Unbalanced[Reducers]]
 }
 
 private[grimlock] trait MapSideJoin[K, V, W, U[_], E[_]] extends java.io.Serializable {

@@ -14,7 +14,7 @@
 
 package commbank.grimlock.test
 
-import commbank.grimlock.framework._
+import commbank.grimlock.framework.metadata._
 
 class TestMixedType extends TestGrimlock {
 

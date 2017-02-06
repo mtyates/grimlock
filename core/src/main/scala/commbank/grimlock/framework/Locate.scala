@@ -14,9 +14,9 @@
 
 package commbank.grimlock.framework
 
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.Value
+import commbank.grimlock.framework.position.{ Position, Slice }
 
 import shapeless.{ Nat, Succ, Witness }
 import shapeless.nat._1

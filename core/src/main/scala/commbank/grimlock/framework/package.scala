@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-version in ThisBuild := "0.3.0"
+package commbank.grimlock.framework
 
-localVersionSettings
+import scala.collection.immutable.ListSet
 
-licenses := Seq("Apache License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+import shapeless.AdditiveCollection
+
+package object position {
+  /** Implicit for permuting a position. */
+  implicit def listSetAdditiveCollection[T]: AdditiveCollection[ListSet[T]] = new AdditiveCollection[ListSet[T]] {}
+}
 

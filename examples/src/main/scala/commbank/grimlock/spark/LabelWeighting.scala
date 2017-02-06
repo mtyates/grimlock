@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@ package commbank.grimlock.spark.examples
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.transform._
 
@@ -25,8 +26,6 @@ import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
-import commbank.grimlock.spark.Matrix._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 
@@ -55,8 +54,7 @@ object LabelWeighting {
     val output = "spark"
 
     // Read labels and melt the date into the instance id to generate a 1D matrix.
-    val labels = loadText(
-        ctx,
+    val labels = ctx.loadText(
         s"${path}/exampleLabels.txt",
         Cell.parse2DWithSchema(Content.parser(DoubleCodec, ContinuousSchema[Double]()))
       )
@@ -90,14 +88,13 @@ object LabelWeighting {
       .compact(Over(_1))
 
     // Re-read labels and add the computed weight.
-    loadText(
-        ctx,
+    ctx.loadText(
         s"${path}/exampleLabels.txt",
         Cell.parse2DWithSchema(Content.parser(DoubleCodec, ContinuousSchema[Double]()))
       )
       .data // Keep only the data (ignoring errors).
       .transformWithValue(weights, AddWeight())
-      .saveAsText(ctx, s"./demo.${output}/weighted.out")
+      .saveAsText(s"./demo.${output}/weighted.out")
       .toUnit
   }
 }

@@ -14,19 +14,36 @@
 
 package commbank.grimlock.scalding
 
-import commbank.grimlock.framework.{ Persist => FwPersist, Tuner }
+import commbank.grimlock.framework.{ Persist => FwPersist, SaveStringsAsText => FwSaveStringsAsText }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 
-import commbank.grimlock.scalding.environment.{ DistributedData, Environment }
-import commbank.grimlock.scalding.ScaldingImplicits._
+import commbank.grimlock.scalding.environment.Context
+import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
 
-/** Trait for peristing a Scalding `TypedPipe`. */
-trait Persist[X] extends FwPersist[X] with DistributedData with Environment {
-  protected def saveText[T <: Tuner : PersistParition](ctx: C, file: String, writer: TextWriter, tuner: T): U[X] = {
+/** Trait for peristing a `TypedPipe`. */
+trait Persist[X] extends FwPersist[X, Context.U, Context.E, Context] {
+  protected def saveText[T <: Tuner](file: String, writer: FwPersist.TextWriter[X], tuner: T): Context.U[X] = {
     data
       .flatMap { case x => writer(x) }
-      .tunedSaveAsText(ctx, tuner, file)
+      .tunedSaveAsText(context, tuner, file)
 
     data
   }
+}
+
+/** Case class that enriches a `TypedPipe` of strings with saveAsText functionality. */
+case class SaveStringsAsText(
+  context: Context,
+  data: Context.U[String]
+) extends FwSaveStringsAsText[Context.U, Context.E, Context]
+  with Persist[String] {
+  def saveAsText[
+    T <: Tuner
+  ](
+    file: String,
+    tuner: T = Default()
+  )(implicit
+    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+  ): Context.U[String] = saveText(file, Option(_), tuner)
 }
 

@@ -14,14 +14,17 @@
 
 package commbank.grimlock.framework
 
-import commbank.grimlock.framework.environment._
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
 
 import org.apache.hadoop.io.Writable
 
-/** Base trait for persisting data. */
-trait Persist[X] extends DistributedData with Environment with java.io.Serializable {
-  /** The data to persist. */
+/** Trait for persisting data. */
+trait Persist[X, U[_], E[_], C <: Context[U, E]] extends java.io.Serializable {
+  /** Operating context for the data. */
+  val context: C
+
+  /** The underlying data. */
   val data: U[X]
 
   /**
@@ -31,9 +34,15 @@ trait Persist[X] extends DistributedData with Environment with java.io.Serializa
    *   This function ensures that such warnings are suppressed, it does not affect the flow or outcome.
    */
   def toUnit(): Unit = ()
+}
+
+/** Companion object to `Persist` with various types, implicits, etc. */
+object Persist {
+  /** Shorthand type for converting a `X` to key value tuple. */
+  type SequenceWriter[X, K <: Writable, V <: Writable] = (X) => TraversableOnce[(K, V)]
 
   /** Shorthand type for converting a `X` to string. */
-  type TextWriter = (X) => TraversableOnce[String]
+  type TextWriter[X] = (X) => TraversableOnce[String]
 
   /**
    * Type for converting pivoted `X`s to string.
@@ -41,11 +50,22 @@ trait Persist[X] extends DistributedData with Environment with java.io.Serializa
    * All data will first be pivoted according to a slice. All `X` belonging to each slice.selected will
    * be grouped into the list.
    */
-  type TextWriterByPosition = (List[Option[X]]) => TraversableOnce[String]
+  type TextWriterByPosition[X] = (List[Option[X]]) => TraversableOnce[String]
 
-  /** Shorthand type for converting a `X` to key value tuple. */
-  type SequenceWriter[K <: Writable, V <: Writable] = (X) => TraversableOnce[(K, V)]
+  /** Trait for tuners permitted on a call to `saveAsText`. */
+  trait SaveAsTextTuners[U[_], T <: Tuner]
+}
 
-  protected type PersistParition[T] = T In OneOf[Default[NoParameters]]#Or[Redistribute]
+/** Trait for writing strings as text. */
+trait SaveStringsAsText[U[_], E[_], C <: Context[U, E]] extends Persist[String, U, E, C] {
+  /**
+   * Persist to disk.
+   *
+   * @param file  Name of the output file.
+   * @param tuner The tuner for the job.
+   *
+   * @return A `U[String]`; that is it returns `data`.
+   */
+  def saveAsText[T <: Tuner](file: String, tuner: T)(implicit ev: Persist.SaveAsTextTuners[U, T]): U[String]
 }
 

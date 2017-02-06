@@ -14,14 +14,15 @@
 
 package commbank.grimlock.library.aggregate
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.aggregate._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.distribution._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.statistics._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.aggregate.{ Aggregator, AggregatorWithValue, Multiple, Single }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.distribution.{ CountMap, StreamingHistogram, TDigest, Quantiles }
+import commbank.grimlock.framework.encoding.Value
+import commbank.grimlock.framework.extract.Extract
+import commbank.grimlock.framework.metadata.{ CategoricalType, ContinuousSchema, DiscreteSchema, NumericType }
+import commbank.grimlock.framework.position.Position
+import commbank.grimlock.framework.statistics.Statistics
 
 import com.twitter.algebird.{ Moments => AlgeMoments, Monoid }
 
@@ -30,61 +31,28 @@ import  scala.reflect.classTag
 import shapeless.Nat
 import shapeless.ops.nat.GT
 
-/** Trait for aggregators that can be filter based on the type. */
-private[aggregate] trait PrepareDouble[P <: Nat] {
-  /** Indicates if filtering data is required. If so then any non-numeric value is filtered. */
-  val filter: Boolean
-
-  def prepareDouble(cell: Cell[P]): Option[Double] =
-    if (filter && !cell.content.schema.classification.isOfType(NumericType))
-      None
-    else
-      Option(cell.content.value.asDouble.getOrElse(Double.NaN))
-}
-
-/** Trait for aggregators that can be lenient or strict when it comes to invalid (or unexpected) values. */
-private[aggregate] trait StrictReduce[P <: Nat, S <: Nat, Q <: Nat] { self: AggregatorWithValue[P, S, Q] =>
-  /**
-   * Indicates if strict data handling is required. If so then any invalid value fails the reduction. If not, then
-   * invalid values are silently ignored.
-   */
-  val strict: Boolean
-
-  /**
-   * Standard reduce method.
-   *
-   * @param lt Left state to reduce.
-   * @param rt Right state to reduce.
-   *
-   * @return Reduced state
-   */
-  def reduce(lt: T, rt: T): T =
-    if (invalid(lt)) { if (strict) lt else rt }
-    else if (invalid(rt)) { if (strict) rt else lt }
-    else reduction(lt, rt)
-
-  protected def invalid(t: T): Boolean
-  protected def reduction(lt: T, rt: T): T
-}
-
-/** Trait for aggregators that can be lenient or strict when it comes to invalid (or unexpected) values. */
-private[aggregate] trait PresentDouble[P <: Nat, S <: Nat] extends StrictReduce[P, S, S] { self: Aggregator[P, S, S] =>
+private[aggregate] object Aggregate {
   type O[A] = Single[A]
 
   val oTag = classTag[O[_]]
 
-  /** Indicator if 'NaN' value should be output if the reduction failed (for example due to non-numeric data). */
-  val nan: Boolean
+  def reduce[T](strict: Boolean, invalid: (T) => Boolean, reduction: (T, T) => T)(lt: T, rt: T): T =
+    if (invalid(lt)) { if (strict) lt else rt }
+    else if (invalid(rt)) { if (strict) rt else lt }
+    else reduction(lt, rt)
 
-  /**
-   * Present the reduced content.
-   *
-   * @param pos The reduced position. That is, the position returned by `Slice.selected`.
-   * @param t   The reduced state.
-   *
-   * @return `Result` cell where the position is derived from `pos` and the content is derived from `t`.
-   */
-  def present(pos: Position[S], t: T): O[Cell[S]] =
+  def present[
+    S <: Nat,
+    T
+  ](
+    nan: Boolean,
+    invalid: (T) => Boolean,
+    missing: (T) => Boolean,
+    asDouble: (T) => Double
+  )(
+    pos: Position[S],
+    t: T
+  ): O[Cell[S]] =
     if (missing(t) || (invalid(t) && !nan))
       Single()
     else if (invalid(t))
@@ -92,69 +60,64 @@ private[aggregate] trait PresentDouble[P <: Nat, S <: Nat] extends StrictReduce[
     else
       Single(Cell(pos, Content(ContinuousSchema[Double](), asDouble(t))))
 
-  protected def missing(t: T): Boolean
-  protected def asDouble(t: T): Double
 }
 
-/** Base trait for aggregator that return a `Double` value. */
-private[aggregate] trait DoubleAggregator[
-  P <: Nat,
-  S <: Nat
-] extends PrepareDouble[P]
-  with PresentDouble[P, S] { self: Aggregator[P, S, S] =>
-  /** Type of the state being aggregated. */
+private[aggregate] object AggregateDouble {
   type T = Double
 
   val tTag = classTag[T]
 
-  /**
-   * Prepare for reduction.
-   *
-   * @param cell Cell which is to be aggregated. Note that its position is prior to `slice.selected` being applied.
-   *
-   * @return State to reduce.
-   */
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell)
+  def prepare[P <: Nat](cell: Cell[P], filter: Boolean): Option[Double] =
+    if (filter && !cell.content.schema.classification.isOfType(NumericType))
+      None
+    else
+      Option(cell.content.value.asDouble.getOrElse(Double.NaN))
 
-  protected def invalid(t: T): Boolean = t.isNaN
+  def reduce(
+    strict: Boolean,
+    reduction: (T, T) => T
+  )(
+    lt: T,
+    rt: T
+  ): T = Aggregate.reduce(strict, invalid, reduction)(lt, rt)
 
-  protected def missing(t: T): Boolean = false
-  protected def asDouble(t: T): Double = t
+  def present[
+    S <: Nat
+  ](
+    nan: Boolean
+  )(
+    pos: Position[S],
+    t: T
+  ): Aggregate.O[Cell[S]] = Aggregate.present(nan, invalid, missing, asDouble)(pos, t)
+
+  private def invalid(t: T): Boolean = t.isNaN
+  private def missing(t: T): Boolean = false
+  private def asDouble(t: T): Double = t
 }
 
-/** Trait for preparing and reducing algebird Moments. */
-private[aggregate] trait MomentsPrepareReduce[
-  P <: Nat,
-  S <: Nat,
-  Q <: Nat
-] extends PrepareDouble[P]
-  with StrictReduce[P, S, Q] { self: Aggregator[P, S, Q] =>
-  /** Type of the state being aggregated. */
+private[aggregate] object AggregateMoments {
   type T = AlgeMoments
 
-  /** ClassTag of type of the state being aggregated. */
   val tTag = classTag[T]
 
-  /**
-   * Prepare for reduction.
-   *
-   * @param cell Cell which is to be aggregated. Note that its position is prior to `slice.selected` being applied.
-   *
-   * @return State to reduce.
-   */
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(AlgeMoments(_))
+  def prepare[P <: Nat](cell: Cell[P], filter: Boolean): Option[T] = AggregateDouble.prepare(cell, filter)
+    .map { case d => AlgeMoments(d) }
 
-  protected def invalid(t: T): Boolean = t.mean.isNaN
-  protected def reduction(lt: T, rt: T): T = Monoid.plus(lt, rt)
-}
+  def reduce(strict: Boolean)(lt: T, rt: T): T = Aggregate.reduce(strict, invalid, reduction)(lt, rt)
 
-/** Trait for presenting algebird Moments. */
-private[aggregate] trait MomentsPresent[
-  P <: Nat,
-  S <: Nat
-] extends MomentsPrepareReduce[P, S, S]
-  with PresentDouble[P, S] { self: Aggregator[P, S, S] =>
-  protected def missing(t: T): Boolean = false
+  def present[
+    S <: Nat
+  ](
+    nan: Boolean,
+    asDouble: (T) => Double
+  )(
+    pos: Position[S],
+    t: T
+  ): Aggregate.O[Cell[S]] = Aggregate.present(nan, invalid, missing, asDouble)(pos, t)
+
+  def invalid(t: T): Boolean = t.mean.isNaN
+  def missing(t: T): Boolean = false
+  def reduction(lt: T, rt: T): T = Monoid.plus(lt, rt)
 }
 
 /** Count reductions. */
@@ -230,32 +193,37 @@ case class Moments[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, Q]
-  with MomentsPrepareReduce[P, S, Q] {
+) extends Aggregator[P, S, Q] {
+  type T = AggregateMoments.T
   type O[A] = Multiple[A]
 
+  val tTag = AggregateMoments.tTag
   val oTag = classTag[O[_]]
 
+  def prepare(cell: Cell[P]): Option[T] = AggregateMoments.prepare(cell, filter)
+
+  def reduce(lt: T, rt: T): T = AggregateMoments.reduce(strict)(lt, rt)
+
   def present(pos: Position[S], t: T): O[Cell[Q]] =
-    if (invalid(t) && !nan)
+    if (AggregateMoments.invalid(t) && !nan)
       Multiple()
-    else if (invalid(t))
+    else if (AggregateMoments.invalid(t))
       Multiple(
         List(
-          mean(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN))),
-          sd(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN))),
-          skewness(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN))),
-          kurtosis(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN)))
+          mean(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) },
+          sd(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) },
+          skewness(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) },
+          kurtosis(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) }
         )
         .flatten
       )
     else
       Multiple(
         List(
-          mean(pos).map(Cell(_, Content(ContinuousSchema[Double](), t.mean))),
-          sd(pos).map(Cell(_, Content(ContinuousSchema[Double](), Statistics.sd(t, biased)))),
-          skewness(pos).map(Cell(_, Content(ContinuousSchema[Double](), t.skewness))),
-          kurtosis(pos).map(Cell(_, Content(ContinuousSchema[Double](), Statistics.kurtosis(t, excess))))
+          mean(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), t.mean)) },
+          sd(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Statistics.sd(t, biased))) },
+          skewness(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), t.skewness)) },
+          kurtosis(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Statistics.kurtosis(t, excess))) }
         )
         .flatten
       )
@@ -278,10 +246,18 @@ case class Mean[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with MomentsPrepareReduce[P, S, S]
-  with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = t.mean
+) extends Aggregator[P, S, S] {
+  type T = AggregateMoments.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateMoments.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateMoments.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateMoments.reduce(strict)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateMoments.present(nan, asDouble)(pos, t)
+
+  private def asDouble(t: T): Double = t.mean
 }
 
 /**
@@ -303,10 +279,18 @@ case class StandardDeviation[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with MomentsPrepareReduce[P, S, S]
-  with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = Statistics.sd(t, biased)
+) extends Aggregator[P, S, S] {
+  type T = AggregateMoments.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateMoments.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateMoments.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateMoments.reduce(strict)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateMoments.present(nan, asDouble)(pos, t)
+
+  private def asDouble(t: T): Double = Statistics.sd(t, biased)
 }
 
 /**
@@ -326,10 +310,18 @@ case class Skewness[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with MomentsPrepareReduce[P, S, S]
-  with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = t.skewness
+) extends Aggregator[P, S, S] {
+  type T = AggregateMoments.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateMoments.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateMoments.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateMoments.reduce(strict)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateMoments.present(nan, asDouble)(pos, t)
+
+  private def asDouble(t: T): Double = t.skewness
 }
 
 /**
@@ -351,10 +343,18 @@ case class Kurtosis[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with MomentsPrepareReduce[P, S, S]
-  with MomentsPresent[P, S] {
-  protected def asDouble(t: T): Double = Statistics.kurtosis(t, excess)
+) extends Aggregator[P, S, S] {
+  type T = AggregateMoments.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateMoments.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateMoments.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateMoments.reduce(strict)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateMoments.present(nan, asDouble)(pos, t)
+
+  private def asDouble(t: T): Double = Statistics.kurtosis(t, excess)
 }
 
 /**
@@ -379,16 +379,16 @@ case class Limits[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, Q]
-  with PrepareDouble[P]
-  with StrictReduce[P, S, Q] {
+) extends Aggregator[P, S, Q] {
   type T = (Double, Double)
   type O[A] = Multiple[A]
 
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => (d, d))
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter).map { case d => (d, d) }
+
+  def reduce(lt: T, rt: T): T = Aggregate.reduce(strict, invalid, reduction)(lt, rt)
 
   def present(pos: Position[S], t: T): O[Cell[Q]] =
     if (invalid(t) && !nan)
@@ -396,22 +396,22 @@ case class Limits[
     else if (invalid(t))
       Multiple(
         List(
-          min(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN))),
-          max(pos).map(Cell(_, Content(ContinuousSchema[Double](), Double.NaN)))
+          min(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) },
+          max(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), Double.NaN)) }
         )
         .flatten
       )
     else
       Multiple(
         List(
-          min(pos).map(Cell(_, Content(ContinuousSchema[Double](), t._1))),
-          max(pos).map(Cell(_, Content(ContinuousSchema[Double](), t._2)))
+          min(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), t._1)) },
+          max(pos).map { case p => Cell(p, Content(ContinuousSchema[Double](), t._2)) }
         )
         .flatten
       )
 
-  protected def invalid(t: T): Boolean = t._1.isNaN || t._2.isNaN
-  protected def reduction(lt: T, rt: T): T = (math.min(lt._1, rt._1), math.max(lt._2, rt._2))
+  private def invalid(t: T): Boolean = t._1.isNaN || t._2.isNaN
+  private def reduction(lt: T, rt: T): T = (math.min(lt._1, rt._1), math.max(lt._2, rt._2))
 }
 
 /**
@@ -431,9 +431,18 @@ case class Minimum[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with DoubleAggregator[P, S] {
-  protected def reduction(lt: T, rt: T): T = math.min(lt, rt)
+) extends Aggregator[P, S, S] {
+  type T = AggregateDouble.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateDouble.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateDouble.reduce(strict, reduction)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateDouble.present(nan)(pos, t)
+
+  private def reduction(lt: T, rt: T): T = math.min(lt, rt)
 }
 
 /**
@@ -453,9 +462,18 @@ case class Maximum[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with DoubleAggregator[P, S] {
-  protected def reduction(lt: T, rt: T): T = math.max(lt, rt)
+) extends Aggregator[P, S, S] {
+  type T = AggregateDouble.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateDouble.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateDouble.reduce(strict, reduction)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateDouble.present(nan)(pos, t)
+
+  private def reduction(lt: T, rt: T): T = math.max(lt, rt)
 }
 
 /**
@@ -475,9 +493,18 @@ case class MaximumAbsolute[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with DoubleAggregator[P, S] {
-  protected def reduction(lt: T, rt: T): T = math.max(math.abs(lt), math.abs(rt))
+) extends Aggregator[P, S, S] {
+  type T = AggregateDouble.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateDouble.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateDouble.reduce(strict, reduction)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateDouble.present(nan)(pos, t)
+
+  private def reduction(lt: T, rt: T): T = math.max(math.abs(lt), math.abs(rt))
 }
 
 /**
@@ -497,9 +524,18 @@ case class Sums[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with DoubleAggregator[P, S] {
-  protected def reduction(lt: T, rt: T): T = lt + rt
+) extends Aggregator[P, S, S] {
+  type T = AggregateDouble.T
+  type O[A] = Aggregate.O[A]
+
+  val tTag = AggregateDouble.tTag
+  val oTag = Aggregate.oTag
+
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+  def reduce(lt: T, rt: T): T = AggregateDouble.reduce(strict, reduction)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = AggregateDouble.present(nan)(pos, t)
+
+  private def reduction(lt: T, rt: T): T = lt + rt
 }
 
 /**
@@ -522,24 +558,23 @@ case class WeightedSums[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends AggregatorWithValue[P, S, S]
-  with PrepareDouble[P]
-  with StrictReduce[P, S, S] {
-  type T = Double
+) extends AggregatorWithValue[P, S, S] {
+  type T = AggregateDouble.T
   type V = W
-  type O[A] = Single[A]
+  type O[A] = Aggregate.O[A]
 
-  val tTag = classTag[T]
-  val oTag = classTag[O[_]]
+  val tTag = AggregateDouble.tTag
+  val oTag = Aggregate.oTag
 
-  def prepareWithValue(cell: Cell[P], ext: V): Option[T] = prepareDouble(cell)
-    .map(_ * weight.extract(cell, ext).getOrElse(0.0))
+  def prepareWithValue(cell: Cell[P], ext: V): Option[T] = AggregateDouble.prepare(cell, filter)
+    .map { case d => d * weight.extract(cell, ext).getOrElse(0.0) }
+
+  def reduce(lt: T, rt: T): T = AggregateDouble.reduce(strict, reduction)(lt, rt)
 
   def presentWithValue(pos: Position[S], t: T, ext: V): O[Cell[S]] =
     if (t.isNaN && !nan) Single() else Single(Cell(pos, Content(ContinuousSchema[Double](), t)))
 
-  protected def invalid(t: T): Boolean = t.isNaN
-  protected def reduction(lt: T, rt: T): T = lt + rt
+  private def reduction(lt: T, rt: T): T = lt + rt
 }
 
 /**
@@ -566,8 +601,7 @@ case class Entropy[
   nan: Boolean = false,
   negate: Boolean = false,
   log: (Double) => Double = (x: Double) => math.log(x) / math.log(2)
-) extends AggregatorWithValue[P, S, S]
-  with PrepareDouble[P] {
+) extends AggregatorWithValue[P, S, S] {
   type T = (Long, Double)
   type V = W
   type O[A] = Single[A]
@@ -575,7 +609,7 @@ case class Entropy[
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
-  def prepareWithValue(cell: Cell[P], ext: V): Option[T] = prepareDouble(cell).map {
+  def prepareWithValue(cell: Cell[P], ext: V): Option[T] = AggregateDouble.prepare(cell, filter).map {
     case v => (1, count.extract(cell, ext) match {
       case Some(c) => (v / c) * log(v / c)
       case None => Double.NaN
@@ -612,25 +646,26 @@ case class FrequencyRatio[
   filter: Boolean = true,
   strict: Boolean = true,
   nan: Boolean = false
-) extends Aggregator[P, S, S]
-  with PrepareDouble[P]
-  with PresentDouble[P, S] {
+) extends Aggregator[P, S, S] {
   type T = (Long, Double, Double)
+  type O[A] = Aggregate.O[A]
 
   val tTag = classTag[T]
+  val oTag = Aggregate.oTag
 
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => (1, d, d))
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter).map { case d => (1, d, d) }
+  def reduce(lt: T, rt: T): T = Aggregate.reduce(strict, invalid, reduction)(lt, rt)
+  def present(pos: Position[S], t: T): O[Cell[S]] = Aggregate.present(nan, invalid, missing, asDouble)(pos, t)
 
-  protected def invalid(t: T): Boolean = t._2.isNaN
-  protected def reduction(lt: T, rt: T): T = {
+  private def invalid(t: T): Boolean = t._2.isNaN
+  private def reduction(lt: T, rt: T): T = {
     val high = math.max(lt._2, rt._2)
     val low = if (math.max(lt._3, rt._3) == high) math.min(lt._3, rt._3) else math.max(lt._3, rt._3)
 
     (lt._1 + rt._1, high, low)
   }
-
-  protected def missing(t: T): Boolean = t._1 == 1
-  protected def asDouble(t: T): Double = t._2 / t._3
+  private def missing(t: T): Boolean = t._1 == 1
+  private def asDouble(t: T): Double = t._2 / t._3
 }
 
 /**
@@ -658,16 +693,18 @@ case class TDigestQuantiles[
   nan: Boolean = false
 )(implicit
   ev: GT[Q, S]
-) extends Aggregator[P, S, Q]
-  with PrepareDouble[P] {
+) extends Aggregator[P, S, Q] {
   type T = TDigest.T
   type O[A] = Multiple[A]
 
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).flatMap(TDigest.from(_, compression))
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+    .flatMap { case d => TDigest.from(d, compression) }
+
   def reduce(lt: T, rt: T): T = TDigest.reduce(lt, rt)
+
   def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(TDigest.toCells(t, probs, pos, name, nan))
 }
 
@@ -690,21 +727,20 @@ case class CountMapQuantiles[
   Q <: Nat
 ](
   probs: List[Double],
-  quantiser: Quantile.Quantiser,
+  quantiser: Quantiles.Quantiser,
   name: Locate.FromSelectedAndOutput[S, Double, Q],
   filter: Boolean = true,
   nan: Boolean = false
 )(implicit
   ev: GT[Q, S]
-) extends Aggregator[P, S, Q]
-  with PrepareDouble[P] {
+) extends Aggregator[P, S, Q] {
   type T = CountMap.T
   type O[A] = Multiple[A]
 
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(CountMap.from(_))
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter).map { case d => CountMap.from(d) }
   def reduce(lt: T, rt: T): T = CountMap.reduce(lt, rt)
   def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(CountMap.toCells(t, probs, pos, quantiser, name, nan))
 }
@@ -732,16 +768,18 @@ sealed case class UniformQuantiles[
   nan: Boolean = false
 )(implicit
   ev: GT[Q, S]
-) extends Aggregator[P, S, Q]
-  with PrepareDouble[P] {
+) extends Aggregator[P, S, Q] {
   type T = StreamingHistogram.T
   type O[A] = Multiple[A]
 
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
-  def prepare(cell: Cell[P]): Option[T] = prepareDouble(cell).map(d => StreamingHistogram.from(d, count))
+  def prepare(cell: Cell[P]): Option[T] = AggregateDouble.prepare(cell, filter)
+    .map { case d => StreamingHistogram.from(d, count) }
+
   def reduce(lt: T, rt: T): T = StreamingHistogram.reduce(lt, rt)
+
   def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(StreamingHistogram.toCells(t, count, pos, name, nan))
 }
 
@@ -775,14 +813,16 @@ case class CountMapHistogram[
       Option(Map(cell.content -> 1L))
     else
       None
+
   def reduce(lt: T, rt: T): T = {
     val (big, small) = if (lt.size > rt.size) (lt, rt) else (rt, lt)
 
-    big ++ small.map { case (k, v) => k -> big.get(k).map(_ + v).getOrElse(v) }
+    big ++ small.map { case (k, v) => k -> big.get(k).map { case l => l + v }.getOrElse(v) }
   }
+
   def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(
     t
-      .flatMap { case (c, s) => name(pos, c).map(p => Cell(p, Content(DiscreteSchema[Long](), s))) }
+      .flatMap { case (c, s) => name(pos, c).map { case p => Cell(p, Content(DiscreteSchema[Long](), s)) } }
       .toList
   )
 }

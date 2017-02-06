@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
 
 package commbank.grimlock.framework.pairwise
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.position.Position
 
 import shapeless.Nat
 import shapeless.ops.nat.GTEq
 
-/** Base trait for comparing two positions to determine if pairwise operation is to be applied. */
+/** Trait for comparing two positions to determine if pairwise operation is to be applied. */
 trait Comparer {
   /**
    * Check, based on left and right positions, if pairwise operation should be computed.
@@ -62,7 +62,7 @@ case object LowerDiagonal extends Comparer {
   def keep[P <: Nat](left: Position[P], right: Position[P]): Boolean = left.compare(right) >= 0
 }
 
-/** Base trait for computing pairwise values. */
+/** Trait for computing pairwise values. */
 trait Operator[P <: Nat, Q <: Nat] extends OperatorWithValue[P, Q] { self =>
   type V = Any
 
@@ -135,7 +135,7 @@ object Operator {
   }
 }
 
-/** Base trait for computing pairwise values with a user provided value. */
+/** Trait for computing pairwise values with a user provided value. */
 trait OperatorWithValue[P <: Nat, Q <: Nat] extends java.io.Serializable { self =>
   /** Type of the external value. */
   type V

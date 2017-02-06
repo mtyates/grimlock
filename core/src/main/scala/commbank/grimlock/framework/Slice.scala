@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import shapeless.{ Nat, Witness }
 import shapeless.nat._1
 import shapeless.ops.nat.{ Diff, LTEq, ToInt }
 
-/** Base trait that encapsulates dimension on which to operate. */
+/** Trait that encapsulates dimension on which to operate. */
 sealed trait Slice[L <: Nat, P <: Nat] {
   /**
    * Return type of the `selected` method; a position of dimension less than `P`.
@@ -59,11 +59,11 @@ sealed trait Slice[L <: Nat, P <: Nat] {
 sealed trait Over[
   L <: Nat,
   P <: Nat,
-  E <: Nat
+  X <: Nat
 ] extends Slice[L, P] {
   type S = _1
   type R = L
-  type D = E
+  type D = X
 }
 
 /** Companion object to `Over` trait. */
@@ -112,11 +112,11 @@ private case class OverImpl[
 sealed trait Along[
   L <: Nat,
   P <: Nat,
-  E <: Nat
+  X <: Nat
 ] extends Slice[L, P] {
   type S = L
   type R = _1
-  type D = E
+  type D = X
 }
 
 /** Companion object to `Along` trait. */

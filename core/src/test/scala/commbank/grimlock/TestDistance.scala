@@ -16,12 +16,13 @@ package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
+import commbank.grimlock.framework.environment.tuner._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 
-import commbank.grimlock.scalding.environment.Context._
+import commbank.grimlock.scalding.environment._
 
-import commbank.grimlock.spark.environment.Context._
+import commbank.grimlock.spark.environment._
 
 import shapeless.Nat
 import shapeless.nat.{ _1, _2, _3 }
@@ -120,23 +121,9 @@ trait TestCorrelation extends TestGrimlock {
   )
 
   val result7 = List(
-    Cell(Position("(sales*neg.sales)"), Content(ContinuousSchema[Double](), -0.9999999999999998))
-  )
-
-  val result8 = List(
-    Cell(Position("(sales*neg.sales)"), Content(ContinuousSchema[Double](), -0.9999999999999998)),
-    Cell(Position("(temperature*neg.sales)"), Content(ContinuousSchema[Double](), -0.957506623001595)),
-    Cell(Position("(temperature*sales)"), Content(ContinuousSchema[Double](), 0.957506623001595))
-  )
-
-  val result9 = List(
     Cell(Position("(sales*neg.sales)"), Content(ContinuousSchema[Double](), -0.9999999999999998)),
     Cell(Position("(temperature*neg.sales)"), Content(ContinuousSchema[Double](), Double.NaN)),
     Cell(Position("(temperature*sales)"), Content(ContinuousSchema[Double](), Double.NaN))
-  )
-
-  val result10 = List(
-    Cell(Position("(sales*neg.sales)"), Content(ContinuousSchema[Double](), -0.9999999999999998))
   )
 }
 
@@ -150,7 +137,7 @@ class TestScaldingCorrelation extends TestCorrelation {
 
   "A correlation" should "return its second over in 2D" in {
     val res = toPipe(data1)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), InMemory())(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -162,7 +149,7 @@ class TestScaldingCorrelation extends TestCorrelation {
 
   it should "return its multiple second over in 2D" in {
     val res = toPipe(data2)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), Default())(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -174,7 +161,7 @@ class TestScaldingCorrelation extends TestCorrelation {
 
   it should "return its first along in 3D" in {
     val res = toPipe(data3)
-      .correlation(Along(_3))(TestCorrelation.name, true)
+      .correlation(Along(_3), Ternary(Default(12), InMemory(), Default()))(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result3.size
@@ -186,7 +173,7 @@ class TestScaldingCorrelation extends TestCorrelation {
 
   it should "return its second over in 3D" in {
     val res = toPipe(data4)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), Ternary(Default(12), InMemory(12), Default(12)))(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result4.size
@@ -198,7 +185,7 @@ class TestScaldingCorrelation extends TestCorrelation {
 
   it should "filter correctly" in {
     val res = toPipe(data5)
-      .correlation(Over(_2))(TestCorrelation.name, true, true, true)
+      .correlation(Over(_2), Ternary(Default(12), Default(), Unbalanced(12)))(TestCorrelation.name, true, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -208,9 +195,9 @@ class TestScaldingCorrelation extends TestCorrelation {
     }
   }
 
-  it should "!filter,strict,nan correctly" in {
+  it should "!filter,strict correctly" in {
     val res = toPipe(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, true, true)
+      .correlation(Over(_2), Ternary(Default(12), Default(12), Default(12)))(TestCorrelation.name, false, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result5.size
@@ -220,9 +207,9 @@ class TestScaldingCorrelation extends TestCorrelation {
     }
   }
 
-  it should "!filter,!strict,nan correctly" in {
+  it should "!filter,!strict correctly" in {
     val res = toPipe(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, true)
+      .correlation(Over(_2), Ternary(Default(12), Unbalanced(12), Default(12)))(TestCorrelation.name, false, false)
       .toList.sortBy(_.position)
 
     res.size shouldBe result6.size
@@ -232,51 +219,15 @@ class TestScaldingCorrelation extends TestCorrelation {
     }
   }
 
-  it should "!filter,strict,!nan correctly" in {
-    val res = toPipe(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, true, false)
+  it should "!filter,strict correctly take 2" in {
+    val res = toPipe(data6)
+      .correlation(Over(_2), Default())(TestCorrelation.name, false, false)
       .toList.sortBy(_.position)
 
     res.size shouldBe result7.size
     for (i <- 0 until res.size) {
       res(i).position shouldBe result7(i).position
-      res(i).content.value.asDouble.get shouldBe result7(i).content.value.asDouble.get +- 1e-8
-    }
-  }
-
-  it should "!filter,!strict,!nan correctly" in {
-    val res = toPipe(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, false)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result8.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result8(i).position
-      res(i).content.value.asDouble.get shouldBe result8(i).content.value.asDouble.get +- 1e-8
-    }
-  }
-
-  it should "!filter,strict,nan correctly take 2" in {
-    val res = toPipe(data6)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, true)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result9.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result9(i).position
-      res(i).content.value.asDouble.get.compare(result9(i).content.value.asDouble.get).toDouble shouldBe 0.0 +- 1e-8
-    }
-  }
-
-  it should "!filter,strict,!nan correctly take 2" in {
-    val res = toPipe(data6)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, false)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result10.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result10(i).position
-      res(i).content.value.asDouble.get shouldBe result10(i).content.value.asDouble.get +- 1e-8
+      res(i).content.value.asDouble.get.compare(result7(i).content.value.asDouble.get).toDouble shouldBe 0.0 +- 1e-8
     }
   }
 }
@@ -285,7 +236,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   "A correlation" should "return its second over in 2D" in {
     val res = toRDD(data1)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), InMemory())(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -297,7 +248,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "return its multiple second over in 2D" in {
     val res = toRDD(data2)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), Default())(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -309,7 +260,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "return its first along in 3D" in {
     val res = toRDD(data3)
-      .correlation(Along(_3))(TestCorrelation.name, true)
+      .correlation(Along(_3), Ternary(Default(12), InMemory(), Default()))(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result3.size
@@ -321,7 +272,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "return its second over in 3D" in {
     val res = toRDD(data4)
-      .correlation(Over(_2))(TestCorrelation.name, true)
+      .correlation(Over(_2), Ternary(Default(12), InMemory(), Default(12)))(TestCorrelation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result4.size
@@ -333,7 +284,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "filter correctly" in {
     val res = toRDD(data5)
-      .correlation(Over(_2))(TestCorrelation.name, true, true, true)
+      .correlation(Over(_2), Ternary(Default(12), InMemory(12), Default(12)))(TestCorrelation.name, true, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -345,7 +296,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "!filter,strict,nan correctly" in {
     val res = toRDD(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, true, true)
+      .correlation(Over(_2), Ternary(Default(12), Default(), Default()))(TestCorrelation.name, false, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result5.size
@@ -357,7 +308,7 @@ class TestSparkCorrelation extends TestCorrelation {
 
   it should "!filter,!strict,nan correctly" in {
     val res = toRDD(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, true)
+      .correlation(Over(_2), Ternary(Default(12), Default(), Default(12)))(TestCorrelation.name, false, false)
       .toList.sortBy(_.position)
 
     res.size shouldBe result6.size
@@ -367,51 +318,15 @@ class TestSparkCorrelation extends TestCorrelation {
     }
   }
 
-  it should "!filter,strict,!nan correctly" in {
-    val res = toRDD(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, true, false)
+  it should "!filter,strict,nan correctly take 2" in {
+    val res = toRDD(data6)
+      .correlation(Over(_2), Ternary(Default(12), Default(12), Default(12)))(TestCorrelation.name, false, false)
       .toList.sortBy(_.position)
 
     res.size shouldBe result7.size
     for (i <- 0 until res.size) {
       res(i).position shouldBe result7(i).position
-      res(i).content.value.asDouble.get shouldBe result7(i).content.value.asDouble.get +- 1e-8
-    }
-  }
-
-  it should "!filter,!strict,!nan correctly" in {
-    val res = toRDD(data5)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, false)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result8.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result8(i).position
-      res(i).content.value.asDouble.get shouldBe result8(i).content.value.asDouble.get +- 1e-8
-    }
-  }
-
-  it should "!filter,strict,nan correctly take 2" in {
-    val res = toRDD(data6)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, true)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result9.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result9(i).position
-      res(i).content.value.asDouble.get.compare(result9(i).content.value.asDouble.get).toDouble shouldBe 0.0 +- 1e-8
-    }
-  }
-
-  it should "!filter,strict,!nan correctly take 2" in {
-    val res = toRDD(data6)
-      .correlation(Over(_2))(TestCorrelation.name, false, false, false)
-      .toList.sortBy(_.position)
-
-    res.size shouldBe result10.size
-    for (i <- 0 until res.size) {
-      res(i).position shouldBe result10(i).position
-      res(i).content.value.asDouble.get shouldBe result10(i).content.value.asDouble.get +- 1e-8
+      res(i).content.value.asDouble.get.compare(result7(i).content.value.asDouble.get).toDouble shouldBe 0.0 +- 1e-8
     }
   }
 }
@@ -657,7 +572,7 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   "A mutualInformation" should "return its second over in 2D" in {
     val res = toPipe(data1)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), InMemory())(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -669,7 +584,7 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   it should "return its first along in 2D" in {
     val res = toPipe(data1)
-      .mutualInformation(Along(_1))(TestMutualInformation.name, true)
+      .mutualInformation(Along(_1), Default())(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -681,7 +596,7 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   it should "return its first along in 3D" in {
     val res = toPipe(data2)
-      .mutualInformation(Along(_3))(TestMutualInformation.name, true)
+      .mutualInformation(Along(_3), Ternary(Default(12), InMemory(), Default()))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -693,7 +608,7 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   it should "return its second over in 3D" in {
     val res = toPipe(data3)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), Ternary(Default(12), InMemory(12), Default(12)))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result3.size
@@ -705,7 +620,7 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   it should "filter correctly" in {
     val res = toPipe(data4)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), Ternary(Default(12), Default(), Unbalanced(12)))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result4.size
@@ -717,7 +632,13 @@ class TestScaldingMutualInformation extends TestMutualInformation {
 
   it should "not filter correctly" in {
     val res = toPipe(data4)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, false)
+      .mutualInformation(
+        Over(_2),
+        Ternary(Default(12), Unbalanced(12), Unbalanced(12))
+      )(
+        TestMutualInformation.name,
+        false
+      )
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -732,7 +653,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   "A mutualInformation" should "return its second over in 2D" in {
     val res = toRDD(data1)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), InMemory())(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -744,7 +665,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   it should "return its first along in 2D" in {
     val res = toRDD(data1)
-      .mutualInformation(Along(_1))(TestMutualInformation.name, true)
+      .mutualInformation(Along(_1), Default())(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size
@@ -756,7 +677,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   it should "return its first along in 3D" in {
     val res = toRDD(data2)
-      .mutualInformation(Along(_3))(TestMutualInformation.name, true)
+      .mutualInformation(Along(_3), Ternary(Default(12), InMemory(), Default()))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result2.size
@@ -768,7 +689,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   it should "return its second over in 3D" in {
     val res = toRDD(data3)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), Ternary(Default(12), InMemory(12), Default(12)))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result3.size
@@ -780,7 +701,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   it should "filter correctly" in {
     val res = toRDD(data4)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, true)
+      .mutualInformation(Over(_2), Ternary(Default(12), Default(), Default(12)))(TestMutualInformation.name, true)
       .toList.sortBy(_.position)
 
     res.size shouldBe result4.size
@@ -792,7 +713,7 @@ class TestSparkMutualInformation extends TestMutualInformation {
 
   it should "not filter correctly" in {
     val res = toRDD(data4)
-      .mutualInformation(Over(_2))(TestMutualInformation.name, false)
+      .mutualInformation(Over(_2), Ternary(Default(12), Default(12), Default(12)))(TestMutualInformation.name, false)
       .toList.sortBy(_.position)
 
     res.size shouldBe result1.size

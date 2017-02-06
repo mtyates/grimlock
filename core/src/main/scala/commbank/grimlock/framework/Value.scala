@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 package commbank.grimlock.framework.encoding
 
-import commbank.grimlock.framework.Type
+import commbank.grimlock.framework.metadata.Type
 
 import java.util.Date
 
@@ -28,10 +28,10 @@ private case object Equal extends CompareResult
 private case object Less extends CompareResult
 private case object LessEqual extends CompareResult
 
-/** Base trait for representing strutured data. */
+/** Trait for representing strutured data. */
 trait Structured
 
-/** Base trait for variable values. */
+/** Trait for variable values. */
 trait Value { self =>
   /** Type of the value. */
   type D

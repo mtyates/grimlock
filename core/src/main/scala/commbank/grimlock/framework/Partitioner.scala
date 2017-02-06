@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
 
 package commbank.grimlock.framework.partition
 
-import commbank.grimlock.framework._
+import commbank.grimlock.framework.{ Cell, Persist }
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
 
 import scala.reflect.ClassTag
 
 import shapeless.Nat
 
-/** Base trait for partitioners. */
+/** Trait for partitioners. */
 trait Partitioner[P <: Nat, I] extends PartitionerWithValue[P, I] {
   type V = Any
 
@@ -54,7 +56,7 @@ object Partitioner {
   }
 }
 
-/** Base trait for partitioners that use a user supplied value. */
+/** Trait for partitioners that use a user supplied value. */
 trait PartitionerWithValue[P <: Nat, I] {
   /** Type of the external value. */
   type V
@@ -110,8 +112,8 @@ object PartitionerWithValue {
   }
 }
 
-/** Base trait that represents the partitions of matrices */
-trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
+/** Trait that represents the partitions of matrices */
+trait Partitions[P <: Nat, I, U[_], E[_], C <: Context[U, E]] extends Persist[(I, Cell[P]), U, E, C] {
   /**
    * Add a partition.
    *
@@ -121,9 +123,6 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    * @return A `U[(I, Cell[P])]` containing existing and new paritions.
    */
   def add(id: I, partition: U[Cell[P]]): U[(I, Cell[P])]
-
-  /** Specifies tuners permitted on a call to `forAll`. */
-  type ForAllTuners[_]
 
   /**
    * Apply function `fn` to all partitions.
@@ -139,13 +138,14 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    */
   def forAll[
     Q <: Nat,
-    T <: Tuner : ForAllTuners
+    T <: Tuner
   ](
     fn: (I, U[Cell[P]]) => U[Cell[Q]],
     exclude: List[I] = List(),
     tuner: T
   )(implicit
-    ev1: ClassTag[I]
+    ev1: ClassTag[I],
+    ev2: Partitions.ForAllTuners[U, T]
   ): U[(I, Cell[Q])]
 
   /**
@@ -167,15 +167,12 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    */
   def get(id: I): U[Cell[P]]
 
-  /** Specifies tuners permitted on a call to `ids`. */
-  type IdsTuners[_]
-
   /**
    * Return the partition identifiers.
    *
    * @param tuner The tuner for the job.
    */
-  def ids[T <: Tuner : IdsTuners](tuner: T)(implicit ev1: ClassTag[I]): U[I]
+  def ids[T <: Tuner](tuner: T)(implicit ev1: ClassTag[I], ev2: Partitions.IdsTuners[U, T]): U[I]
 
   /**
    * Merge partitions into a single matrix.
@@ -195,13 +192,9 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    */
   def remove(id: I): U[(I, Cell[P])]
 
-  /** Specifies tuners permitted on a call to `saveAsText`. */
-  type SaveAsTextTuners[_]
-
   /**
    * Persist to disk.
    *
-   * @param ctx    The context used to persist this partition.
    * @param file   Name of the output file.
    * @param writer Writer that converts `(I, Cell[P])` to string.
    * @param tuner  The tuner for the job.
@@ -209,17 +202,24 @@ trait Partitions[P <: Nat, I] extends Persist[(I, Cell[P])] {
    * @return A `U[(I, Cell[P])]` which is this object's data.
    */
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter = Partition.toString(),
+    writer: Persist.TextWriter[(I, Cell[P])] = Partitions.toString(),
     tuner: T
+  )(implicit
+    ev: Persist.SaveAsTextTuners[U, T]
   ): U[(I, Cell[P])]
 }
 
-/** Object for `Partition` functions. */
-object Partition {
+/** Companion object to `Partitions` with types, implicits, etc. */
+object Partitions {
+  /** Trait for tuners permitted on a call to `forAll`. */
+  trait ForAllTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `ids`. */
+  trait IdsTuners[U[_], T <: Tuner]
+
   /**
    * Return function that returns a string representation of a partition.
    *

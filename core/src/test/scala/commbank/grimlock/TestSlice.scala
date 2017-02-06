@@ -15,8 +15,8 @@
 package commbank.grimlock.test
 
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5 }

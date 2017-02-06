@@ -16,12 +16,13 @@ package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 
 import commbank.grimlock.library.sample._
 
-import scala.util._
+import scala.util.Random
 
 import shapeless.Nat
 import shapeless.nat.{ _1, _2 }

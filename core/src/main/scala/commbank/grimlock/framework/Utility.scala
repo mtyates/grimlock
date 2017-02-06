@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ object =:!= extends LowerPriorityImplicits {
   implicit def nequal[A, B]: =:!=[A, B] = new =:!=[A, B]
 }
 
-/** Base trait for ecaping special characters in a string. */
+/** Trait for ecaping special characters in a string. */
 trait Escape {
   /** The special character to escape. */
   val special: String
@@ -101,16 +101,22 @@ object Distinct {
     gen: Generic.Aux[P, L],
     toCoproduct: ToCoproduct.Aux[L, C],
     toSum: ToSum.Aux[L, C]
-  ) = new Distinct[P] {}
+  ): Distinct[P] = new Distinct[P] {}
 }
 
 /** Trait for specifying a union of types. */
 trait UnionTypes {
-  private type Not[A] = A => Nothing
-  private type NotNot[A] = Not[Not[A]]
+  /** Type for ensuring !A. */
+  type Not[A] = A => Nothing
 
-  private type Contains[S, T <: Disjunction] = NotNot[S] <:< Not[T#D]
-  private type NotContains[S, T <: Disjunction] = NotNot[S] <:!< Not[T#D]
+  /** Type for ensuring !!A. */
+  type NotNot[A] = Not[Not[A]]
+
+  /** Type for ensuring `T` contains `S`. */
+  type Contains[S, T <: Disjunction] = NotNot[S] <:< Not[T#D]
+
+  /** Type for ensuring `T` does not contain `S`. */
+  type NotContains[S, T <: Disjunction] = NotNot[S] <:!< Not[T#D]
 
   /** Type for specifying `S` is `T`. */
   type Is[S, T] = Contains[S, OneOf[T]#Or[Nothing]]
@@ -125,8 +131,7 @@ trait UnionTypes {
   type OneOf[T] = { type Or[S] = (Disjunction {type D = Not[T]})#Or[S] }
 
   /** Defines alternative vaues for `T`. */
-  trait Disjunction {
-    self =>
+  trait Disjunction { self =>
     type D
     type Or[S] = Disjunction {
       type D = self.D with Not[S]
