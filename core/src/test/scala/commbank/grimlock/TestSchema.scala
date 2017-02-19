@@ -14,8 +14,8 @@
 
 package commbank.grimlock.test
 
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.metadata._
 
 class TestContinuousSchema extends TestGrimlock {
 

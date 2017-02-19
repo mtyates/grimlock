@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
 
 package commbank.grimlock.framework.content
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.Persist
+import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.metadata.Schema
+import commbank.grimlock.framework.position.Position
 
 import java.util.regex.Pattern
 
@@ -212,15 +214,11 @@ private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { 
   type D = T
 }
 
-/** Base trait that represents the contents of a matrix. */
-trait Contents extends Persist[Content] {
-  /** Specifies tuners permitted on a call to `saveAsText`. */
-  type SaveAsTextTuners[_]
-
+/** Trait that represents the contents of a matrix. */
+trait Contents[U[_], E[_], C <: Context[U, E]] extends Persist[Content, U, E, C] {
   /**
    * Persist to disk.
    *
-   * @param ctx    The context used to persist the contents.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Content` to string.
    * @param tuner  The tuner for the job.
@@ -228,24 +226,21 @@ trait Contents extends Persist[Content] {
    * @return A `U[Content]` which is this object's data.
    */
   def saveAsText[
-    T <: Tuner: SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter = Content.toString(),
+    writer: Persist.TextWriter[Content] = Content.toString(),
     tuner: T
+  )(implicit
+    ev: Persist.SaveAsTextTuners[U, T]
   ): U[Content]
 }
 
-/** Base trait that represents the output of uniqueByPosition. */
-trait IndexedContents[P <: Nat] extends Persist[(Position[P], Content)] {
-  /** Specifies tuners permitted on a call to `saveAsText`. */
-  type SaveAsTextTuners[_]
-
+/** Trait that represents the output of uniqueByPosition. */
+trait IndexedContents[P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[(Position[P], Content), U, E, C] {
   /**
    * Persist to disk.
    *
-   * @param ctx    The context used to persist the indexed contents.
    * @param file   Name of the output file.
    * @param writer Writer that converts `IndexedContent` to string.
    * @param tuner  The tuner for the job.
@@ -253,17 +248,18 @@ trait IndexedContents[P <: Nat] extends Persist[(Position[P], Content)] {
    * @return A `U[(Position[P], Content)]` which is this object's data.
    */
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter = IndexedContent.toString(),
+    writer: Persist.TextWriter[(Position[P], Content)] = IndexedContents.toString(),
     tuner: T
+  )(implicit
+    ev: Persist.SaveAsTextTuners[U, T]
   ): U[(Position[P], Content)]
 }
 
-/** Object for `IndexedContent` functions. */
-object IndexedContent {
+/** Object for `IndexedContents` functions. */
+object IndexedContents {
   /**
    * Return string representation of an indexed content.
    *

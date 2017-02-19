@@ -14,23 +14,22 @@
 
 package commbank.grimlock.framework
 
-import commbank.grimlock.framework.aggregate._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.distance._
-import commbank.grimlock.framework.distribution._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.environment._
-import commbank.grimlock.framework.pairwise._
-import commbank.grimlock.framework.partition._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.sample._
-import commbank.grimlock.framework.squash._
-import commbank.grimlock.framework.statistics._
-import commbank.grimlock.framework.transform._
-import commbank.grimlock.framework.utility._
-import commbank.grimlock.framework.window._
-
-import com.twitter.scrooge.ThriftStruct
+import commbank.grimlock.framework.aggregate.{ Aggregator, AggregatorWithValue }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.distance.PairwiseDistance
+import commbank.grimlock.framework.distribution.ApproximateDistribution
+import commbank.grimlock.framework.encoding.Value
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.pairwise.{ Comparer, Operator, OperatorWithValue }
+import commbank.grimlock.framework.partition.{ Partitioner, PartitionerWithValue }
+import commbank.grimlock.framework.position.{ Position, Positions, Slice }
+import commbank.grimlock.framework.sample.{ Sampler, SamplerWithValue }
+import commbank.grimlock.framework.squash.{ Squasher, SquasherWithValue }
+import commbank.grimlock.framework.statistics.Statistics
+import commbank.grimlock.framework.transform.{ Transformer, TransformerWithValue }
+import commbank.grimlock.framework.utility.{ =:!=, Distinct, Escape, Quote }
+import commbank.grimlock.framework.window.{ Window, WindowWithValue }
 
 import org.apache.hadoop.io.Writable
 
@@ -40,11 +39,8 @@ import shapeless.{ Nat, Witness }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8, _9 }
 import shapeless.ops.nat.{ Diff, LTEq, GT, GTEq, ToInt }
 
-/** Base trait for matrix operations. */
-trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
-  /** Specifies tuners permitted on a call to `change`. */
-  type ChangeTuners[_]
-
+/** Trait for matrix operations. */
+trait Matrix[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[Cell[P], U, E, C] {
   /**
    * Change the variable type of `positions` in a matrix.
    *
@@ -57,21 +53,19 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]` with the changed contents and a `U[String]` with errors.
    */
   def change[
-    T <: Tuner : ChangeTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(
     positions: U[Position[slice.S]],
     schema: Content.Parser,
-    writer: TextWriter = Cell.toString()
+    writer: Persist.TextWriter[Cell[P]] = Cell.toString()
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Matrix.ChangeTuners[U, T]
   ): (U[Cell[P]], U[String])
-
-  /** Specifies tuners permitted on a call to `compact` functions. */
-  type CompactTuners[_]
 
   /**
    * Compacts a matrix to a `Map`.
@@ -94,29 +88,25 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @note Avoid using this for very large matrices.
    */
   def compact[
-    T <: Tuner : CompactTuners
+    T <: Tuner,
+    V[_ <: Nat]
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
-    ev3: Compactable[L, P],
-    ev4: Diff.Aux[P, _1, L]
-  ): E[Map[Position[slice.S], ev3.C[slice.R]]]
-
-  /** Specifies tuners permitted on a call to `domain`. */
-  type DomainTuners[T]
+    ev3: Compactable[L, P, V],
+    ev4: Diff.Aux[P, _1, L],
+    ev5: Matrix.CompactTuners[U, T]
+  ): E[Map[Position[slice.S], V[slice.R]]]
 
   /**
    * Return all possible positions of a matrix.
    *
    * @param tuner The tuner for the job.
    */
-  def domain[T <: Tuner : DomainTuners](tuner: T): U[Position[P]]
-
-  /** Specifies tuners permitted on a call to `fill` with hetrogeneous data. */
-  type FillHeterogeneousTuners[_]
+  def domain[T <: Tuner](tuner: T)(implicit ev: Matrix.DomainTuners[U, T]): U[Position[P]]
 
   /**
    * Fill a matrix with `values` for a given `slice`.
@@ -132,7 +122,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *       from the resulting matrix.
    */
   def fillHeterogeneous[
-    T <: Tuner : FillHeterogeneousTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -141,11 +131,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(implicit
     ev1: ClassTag[Position[P]],
     ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.FillHeterogeneousTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `fill` with homogeneous data. */
-  type FillHomogeneousTuners[_]
 
   /**
    * Fill a matrix with `value`.
@@ -156,16 +144,14 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]` where all missing values have been filled in.
    */
   def fillHomogeneous[
-    T <: Tuner : FillHomogeneousTuners
+    T <: Tuner
   ](
     value: Content,
     tuner: T
   )(implicit
-    ev: ClassTag[Position[P]]
+    ev1: ClassTag[Position[P]],
+    ev2: Matrix.FillHomogeneousTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `get`. */
-  type GetTuners[_]
 
   /**
    * Return contents of a matrix at `positions`.
@@ -176,16 +162,14 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]` of the `positions` together with their content.
    */
   def get[
-    T <: Tuner : GetTuners
+    T <: Tuner
   ](
     positions: U[Position[P]],
     tuner: T
   )(implicit
-    ev: ClassTag[Position[P]]
+    ev1: ClassTag[Position[P]],
+    ev2: Matrix.GetTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `join`. */
-  type JoinTuners[_]
 
   /**
    * Join two matrices.
@@ -198,7 +182,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   // TODO: Add inner/left/right/outer join functionality?
   def join[
-    T <: Tuner : JoinTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -207,11 +191,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(implicit
     ev1: P =:!= _1,
     ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.JoinTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `materialise`. */
-  type MaterialiseTuners[_]
 
   /**
    * Returns the matrix as in in-memory list of cells.
@@ -222,10 +204,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @note Avoid using this for very large matrices.
    */
-  def materialise[T <: Tuner : MaterialiseTuners](tuner: T): List[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `names`. */
-  type NamesTuners[_]
+  def materialise[T <: Tuner](tuner: T)(implicit ev: Matrix.MaterialiseTuners[U, T]): List[Cell[P]]
 
   /**
    * Returns the distinct position(s) (or names) for a given `slice`.
@@ -236,18 +215,16 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Position[slice.S]]` of the distinct position(s).
    */
   def names[
-    T <: Tuner : NamesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Positions.NamesTuners[U, T]
   ): U[Position[slice.S]]
-
-  /** Specifies tuners permitted on a call to `pairwise` functions. */
-  type PairwiseTuners[_]
 
   /**
    * Compute pairwise values between all pairs of values given a slice.
@@ -261,7 +238,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def pairwise[
     Q <: Nat,
-    T <: Tuner : PairwiseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -273,7 +250,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.PairwiseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -290,7 +268,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def pairwiseWithValue[
     Q <: Nat,
     W,
-    T <: Tuner : PairwiseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -303,7 +281,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.PairwiseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -319,7 +298,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def pairwiseBetween[
     Q <: Nat,
-    T <: Tuner : PairwiseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -332,7 +311,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.PairwiseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -350,7 +330,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def pairwiseBetweenWithValue[
     Q <: Nat,
     W,
-    T <: Tuner : PairwiseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -364,7 +344,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.R],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.PairwiseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -394,13 +375,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev: GTEq[Q, P]
   ): U[Cell[Q]]
 
-  /** Specifies tuners permitted on a call to `saveAsIV`. */
-  type SaveAsIVTuners[_]
-
   /**
    * Persist as a sparse matrix file (index, value).
    *
-   * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param dictionary Pattern for the dictionary file name.
    * @param separator  Column separator to use in dictionary file.
@@ -409,22 +386,19 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]`; that is it returns `data`.
    */
   def saveAsIV[
-    T <: Tuner : SaveAsIVTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
     dictionary: String = "%1$s.dict.%2$d",
     separator: String = "|",
     tuner: T
+  )(implicit
+    ev: Matrix.SaveAsIVTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `saveAsText`. */
-  type SaveAsTextTuners[_]
 
   /**
    * Persist to disk.
    *
-   * @param ctx    The context for to persist the matrix.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Cell[P]` to string.
    * @param tuner  The tuner for the job.
@@ -432,16 +406,14 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]`; that is it returns `data`.
    */
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter = Cell.toString(),
+    writer: Persist.TextWriter[Cell[P]] = Cell.toString(),
     tuner: T
+  )(implicit
+    ev: Persist.SaveAsTextTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `set` functions. */
-  type SetTuners[_]
 
   /**
    * Set the `values` in a matrix.
@@ -451,10 +423,15 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @return A `U[Cell[P]]` with the `values` set.
    */
-  def set[T <: Tuner : SetTuners](values: U[Cell[P]], tuner: T)(implicit ev: ClassTag[Position[P]]): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `shape`. */
-  type ShapeTuners[_]
+  def set[
+    T <: Tuner
+  ](
+    values: U[Cell[P]],
+    tuner: T
+  )(implicit
+    ev1: ClassTag[Position[P]],
+    ev2: Matrix.SetTuners[U, T]
+  ): U[Cell[P]]
 
   /**
    * Returns the shape of the matrix.
@@ -464,10 +441,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[Position1D]]`. The position consists of a long value of the dimension (`Nat.toInt[dim.N]`). The
    *         content has the actual size in it as a discrete variable.
    */
-  def shape[T <: Tuner : ShapeTuners](tuner: T): U[Cell[_1]]
-
-  /** Specifies tuners permitted on a call to `shape`. */
-  type SizeTuners[_]
+  def shape[T <: Tuner](tuner: T)(implicit ev: Matrix.ShapeTuners[U, T]): U[Cell[_1]]
 
   /**
    * Returns the size of the matrix in dimension `dim`.
@@ -481,7 +455,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *         content has the actual size in it as a discrete variable.
    */
   def size[
-    T <: Tuner : SizeTuners
+    T <: Tuner
   ](
     dim: Nat,
     distinct: Boolean = false,
@@ -489,11 +463,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(implicit
     ev1: LTEq[dim.N, P],
     ev2: ToInt[dim.N],
-    ev3: Witness.Aux[dim.N]
+    ev3: Witness.Aux[dim.N],
+    ev4: Matrix.SizeTuners[U, T]
   ): U[Cell[_1]]
-
-  /** Specifies tuners permitted on a call to `slice`. */
-  type SliceTuners[_]
 
   /**
    * Slice a matrix.
@@ -506,7 +478,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[P]]` of the remaining content.
    */
   def slice[
-    T <: Tuner : SliceTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -515,11 +487,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     positions: U[Position[slice.S]]
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Matrix.SliceTuners[U, T]
   ): U[Cell[P]]
-
-  /** Specifies tuners permitted on a call to `slide` functions. */
-  type SlideTuners[_]
 
   /**
    * Create window based derived data.
@@ -533,7 +503,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def slide[
     Q <: Nat,
-    T <: Tuner: SlideTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -545,7 +515,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.S],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.SlideTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -562,7 +533,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def slideWithValue[
     Q <: Nat,
     W,
-    T <: Tuner : SlideTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -575,7 +546,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev2: GT[Q, slice.S],
     ev3: ClassTag[Position[slice.S]],
     ev4: ClassTag[Position[slice.R]],
-    ev5: Diff.Aux[P, _1, L]
+    ev5: Diff.Aux[P, _1, L],
+    ev6: Matrix.SlideTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -597,9 +569,6 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def splitWithValue[I, W](value: E[W], partitioners: PartitionerWithValue[P, I] { type V >: W }*): U[(I, Cell[P])]
 
-  /** Specifies tuners permitted on a call to `stream` functions. */
-  type StreamTuners[_]
-
   /**
    * Stream this matrix through `command` and apply `script`.
    *
@@ -618,14 +587,16 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def stream[
     Q <: Nat,
-    T <: Tuner : StreamTuners
+    T <: Tuner
   ](
     command: String,
     files: List[String],
-    writer: TextWriter,
+    writer: Persist.TextWriter[Cell[P]],
     parser: Cell.TextParser[Q],
     hash: (Position[P]) => Int = _ => 0,
     tuner: T
+  )(implicit
+    ev: Matrix.StreamTuners[U, T]
   ): (U[Cell[Q]], U[String])
 
   /**
@@ -646,19 +617,20 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def streamByPosition[
     Q <: Nat,
-    T <: Tuner : StreamTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(
     command: String,
     files: List[String],
-    writer: TextWriterByPosition,
+    writer: Persist.TextWriterByPosition[Cell[P]],
     parser: Cell.TextParser[Q]
   )(implicit
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[slice.S],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.StreamTuners[U, T]
   ): (U[Cell[Q]], U[String])
 
   /**
@@ -681,9 +653,6 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def subsetWithValue[W](value: E[W], samplers: SamplerWithValue[P] { type V >: W }*): U[Cell[P]]
 
-  /** Specifies tuners permitted on a call to `summarise` functions. */
-  type SummariseTuners[_]
-
   /**
    * Summarise a matrix and return the aggregates.
    *
@@ -695,7 +664,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    */
   def summarise[
     Q <: Nat,
-    T <: Tuner : SummariseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -705,7 +674,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
     ev3: Aggregator.Validate[P, slice.S, Q],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: Matrix.SummariseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -721,7 +691,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   def summariseWithValue[
     Q <: Nat,
     W,
-    T <: Tuner : SummariseTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -732,7 +702,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev1: GTEq[Q, slice.S],
     ev2: ClassTag[Position[slice.S]],
     ev3: AggregatorWithValue.Validate[P, slice.S, Q, W],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: Matrix.SummariseTuners[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -742,7 +713,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @return A `U[(K, V)]` with all cells as key value tuples.
    */
-  def toSequence[K <: Writable, V <: Writable](writer: SequenceWriter[K, V]): U[(K, V)]
+  def toSequence[K <: Writable, V <: Writable](writer: Persist.SequenceWriter[Cell[P], K, V]): U[(K, V)]
 
   /**
    * Convert all cells to strings.
@@ -751,7 +722,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @return A `U[String]` with all cells as string.
    */
-  def toText(writer: TextWriter): U[String]
+  def toText(writer: Persist.TextWriter[Cell[P]]): U[String]
 
   /**
    * Merge all dimensions into a single.
@@ -789,9 +760,6 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
     ev: GTEq[Q, P]
   ): U[Cell[Q]]
 
-  /** Specifies tuners permitted on a call to `types`. */
-  type TypesTuners[_]
-
   /**
    * Returns the variable type of the content(s) for a given `slice`.
    *
@@ -802,7 +770,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Cell[slice.S]]` of the distinct position(s) together with their type.
    */
   def types[
-    T <: Tuner : TypesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -811,11 +779,9 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.TypesTuners[U, T]
   ): U[Cell[slice.S]]
-
-  /** Specifies tuners permitted on a call to `unique` functions. */
-  type UniqueTuners[_]
 
   /**
    * Return the unique (distinct) contents of an entire matrix.
@@ -824,7 +790,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    *
    * @note Comparison is performed based on the string representation of the `Content`.
    */
-  def unique[T <: Tuner : UniqueTuners](tuner: T): U[Content]
+  def unique[T <: Tuner](tuner: T)(implicit ev: Matrix.UniqueTuners[U, T]): U[Content]
 
   /**
    * Return the unique (distinct) contents along a dimension.
@@ -837,17 +803,15 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @note Comparison is performed based on the string representation of the `slice.S` and `Content`.
    */
   def uniqueByPosition[
-    T <: Tuner : UniqueTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
-    ev2: Diff.Aux[P, _1, L]
+    ev2: Diff.Aux[P, _1, L],
+    ev3: Matrix.UniqueTuners[U, T]
   ): U[(Position[slice.S], Content)]
-
-  /** Specifies tuners permitted on a call to `which` functions. */
-  type WhichTuners[_]
 
   /**
    * Query the contents of a matrix and return the positions of those that match the predicate.
@@ -870,7 +834,7 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
    * @return A `U[Position[P]]` of the positions for which the content matches predicates.
    */
   def whichByPosition[
-    T <: Tuner : WhichTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -879,7 +843,8 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   )(implicit
     ev1: ClassTag[Position[slice.S]],
     ev2: ClassTag[Position[P]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.WhichTuners[U, T]
   ): U[Position[P]]
 
   // TODO: Add more compile-time type checking
@@ -888,53 +853,83 @@ trait Matrix[L <: Nat, P <: Nat] extends Persist[Cell[P]] with UserData {
   // TODO: Add machine learning operations (SVD/finding cliques/etc.) - use Spark instead?
 }
 
-/** Base trait for loading data into a matrix. */
-trait Consume extends DistributedData with Environment {
-  /**
-   * Read column oriented, pipe separated matrix text data into a `U[Cell[P]]`.
-   *
-   * @param ctx    The context used to read a matrix.
-   * @param file   The text file to read from.
-   * @param parser The parser that converts a single line to a cell.
-   */
-  def loadText[P <: Nat](ctx: C, file: String, parser: Cell.TextParser[P]): (U[Cell[P]], U[String])
+/** Companion object to `Matrix` with types, implicits, etc. */
+object Matrix {
+  /** Trait for tuners permitted on a call to `change`. */
+  trait ChangeTuners[U[_], T <: Tuner]
 
-  /**
-   * Read binary key-value (sequence) matrix data into a `U[Cell[P]]`.
-   *
-   * @param ctx    The context used to read a matrix.
-   * @param file   The text file to read from.
-   * @param parser The parser that converts a single key-value to a cell.
-   */
-  def loadSequence[
-    K <: Writable : Manifest,
-    V <: Writable : Manifest,
-    P <: Nat
-  ](
-    ctx: C,
-    file: String,
-    parser: Cell.SequenceParser[K, V, P]
-  ): (U[Cell[P]], U[String])
+  /** Trait for tuners permitted on a call to `compact` functions. */
+  trait CompactTuners[U[_], T <: Tuner]
 
-  /**
-   * Load Parquet data.
-   *
-   * @param ctx    The context used to read a matrix.
-   * @param file   File path.
-   * @param parser Parser that convers single Parquet structure to cells.
-   */
-  def loadParquet[
-    T <: ThriftStruct : Manifest,
-    P <: Nat
-  ](
-    ctx: C,
-    file: String,
-    parser: Cell.ParquetParser[T, P]
-  ): (U[Cell[P]], U[String])
+  /** Trait for tuners permitted on a call to `domain`. */
+  trait DomainTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `fill` with hetrogeneous data. */
+  trait FillHeterogeneousTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `fill` with homogeneous data. */
+  trait FillHomogeneousTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `get`. */
+  trait GetTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `join`. */
+  trait JoinTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `materialise`. */
+  trait MaterialiseTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `pairwise` functions. */
+  trait PairwiseTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `reshape` functions. */
+  trait ReshapeTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `saveAsCSV`. */
+  trait SaveAsCSVTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `saveAsIV`. */
+  trait SaveAsIVTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `saveAsVW*`. */
+  trait SaveAsVWTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `shape`. */
+  trait ShapeTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `set` functions. */
+  trait SetTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `shape`. */
+  trait SizeTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `slice`. */
+  trait SliceTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `slide` functions. */
+  trait SlideTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `squash` functions. */
+  trait SquashTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `stream` functions. */
+  trait StreamTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `summarise` functions. */
+  trait SummariseTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `types`. */
+  trait TypesTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `unique` functions. */
+  trait UniqueTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `which` functions. */
+  trait WhichTuners[U[_], T <: Tuner]
 }
 
-/** Base trait for methods that reduce the number of dimensions or that can be filled. */
-trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
+/** Trait for methods that reduce the number of dimensions or that can be filled. */
+trait ReducibleMatrix[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] { self: Matrix[L, P, U, E, C] =>
   /**
    * Melt one dimension of a matrix into another.
    *
@@ -961,9 +956,6 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev4: Diff.Aux[P, _1, L]
   ): U[Cell[L]]
 
-  /** Specifies tuners permitted on a call to `squash` functions. */
-  type SquashTuners[_]
-
   /**
    * Squash a dimension of a matrix.
    *
@@ -975,7 +967,7 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    */
   def squash[
     D <: Nat : ToInt,
-    T <: Tuner : SquashTuners
+    T <: Tuner
   ](
     dim: D,
     squasher: Squasher[P],
@@ -983,7 +975,8 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   )(implicit
     ev1: LTEq[D, P],
     ev2: ClassTag[Position[L]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.SquashTuners[U, T]
   ): U[Cell[L]]
 
   /**
@@ -999,7 +992,7 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   def squashWithValue[
     D <: Nat : ToInt,
     W,
-    T <: Tuner : SquashTuners
+    T <: Tuner
   ](
     dim: D,
     value: E[W],
@@ -1008,15 +1001,13 @@ trait ReducibleMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   )(implicit
     ev1: LTEq[D, P],
     ev2: ClassTag[Position[L]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Matrix.SquashTuners[U, T]
   ): U[Cell[L]]
 }
 
-/** Base trait for methods that reshapes the number of dimension of a matrix. */
-trait ReshapeableMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
-  /** Specifies tuners permitted on a call to `reshape` functions. */
-  type ReshapeTuners[_]
-
+/** Trait for methods that reshapes the number of dimension of a matrix. */
+trait ReshapeableMatrix[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] { self: Matrix[L, P, U, E, C] =>
   /**
    * Reshape a coordinate into it's own dimension.
    *
@@ -1030,7 +1021,7 @@ trait ReshapeableMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   def reshape[
     D <: Nat : ToInt,
     Q <: Nat,
-    T <: Tuner : ReshapeTuners
+    T <: Tuner
   ](
     dim: D,
     coordinate: Value,
@@ -1040,20 +1031,24 @@ trait ReshapeableMatrix[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev1: LTEq[D, P],
     ev2: GT[Q, P],
     ev3: ClassTag[Position[L]],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: Matrix.ReshapeTuners[U, T]
   ): U[Cell[Q]]
 }
 
-/** Base trait for 1D specific operations. */
-trait Matrix1D extends Matrix[_0, _1] with ApproximateDistribution[_0, _1] with Statistics[_0, _1] { }
+/** Trait for 1D specific operations. */
+trait Matrix1D[U[_], E[_], C <: Context[U, E]] extends Matrix[_0, _1, U, E, C]
+  with ApproximateDistribution[_0, _1, U, E, C]
+  with Statistics[_0, _1, U, E, C] {
+}
 
-/** Base trait for 2D specific operations. */
-trait Matrix2D extends Matrix[_1, _2]
-  with ReducibleMatrix[_1, _2]
-  with ReshapeableMatrix[_1, _2]
-  with ApproximateDistribution[_1, _2]
-  with PairwiseDistance[_1, _2]
-  with Statistics[_1, _2] {
+/** Trait for 2D specific operations. */
+trait Matrix2D[U[_], E[_], C <: Context[U, E]] extends Matrix[_1, _2, U, E, C]
+  with ReducibleMatrix[_1, _2, U, E, C]
+  with ReshapeableMatrix[_1, _2, U, E, C]
+  with ApproximateDistribution[_1, _2, U, E, C]
+  with PairwiseDistance[_1, _2, U, E, C]
+  with Statistics[_1, _2, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1072,15 +1067,11 @@ trait Matrix2D extends Matrix[_1, _2]
     ev3: D1 =:!= D2
   ): U[Cell[_2]]
 
-  /** Specifies tuners permitted on a call to `saveAsCSV`. */
-  type SaveAsCSVTuners[_]
-
   /**
    * Persist as a CSV file.
    *
    * @param slice       Encapsulates the dimension that makes up the columns.
    * @param tuner       The tuner for the job.
-   * @param ctx         The context used to perist the matrix.
    * @param file        File to write to.
    * @param separator   Column separator to use.
    * @param escapee     The method for escaping the separator character.
@@ -1092,12 +1083,11 @@ trait Matrix2D extends Matrix[_1, _2]
    * @return A `U[Cell[_2]]`; that is it returns `data`.
    */
   def saveAsCSV[
-    T <: Tuner : SaveAsCSVTuners
+    T <: Tuner
   ](
     slice: Slice[_1, _2],
     tuner: T
   )(
-    ctx: C,
     file: String,
     separator: String = "|",
     escapee: Escape = Quote("|"),
@@ -1106,18 +1096,15 @@ trait Matrix2D extends Matrix[_1, _2]
     writeRowId: Boolean = true,
     rowId: String = "id"
   )(implicit
-    ev: ClassTag[Position[slice.S]]
+    ev1: ClassTag[Position[slice.S]],
+    ev2: Matrix.SaveAsCSVTuners[U, T]
   ): U[Cell[_2]]
-
-  /** Specifies tuners permitted on a call to `saveAsVW*`. */
-  type SaveAsVWTuners[_]
 
   /**
    * Persist a `Matrix2D` as a Vowpal Wabbit file.
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
    * @param tuner      The tuner for the job.
-   * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param dictionary Pattern for the dictionary file name, use `%``s` for the file name.
    * @param tag        Indicator if the selected position should be added as a tag.
@@ -1126,18 +1113,18 @@ trait Matrix2D extends Matrix[_1, _2]
    * @return A `U[Cell[_2]]`; that is it returns `data`.
    */
   def saveAsVW[
-    T <: Tuner : SaveAsVWTuners
+    T <: Tuner
   ](
     slice: Slice[_1, _2],
     tuner: T
   )(
-    ctx: C,
     file: String,
     dictionary: String = "%s.dict",
     tag: Boolean = false,
     separator: String = "|"
   )(implicit
-    ev: ClassTag[Position[slice.S]]
+    ev1: ClassTag[Position[slice.S]],
+    ev2: Matrix.SaveAsVWTuners[U, T]
   ): U[Cell[_2]]
 
   /**
@@ -1145,7 +1132,6 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
    * @param tuner      The tuner for the job.
-   * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param labels     The labels.
    * @param dictionary Pattern for the dictionary file name, use `%``s` for the file name.
@@ -1157,19 +1143,19 @@ trait Matrix2D extends Matrix[_1, _2]
    * @note The labels are joined to the data keeping only those examples for which data and a label are available.
    */
   def saveAsVWWithLabels[
-    T <: Tuner : SaveAsVWTuners
+    T <: Tuner
   ](
     slice: Slice[_1, _2],
     tuner: T
   )(
-    ctx: C,
     file: String,
     labels: U[Cell[slice.S]],
     dictionary: String = "%s.dict",
     tag: Boolean = false,
     separator: String = "|"
   )(implicit
-    ev: ClassTag[Position[slice.S]]
+    ev1: ClassTag[Position[slice.S]],
+    ev2: Matrix.SaveAsVWTuners[U, T]
   ): U[Cell[_2]]
 
   /**
@@ -1177,7 +1163,6 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
    * @param tuner      The tuner for the job.
-   * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param importance The importance weights.
    * @param dictionary Pattern for the dictionary file name, use `%``s` for the file name.
@@ -1189,19 +1174,19 @@ trait Matrix2D extends Matrix[_1, _2]
    * @note The weights are joined to the data keeping only those examples for which data and a weight are available.
    */
   def saveAsVWWithImportance[
-    T <: Tuner : SaveAsVWTuners
+    T <: Tuner
   ](
     slice: Slice[_1, _2],
     tuner: T
   )(
-    ctx: C,
     file: String,
     importance: U[Cell[slice.S]],
     dictionary: String = "%s.dict",
     tag: Boolean = false,
     separator: String = "|"
   )(implicit
-    ev: ClassTag[Position[slice.S]]
+    ev1: ClassTag[Position[slice.S]],
+    ev2: Matrix.SaveAsVWTuners[U, T]
   ): U[Cell[_2]]
 
   /**
@@ -1209,7 +1194,6 @@ trait Matrix2D extends Matrix[_1, _2]
    *
    * @param slice      Encapsulates the dimension that makes up the columns.
    * @param tuner      The tuner for the job.
-   * @param ctx        The context used to perist the matrix.
    * @param file       File to write to.
    * @param labels     The labels.
    * @param importance The importance weights.
@@ -1223,12 +1207,11 @@ trait Matrix2D extends Matrix[_1, _2]
    *       and weight are available.
    */
   def saveAsVWWithLabelsAndImportance[
-    T <: Tuner : SaveAsVWTuners
+    T <: Tuner
   ](
     slice: Slice[_1, _2],
     tuner: T
   )(
-    ctx: C,
     file: String,
     labels: U[Cell[slice.S]],
     importance: U[Cell[slice.S]],
@@ -1236,17 +1219,18 @@ trait Matrix2D extends Matrix[_1, _2]
     tag: Boolean = false,
     separator: String = "|"
   )(implicit
-    ev: ClassTag[Position[slice.S]]
+    ev1: ClassTag[Position[slice.S]],
+    ev2: Matrix.SaveAsVWTuners[U, T]
   ): U[Cell[_2]]
 }
 
-/** Base trait for 3D specific operations. */
-trait Matrix3D extends Matrix[_2, _3]
-  with ReducibleMatrix[_2, _3]
-  with ReshapeableMatrix[_2, _3]
-  with ApproximateDistribution[_2, _3]
-  with PairwiseDistance[_2, _3]
-  with Statistics[_2, _3] {
+/** Trait for 3D specific operations. */
+trait Matrix3D[U[_], E[_], C <: Context[U, E]] extends Matrix[_2, _3, U, E, C]
+  with ReducibleMatrix[_2, _3, U, E, C]
+  with ReshapeableMatrix[_2, _3, U, E, C]
+  with ApproximateDistribution[_2, _3, U, E, C]
+  with PairwiseDistance[_2, _3, U, E, C]
+  with Statistics[_2, _3, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1270,13 +1254,13 @@ trait Matrix3D extends Matrix[_2, _3]
   ): U[Cell[_3]]
 }
 
-/** Base trait for 4D specific operations. */
-trait Matrix4D extends Matrix[_3, _4]
-  with ReducibleMatrix[_3, _4]
-  with ReshapeableMatrix[_3, _4]
-  with ApproximateDistribution[_3, _4]
-  with PairwiseDistance[_3, _4]
-  with Statistics[_3, _4] {
+/** Trait for 4D specific operations. */
+trait Matrix4D[U[_], E[_], C <: Context[U, E]] extends Matrix[_3, _4, U, E, C]
+  with ReducibleMatrix[_3, _4, U, E, C]
+  with ReshapeableMatrix[_3, _4, U, E, C]
+  with ApproximateDistribution[_3, _4, U, E, C]
+  with PairwiseDistance[_3, _4, U, E, C]
+  with Statistics[_3, _4, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1304,13 +1288,13 @@ trait Matrix4D extends Matrix[_3, _4]
   ): U[Cell[_4]]
 }
 
-/** Base trait for 5D specific operations. */
-trait Matrix5D extends Matrix[_4, _5]
-  with ReducibleMatrix[_4, _5]
-  with ReshapeableMatrix[_4, _5]
-  with ApproximateDistribution[_4, _5]
-  with PairwiseDistance[_4, _5]
-  with Statistics[_4, _5] {
+/** Trait for 5D specific operations. */
+trait Matrix5D[U[_], E[_], C <: Context[U, E]] extends Matrix[_4, _5, U, E, C]
+  with ReducibleMatrix[_4, _5, U, E, C]
+  with ReshapeableMatrix[_4, _5, U, E, C]
+  with ApproximateDistribution[_4, _5, U, E, C]
+  with PairwiseDistance[_4, _5, U, E, C]
+  with Statistics[_4, _5, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1342,13 +1326,13 @@ trait Matrix5D extends Matrix[_4, _5]
   ): U[Cell[_5]]
 }
 
-/** Base trait for 6D specific operations. */
-trait Matrix6D extends Matrix[_5, _6]
-  with ReducibleMatrix[_5, _6]
-  with ReshapeableMatrix[_5, _6]
-  with ApproximateDistribution[_5, _6]
-  with PairwiseDistance[_5, _6]
-  with Statistics[_5, _6] {
+/** Trait for 6D specific operations. */
+trait Matrix6D[U[_], E[_], C <: Context[U, E]] extends Matrix[_5, _6, U, E, C]
+  with ReducibleMatrix[_5, _6, U, E, C]
+  with ReshapeableMatrix[_5, _6, U, E, C]
+  with ApproximateDistribution[_5, _6, U, E, C]
+  with PairwiseDistance[_5, _6, U, E, C]
+  with Statistics[_5, _6, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1384,13 +1368,13 @@ trait Matrix6D extends Matrix[_5, _6]
   ): U[Cell[_6]]
 }
 
-/** Base trait for 7D specific operations. */
-trait Matrix7D extends Matrix[_6, _7]
-  with ReducibleMatrix[_6, _7]
-  with ReshapeableMatrix[_6, _7]
-  with ApproximateDistribution[_6, _7]
-  with PairwiseDistance[_6, _7]
-  with Statistics[_6, _7] {
+/** Trait for 7D specific operations. */
+trait Matrix7D[U[_], E[_], C <: Context[U, E]] extends Matrix[_6, _7, U, E, C]
+  with ReducibleMatrix[_6, _7, U, E, C]
+  with ReshapeableMatrix[_6, _7, U, E, C]
+  with ApproximateDistribution[_6, _7, U, E, C]
+  with PairwiseDistance[_6, _7, U, E, C]
+  with Statistics[_6, _7, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1430,13 +1414,13 @@ trait Matrix7D extends Matrix[_6, _7]
   ): U[Cell[_7]]
 }
 
-/** Base trait for 8D specific operations. */
-trait  Matrix8D extends Matrix[_7, _8]
-  with ReducibleMatrix[_7, _8]
-  with ReshapeableMatrix[_7, _8]
-  with ApproximateDistribution[_7, _8]
-  with PairwiseDistance[_7, _8]
-  with Statistics[_7, _8] {
+/** Trait for 8D specific operations. */
+trait  Matrix8D[U[_], E[_], C <: Context[U, E]] extends Matrix[_7, _8, U, E, C]
+  with ReducibleMatrix[_7, _8, U, E, C]
+  with ReshapeableMatrix[_7, _8, U, E, C]
+  with ApproximateDistribution[_7, _8, U, E, C]
+  with PairwiseDistance[_7, _8, U, E, C]
+  with Statistics[_7, _8, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *
@@ -1480,12 +1464,12 @@ trait  Matrix8D extends Matrix[_7, _8]
   ): U[Cell[_8]]
 }
 
-/** Base trait for 9D specific operations. */
-trait Matrix9D extends Matrix[_8, _9]
-  with ReducibleMatrix[_8, _9]
-  with ApproximateDistribution[_8, _9]
-  with PairwiseDistance[_8, _9]
-  with Statistics[_8, _9] {
+/** Trait for 9D specific operations. */
+trait Matrix9D[U[_], E[_], C <: Context[U, E]] extends Matrix[_8, _9, U, E, C]
+  with ReducibleMatrix[_8, _9, U, E, C]
+  with ApproximateDistribution[_8, _9, U, E, C]
+  with PairwiseDistance[_8, _9, U, E, C]
+  with Statistics[_8, _9, U, E, C] {
   /**
    * Permute the order of the coordinates in a position.
    *

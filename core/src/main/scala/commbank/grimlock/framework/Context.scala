@@ -1,4 +1,4 @@
-// Copyright 2016 Commonwealth Bank of Australia
+// Copyright 2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,24 +14,66 @@
 
 package commbank.grimlock.framework.environment
 
-/** Base trait for capturing all operating context related state. */
-trait Context { }
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.environment.implicits.Implicits
 
-/** Specify distributed data types. */
-trait DistributedData {
-  /** Type of the underlying (raw) data structure (i.e. TypedPipe or RDD). */
-  type U[_]
-}
+import com.twitter.scrooge.ThriftStruct
 
-/** Specify user data types. */
-trait UserData {
-  /** Type of 'wrapper' around user provided data. */
-  type E[_]
-}
+import org.apache.hadoop.io.Writable
 
-/** Specify environment types. */
-trait Environment {
-  /** Type of the operating context. */
-  type C <: Context
+import scala.reflect.ClassTag
+
+import shapeless.Nat
+
+/** Trait for capturing all operating context related state. */
+trait Context[U[_], E[_]] {
+  /**
+   * Read column oriented, pipe separated matrix text data into a `U[Cell[P]]`.
+   *
+   * @param file   The text file to read from.
+   * @param parser The parser that converts a single line to a cell.
+   */
+  def loadText[P <: Nat](file: String, parser: Cell.TextParser[P]): (U[Cell[P]], U[String])
+
+  /**
+   * Read binary key-value (sequence) matrix data into a `U[Cell[P]]`.
+   *
+   * @param file   The text file to read from.
+   * @param parser The parser that converts a single key-value to a cell.
+   */
+  def loadSequence[
+    K <: Writable : Manifest,
+    V <: Writable : Manifest,
+    P <: Nat
+  ](
+    file: String,
+    parser: Cell.SequenceParser[K, V, P]
+  ): (U[Cell[P]], U[String])
+
+  /**
+   * Load Parquet data.
+   *
+   * @param file   File path.
+   * @param parser Parser that convers single Parquet structure to cells.
+   */
+  def loadParquet[
+    T <: ThriftStruct : Manifest,
+    P <: Nat
+  ](
+    file: String,
+    parser: Cell.ParquetParser[T, P]
+  ): (U[Cell[P]], U[String])
+
+  /** Concrete type of this context. */
+  type C <: Context[U, E]
+
+  /** All implicits for this context. */
+  val implicits: Implicits[U, E, C]
+
+  /** Create empty instance of `U`. */
+  def empty[T : ClassTag]: U[T]
+
+  /** Create an instance of `U` from `seq`. */
+  def from[T : ClassTag](seq: Seq[T]): U[T]
 }
 

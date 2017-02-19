@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
 
 package commbank.grimlock.framework.squash
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.content.Content
 
 import scala.reflect.ClassTag
 
 import shapeless.Nat
 import shapeless.ops.nat.{ LTEq, ToInt }
 
-/** Base trait for squashing a dimension. */
+/** Trait for squashing a dimension. */
 trait Squasher[P <: Nat] extends SquasherWithValue[P] {
   type V = Any
 
@@ -57,7 +57,7 @@ trait Squasher[P <: Nat] extends SquasherWithValue[P] {
   def present(t: T): Option[Content]
 }
 
-/** Base trait for squashing a dimension with a user provided value. */
+/** Trait for squashing a dimension with a user provided value. */
 trait SquasherWithValue[P <: Nat] extends java.io.Serializable {
   /** Type of the state being squashed. */
   type T

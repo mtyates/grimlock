@@ -14,23 +14,15 @@
 
 package commbank.grimlock.spark.distance
 
-import commbank.grimlock.framework.{
-  Cell,
-  Default,
-  InMemory,
-  Locate,
-  NoParameters,
-  Reducers,
-  Ternary,
-  Tuner
-}
+import commbank.grimlock.framework.{ Cell, Locate }
 import commbank.grimlock.framework.distance.{ PairwiseDistance => FwPairwiseDistance }
+import commbank.grimlock.framework.environment.tuner.{ Default, InMemory, Ternary, Tuner }
 import commbank.grimlock.framework.position.{ Position, Slice }
-import commbank.grimlock.framework.utility.UnionTypes.{ In, OneOf }
 
-import commbank.grimlock.spark.MapMapSideJoin
+import commbank.grimlock.spark.environment.Context
+import commbank.grimlock.spark.environment.tuner.MapMapSideJoin
+import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 import commbank.grimlock.spark.Matrix
-import commbank.grimlock.spark.SparkImplicits._
 
 import com.twitter.algebird.{ Moments, Monoid }
 
@@ -40,39 +32,31 @@ import shapeless.Nat
 import shapeless.nat._1
 import shapeless.ops.nat.Diff
 
-trait PairwiseDistance[L <: Nat, P <: Nat] extends FwPairwiseDistance[L, P] { self: Matrix[L, P] =>
-  /** Permissible tuners on pairwise distance functions. */
-  type DistanceTuners[T] = T In OneOf[InMemory[NoParameters]]#   // Def[NoParam], InMemory[NoParam], Def[NoParam]
-    Or[Default[NoParameters]]#                                   // Def[NoParam], Def[NoParam], Def[NoParam]
-    Or[Ternary[Default[Reducers], InMemory[NoParameters], Default[NoParameters]]]#
-    Or[Ternary[Default[Reducers], InMemory[NoParameters], Default[Reducers]]]#
-    Or[Ternary[Default[Reducers], InMemory[Reducers], Default[Reducers]]]#
-    Or[Ternary[Default[Reducers], Default[NoParameters], Default[NoParameters]]]#
-    Or[Ternary[Default[Reducers], Default[NoParameters], Default[Reducers]]]#
-    Or[Ternary[Default[Reducers], Default[Reducers], Default[Reducers]]]
-
-  type CorrelationTuners[T] = DistanceTuners[T]
+trait PairwiseDistance[
+  L <: Nat,
+  P <: Nat
+] extends FwPairwiseDistance[L, P, Context.U, Context.E, Context] { self: Matrix[L, P] =>
   def correlation[
     Q <: Nat,
-    T <: Tuner : CorrelationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T = Default()
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean,
-    strict: Boolean = true,
-    nan: Boolean = false
+    strict: Boolean = true
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = {
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwPairwiseDistance.CorrelationTuners[Context.U, T]
+  ): Context.U[Cell[Q]] = {
     val msj = Option(MapMapSideJoin[Position[slice.S], (Position[slice.R], Double), Double]())
 
     val (at, st, rt, ct) = getTuners(tuner)
 
     val d = data
-      .flatMap { case c => prepareCorrelation(slice, c, filter, strict) }
+      .flatMap { case c => FwPairwiseDistance.prepareCorrelation(slice, c, filter, strict) }
 
     val mean = d
       .map { case (sel, rem, d) => (sel, Moments(d)) }
@@ -86,25 +70,26 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends FwPairwiseDistance[L, P] { se
 
     val numerator = centered
       .map { case (sel, rem, value) => (rem, (sel, value)) }
-      .tunedSelfJoin(rt, keyedUpper)
+      .tunedSelfJoin(rt, FwPairwiseDistance.keyedUpper)
       .map { case (_, ((lsel, lval), (rsel, rval))) => ((lsel, rsel), lval * rval) }
       .tunedReduce(at, _ + _)
 
     val denominator = centered
       .map { case (sel, rem, value) => (sel, value * value) }
       .tunedReduce(st, _ + _)
-      .tunedSelfCross(ct, upper)
+      .tunedSelfCross(ct, FwPairwiseDistance.upper)
       .map { case ((lsel, lval), (rsel, rval))  => ((lsel, rsel), math.sqrt(lval * rval)) }
 
     numerator
       .tunedJoin(at, denominator)
-      .flatMap { case ((lsel, rsel), (lval, rval)) => presentCorrelation(lsel, lval, rsel, rval, name, nan) }
+      .flatMap { case ((lsel, rsel), (lval, rval)) =>
+        FwPairwiseDistance.presentCorrelation(lsel, lval, rsel, rval, name)
+      }
   }
 
-  type MutualInformationTuners[T] = DistanceTuners[T]
   def mutualInformation[
     Q <: Nat,
-    T <: Tuner : MutualInformationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T = Default()
@@ -114,14 +99,15 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends FwPairwiseDistance[L, P] { se
     log: (Double) => Double
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[Q]] = {
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwPairwiseDistance.MutualInformationTuners[Context.U, T]
+  ): Context.U[Cell[Q]] = {
     val msj = Option(MapMapSideJoin[Position[slice.S], Long, Long]())
 
     val (at, st, rt, ct) = getTuners(tuner)
 
     val d = data
-      .flatMap { case c => prepareMutualInformation(slice, c, filter) }
+      .flatMap { case c => FwPairwiseDistance.prepareMutualInformation(slice, c, filter) }
 
     val mcount = d
       .map { case (sel, _, _) => sel }
@@ -132,14 +118,14 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends FwPairwiseDistance[L, P] { se
       .tunedSize(st)
       .map { case ((sel, _), cnt) => (sel, cnt) }
       .tunedJoin(st, mcount, msj)
-      .map { case (sel, (cnt, tot)) => (sel, partialEntropy(cnt, tot, log, true)) }
+      .map { case (sel, (cnt, tot)) => (sel, FwPairwiseDistance.partialEntropy(cnt, tot, log, true)) }
       .tunedReduce(st, _ + _)
-      .tunedSelfCross(ct, upper)
+      .tunedSelfCross(ct, FwPairwiseDistance.upper)
       .map { case ((lsel, lval), (rsel, rval)) => ((lsel, rsel), lval + rval) }
 
     val jpair = d
       .map { case (sel, rel, s) => (rel, (sel, s)) }
-      .tunedSelfJoin(rt, keyedUpper)
+      .tunedSelfJoin(rt, FwPairwiseDistance.keyedUpper)
       .map { case (_, ((lsel, lval), (rsel, rval))) => ((lsel, rsel), (lval, rval)) }
 
     val jcount = jpair
@@ -150,12 +136,14 @@ trait PairwiseDistance[L <: Nat, P <: Nat] extends FwPairwiseDistance[L, P] { se
       .tunedSize(at)
       .map { case (((lsel, rsel), (lval, rval)), cnt) => ((lsel, rsel), cnt) }
       .tunedJoin(at, jcount)
-      .map { case ((lsel, rsel), (cnt, tot)) => ((lsel, rsel), partialEntropy(cnt, tot, log, false)) }
+      .map { case ((lsel, rsel), (cnt, tot)) =>
+        ((lsel, rsel), FwPairwiseDistance.partialEntropy(cnt, tot, log, false))
+      }
       .tunedReduce(at, _ + _)
 
     (marginal ++ joint)
       .tunedReduce(at, _ + _)
-      .flatMap { case ((lsel, rsel), mi) => presentMutualInformation(lsel, rsel, mi, name) }
+      .flatMap { case ((lsel, rsel), mi) => FwPairwiseDistance.presentMutualInformation(lsel, rsel, mi, name) }
   }
 
   private def getTuners(tuner: Tuner): (Tuner, Tuner, Tuner, Tuner) = tuner match {

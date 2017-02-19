@@ -17,6 +17,7 @@ package commbank.grimlock.spark.examples
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.extract._
 import commbank.grimlock.framework.position._
 
 import commbank.grimlock.library.aggregate._
@@ -24,8 +25,6 @@ import commbank.grimlock.library.squash._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
-import commbank.grimlock.spark.Matrix._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 
@@ -43,7 +42,7 @@ object Conditional {
 
     // Read the data.
     // 1/ Read the data (ignoring errors), this returns a 2D matrix (row x feature).
-    val (data, _) = loadText(ctx, s"${path}/exampleConditional.txt", Cell.parse2D())
+    val (data, _) = ctx.loadText(s"${path}/exampleConditional.txt", Cell.parse2D())
 
     // Define function that appends the value as a string, or "missing" if no value is available
     def cast[P <: Nat](cell: Cell[P], value: Option[Value]): Option[Position[Succ[P]]] = cell
@@ -80,7 +79,7 @@ object Conditional {
     heg
       .summarise(Along(_1))(Sums())
       .transformWithValue(gcount, Fraction(extractor))
-      .saveAsText(ctx, s"./demo.${output}/eye.out")
+      .saveAsText(s"./demo.${output}/eye.out")
       .toUnit
 
     // Get hair color conditional on gender.
@@ -89,7 +88,7 @@ object Conditional {
     heg
       .summarise(Along(_2))(Sums())
       .transformWithValue(gcount, Fraction(extractor))
-      .saveAsText(ctx, s"./demo.${output}/hair.out")
+      .saveAsText(s"./demo.${output}/hair.out")
       .toUnit
   }
 }

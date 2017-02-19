@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.spark
+package commbank.grimlock.spark.environment.tuner
 
-import commbank.grimlock.framework.{
+import commbank.grimlock.framework.environment.tuner.{
   Default,
   InMemory,
   MapMapSideJoin => FwMapMapSideJoin,
@@ -27,13 +27,11 @@ import commbank.grimlock.framework.{
 
 import commbank.grimlock.spark.environment.Context
 
-import org.apache.spark.rdd.RDD
-
 import scala.reflect.ClassTag
 
-private[spark] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, RDD, ({type E[X]=X})#E] {
+private[spark] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, Context.U, Context.E] {
   def compact(
-    smaller: RDD[(K, W)]
+    smaller: Context.U[(K, W)]
   )(implicit
     ev1: ClassTag[K],
     ev2: ClassTag[W],
@@ -41,9 +39,9 @@ private[spark] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, 
   ): T = smaller.collectAsMap().toMap
 }
 
-private[spark] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, RDD, ({type E[X]=X})#E] {
+private[spark] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, Context.U, Context.E] {
   def compact(
-    smaller: RDD[(K, Unit)]
+    smaller: Context.U[(K, Unit)]
   )(implicit
     ev1: ClassTag[K],
     ev2: ClassTag[Unit],
@@ -52,15 +50,15 @@ private[spark] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, 
 }
 
 private[spark] object SparkImplicits {
-  private[spark] implicit class PairRDDTuner[K, V](rdd: RDD[(K, V)])(implicit kt: ClassTag[K], vt: ClassTag[V]) {
+  private[spark] implicit class PairRDDTuner[K, V](rdd: Context.U[(K, V)])(implicit kt: ClassTag[K], vt: ClassTag[V]) {
     def tunedJoin[W](
       tuner: Tuner,
-      smaller: RDD[(K, W)],
-      msj: Option[MapSideJoin[K, V, W, RDD, ({type E[X]=X})#E]] = None
+      smaller: Context.U[(K, W)],
+      msj: Option[MapSideJoin[K, V, W, Context.U, Context.E]] = None
     )(implicit
       ev1: Ordering[K],
       ev2: ClassTag[W]
-    ): RDD[(K, (V, W))] = (tuner, msj) match {
+    ): Context.U[(K, (V, W))] = (tuner, msj) match {
       case (InMemory(_), Some(m)) =>
         rdd.flatMapWithValue(m.compact(smaller)) { case ((k, v), t) =>
           m.join(k, v, t.getOrElse(m.empty)).map { case w => (k, (v, w)) }
@@ -71,12 +69,12 @@ private[spark] object SparkImplicits {
 
     def tunedLeftJoin[W](
       tuner: Tuner,
-      smaller: RDD[(K, W)],
-      msj: Option[MapSideJoin[K, V, W, RDD, ({type E[X]=X})#E]] = None
+      smaller: Context.U[(K, W)],
+      msj: Option[MapSideJoin[K, V, W, Context.U, Context.E]] = None
     )(implicit
       ev1: Ordering[K],
       ev2: ClassTag[W]
-    ): RDD[(K, (V, Option[W]))] = (tuner, msj) match {
+    ): Context.U[(K, (V, Option[W]))] = (tuner, msj) match {
       case (InMemory(_), Some(m)) =>
         // TODO: broadcast value?
         val value = m.compact(smaller)
@@ -88,22 +86,25 @@ private[spark] object SparkImplicits {
 
     def tunedOuterJoin[W](
       tuner: Tuner,
-      smaller: RDD[(K, W)]
-    ): RDD[(K, (Option[V], Option[W]))] = tuner.parameters match {
+      smaller: Context.U[(K, W)]
+    ): Context.U[(K, (Option[V], Option[W]))] = tuner.parameters match {
       case Reducers(reducers) => rdd.fullOuterJoin(smaller, reducers)
       case _ => rdd.fullOuterJoin(smaller)
     }
 
-    def tunedReduce(tuner: Tuner, reduction: (V, V) => V): RDD[(K, V)] = tuner.parameters match {
+    def tunedReduce(tuner: Tuner, reduction: (V, V) => V): Context.U[(K, V)] = tuner.parameters match {
       case Reducers(reducers) => rdd.reduceByKey(reduction, reducers)
       case _ => rdd.reduceByKey(reduction)
     }
 
-    def tunedSelfJoin(tuner: Tuner, filter: (K, V, V) => Boolean)(implicit ev: Ordering[K]): RDD[(K, (V, V))] = rdd
-      .tunedJoin(tuner, rdd)
-      .filter { case (k, (v, w)) => filter(k, v, w) }
+    def tunedSelfJoin(
+      tuner: Tuner,
+      filter: (K, V, V) => Boolean
+    )(implicit
+      ev: Ordering[K]
+    ): Context.U[(K, (V, V))] = rdd.tunedJoin(tuner, rdd).filter { case (k, (v, w)) => filter(k, v, w) }
 
-    def tunedStream[Q](tuner: Tuner, f: (K, Iterator[V]) => TraversableOnce[Q]): RDD[(K, Q)] = {
+    def tunedStream[Q](tuner: Tuner, f: (K, Iterator[V]) => TraversableOnce[Q]): Context.U[(K, Q)] = {
       val grouped = tuner.parameters match {
         case Reducers(reducers) => rdd.groupByKey(reducers)
         case _ => rdd.groupByKey
@@ -113,13 +114,13 @@ private[spark] object SparkImplicits {
     }
   }
 
-  private[spark] implicit class RDDTuner[T](rdd: RDD[T]) {
+  implicit class RDDTuner[T](rdd: Context.U[T]) {
     // TODO: broadcast in WithValue functions?
     def filterWithValue[V](
       value: V
     )(
       f: (T, Option[V]) => Boolean
-    ): RDD[T] = rdd.filter { case t => f(t, Option(value)) }
+    ): Context.U[T] = rdd.filter { case t => f(t, Option(value)) }
 
     def flatMapWithValue[V, Q](
       value: V
@@ -127,37 +128,39 @@ private[spark] object SparkImplicits {
       f: (T, Option[V]) => TraversableOnce[Q]
     )(implicit
       ev: ClassTag[Q]
-    ): RDD[Q] = rdd.flatMap { case t => f(t, Option(value)) }
+    ): Context.U[Q] = rdd.flatMap { case t => f(t, Option(value)) }
 
     def tunedCross[X](
       tuner: Tuner,
       filter: (T, X) => Boolean,
-      smaller: RDD[X]
+      smaller: Context.U[X]
     )(implicit
       ev1: ClassTag[T],
       ev2: ClassTag[X]
-    ): RDD[(T, X)] = rdd.cartesian(smaller).filter { case (l, r) => filter(l, r) }
+    ): Context.U[(T, X)] = rdd.cartesian(smaller).filter { case (l, r) => filter(l, r) }
 
-    def tunedDistinct(tuner: Tuner)(implicit ev: Ordering[T]): RDD[T] = tuner.parameters match {
+    def tunedDistinct(tuner: Tuner)(implicit ev: Ordering[T]): Context.U[T] = tuner.parameters match {
       case Reducers(reducers) => rdd.distinct(reducers)(ev)
       case _ => rdd.distinct()
     }
 
-    def tunedRedistribute(tuner: Tuner): RDD[T] = tuner match {
+    def tunedRedistribute(tuner: Tuner): Context.U[T] = tuner match {
       case Redistribute(reducers) => rdd.repartition(reducers)
       case _ => rdd
     }
 
-    def tunedSaveAsText(ctx: Context, tuner: Tuner, file: String) = rdd.tunedRedistribute(tuner).saveAsTextFile(file)
+    def tunedSaveAsText(ctx: Context, tuner: Tuner, file: String) = rdd
+      .tunedRedistribute(tuner)
+      .saveAsTextFile(file)
 
     def tunedSelfCross(
       tuner: Tuner,
       filter: (T, T) => Boolean
     )(implicit
       ev: ClassTag[T]
-    ): RDD[(T, T)] = tunedCross(tuner, filter, rdd)
+    ): Context.U[(T, T)] = tunedCross(tuner, filter, rdd)
 
-    def tunedSize(tuner: Tuner)(implicit ev: ClassTag[T]): RDD[(T, Long)] = rdd
+    def tunedSize(tuner: Tuner)(implicit ev: ClassTag[T]): Context.U[(T, Long)] = rdd
       .map { case t => (t, 1L) }
       .tunedReduce(tuner, _ + _)
   }

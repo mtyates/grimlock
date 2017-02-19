@@ -20,8 +20,6 @@ import commbank.grimlock.framework.position._
 import commbank.grimlock.library.aggregate._
 
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
-import commbank.grimlock.spark.Matrix._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 
@@ -37,7 +35,7 @@ object DataAnalysis {
     val output = "spark"
 
     // Read the data (ignoring errors). This returns a 2D matrix (instance x feature).
-    val (data, _) = loadText(ctx, s"${path}/exampleInput.txt", Cell.parse2D())
+    val (data, _) = ctx.loadText(s"${path}/exampleInput.txt", Cell.parse2D())
 
     // For the instances:
     //  1/ Compute the number of features for each instance;
@@ -46,7 +44,7 @@ object DataAnalysis {
     //  4/ Save the moments.
     data
       .summarise(Over(_1))(Counts())
-      .saveAsText(ctx, s"./demo.${output}/feature_count.out")
+      .saveAsText(s"./demo.${output}/feature_count.out")
       .summarise(Along(_1))(
         Moments(
           _.append("mean").toOption,
@@ -55,7 +53,7 @@ object DataAnalysis {
           _.append("kurtosis").toOption
         )
       )
-      .saveAsText(ctx, s"./demo.${output}/feature_density.out")
+      .saveAsText(s"./demo.${output}/feature_density.out")
       .toUnit
 
     // For the features:
@@ -65,7 +63,7 @@ object DataAnalysis {
     //  4/ Save the moments.
     data
       .summarise(Over(_2))(Counts())
-      .saveAsText(ctx, s"./demo.${output}/instance_count.out")
+      .saveAsText(s"./demo.${output}/instance_count.out")
       .summarise(Along(_1))(
         Moments(
           _.append("mean").toOption,
@@ -74,7 +72,7 @@ object DataAnalysis {
           _.append("kurtosis").toOption
         )
       )
-      .saveAsText(ctx, s"./demo.${output}/instance_density.out")
+      .saveAsText(s"./demo.${output}/instance_density.out")
       .toUnit
   }
 }

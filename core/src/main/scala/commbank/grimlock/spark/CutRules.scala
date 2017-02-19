@@ -16,58 +16,62 @@ package commbank.grimlock.spark.transform
 
 import commbank.grimlock.framework.position.Position
 
-import commbank.grimlock.spark.environment.UserData
+import commbank.grimlock.spark.environment.Context
 
 import commbank.grimlock.library.transform.{ CutRules => FwCutRules }
 
 import shapeless.nat._1
 
 /** Implement cut rules for Spark. */
-object CutRules extends FwCutRules with UserData {
+object CutRules extends FwCutRules[Context.E] {
   def fixed(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     min: Position[_1],
     max: Position[_1],
     k: Long
-  ): E[Map[Position[_1], List[Double]]] = fixedFromStats(ext, min, max, k)
+  ): Context.E[Map[Position[_1], List[Double]]] = fixedFromStats(ext, min, max, k)
 
   def squareRootChoice(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = squareRootChoiceFromStats(ext, count, min, max)
+  ): Context.E[Map[Position[_1], List[Double]]] = squareRootChoiceFromStats(ext, count, min, max)
 
   def sturgesFormula(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = sturgesFormulaFromStats(ext, count, min, max)
+  ): Context.E[Map[Position[_1], List[Double]]] = sturgesFormulaFromStats(ext, count, min, max)
 
   def riceRule(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = riceRuleFromStats(ext, count, min, max)
+  ): Context.E[Map[Position[_1], List[Double]]] = riceRuleFromStats(ext, count, min, max)
 
   def doanesFormula(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1],
     skewness: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = doanesFormulaFromStats(ext, count, min, max, skewness)
+  ): Context.E[Map[Position[_1], List[Double]]] = doanesFormulaFromStats(ext, count, min, max, skewness)
 
   def scottsNormalReferenceRule(
-    ext: E[Stats],
+    ext: Context.E[Stats],
     count: Position[_1],
     min: Position[_1],
     max: Position[_1],
     sd: Position[_1]
-  ): E[Map[Position[_1], List[Double]]] = scottsNormalReferenceRuleFromStats(ext, count, min, max, sd)
+  ): Context.E[Map[Position[_1], List[Double]]] = scottsNormalReferenceRuleFromStats(ext, count, min, max, sd)
 
-  def breaks[P <% Position[_1]](range: Map[P, List[Double]]): E[Map[Position[_1], List[Double]]] = breaksFromMap(range)
+  def breaks[
+    P <% Position[_1]
+  ](
+    range: Map[P, List[Double]]
+  ): Context.E[Map[Position[_1], List[Double]]] = breaksFromMap(range)
 }
 

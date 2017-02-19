@@ -12,9 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.scalding
+package commbank.grimlock.scalding.environment.tuner
 
-import commbank.grimlock.framework.{
+import com.twitter.algebird.Semigroup
+
+import com.twitter.scalding.TextLine
+import com.twitter.scalding.typed.{ Grouped, SortedGrouped, TypedSink }
+
+import commbank.grimlock.framework.environment.tuner.{
   Default,
   InMemory,
   MapMapSideJoin => FwMapMapSideJoin,
@@ -30,10 +35,6 @@ import commbank.grimlock.framework.position.Position
 
 import commbank.grimlock.scalding.environment.Context
 
-import com.twitter.algebird.Semigroup
-import com.twitter.scalding.TextLine
-import com.twitter.scalding.typed.{ Grouped, SortedGrouped, TypedPipe, TypedSink, ValuePipe }
-
 import scala.reflect.ClassTag
 import scala.util.Random
 
@@ -44,26 +45,26 @@ import scala.util.Random
  */
 case class Execution(context: Context) extends Parameters { }
 
-private[scalding] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, TypedPipe, ValuePipe] {
+private[scalding] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, Context.U, Context.E] {
   def compact(
-    smaller: TypedPipe[(K, W)]
+    smaller: Context.U[(K, W)]
   )(implicit
     ev1: ClassTag[K],
     ev2: ClassTag[W],
     ev3: Ordering[K]
-  ): ValuePipe[T] = smaller.map { case (k, w) => Map(k -> w) }.sum(semigroup)
+  ): Context.E[T] = smaller.map { case (k, w) => Map(k -> w) }.sum(semigroup)
 
   private val semigroup = new Semigroup[T] { def plus(l: T, r: T): T = l ++ r }
 }
 
-private[scalding] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, TypedPipe, ValuePipe] {
+private[scalding] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, Context.U, Context.E] {
   def compact(
-    smaller: TypedPipe[(K, Unit)]
+    smaller: Context.U[(K, Unit)]
   )(implicit
     ev1: ClassTag[K],
     ev2: ClassTag[Unit],
     ev3: Ordering[K]
-  ): ValuePipe[T] = smaller.map { case (k, w) => Set(k) }.sum(semigroup)
+  ): Context.E[T] = smaller.map { case (k, w) => Set(k) }.sum(semigroup)
 
   private val semigroup = new Semigroup[T] { def plus(l: T, r: T): T = l ++ r }
 }
@@ -82,13 +83,13 @@ private[scalding] object ScaldingImplicits {
     .toCharArray
     .map { case c => c.toByte }
 
-  private[scalding] implicit class GroupedTuner[K, V](grouped: Grouped[K, V]) {
+  implicit class GroupedTuner[K, V](grouped: Grouped[K, V]) {
     def tunedStream[Q](
       tuner: Tuner,
       f: (K, Iterator[V]) => TraversableOnce[Q]
     )(implicit
       ev: Ordering[K]
-    ): TypedPipe[(K, Q)] = {
+    ): Context.U[(K, Q)] = {
       val tuned = tuner.parameters match {
         case Reducers(reducers) => grouped.withReducers(reducers)
         case _ => grouped
@@ -98,13 +99,13 @@ private[scalding] object ScaldingImplicits {
     }
   }
 
-  private[scalding] implicit class SortedGroupedTuner[K, V](sorted: SortedGrouped[K, V]) {
+  implicit class SortedGroupedTuner[K, V](sorted: SortedGrouped[K, V]) {
     def tunedStream[Q](
       tuner: Tuner,
       f: (K, Iterator[V]) => TraversableOnce[Q]
     )(implicit
       ev: Ordering[K]
-    ): TypedPipe[(K, Q)] = {
+    ): Context.U[(K, Q)] = {
       val tuned = tuner.parameters match {
         case Reducers(reducers) => sorted.withReducers(reducers)
         case _ => sorted
@@ -114,17 +115,17 @@ private[scalding] object ScaldingImplicits {
     }
   }
 
-  private[scalding] implicit class PairPipeTuner[K, V](pipe: TypedPipe[(K, V)]) {
+  private[scalding] implicit class PairPipeTuner[K, V](pipe: Context.U[(K, V)]) {
     def tunedJoin[W](
       tuner: Tuner,
-      smaller: TypedPipe[(K, W)],
-      msj: Option[MapSideJoin[K, V, W, TypedPipe, ValuePipe]] = None
+      smaller: Context.U[(K, W)],
+      msj: Option[MapSideJoin[K, V, W, Context.U, Context.E]] = None
     )(implicit
       ev1: Ordering[K],
       ev2: K => Array[Byte],
       ev3: ClassTag[K],
       ev4: ClassTag[W]
-    ): TypedPipe[(K, (V, W))] = (tuner, msj) match {
+    ): Context.U[(K, (V, W))] = (tuner, msj) match {
       case (InMemory(_), Some(m)) => pipe.flatMapWithValue(m.compact(smaller)) { case ((k, v), t) =>
           m.join(k, v, t.getOrElse(m.empty)).map { case w => (k, (v, w)) }
         }
@@ -135,14 +136,14 @@ private[scalding] object ScaldingImplicits {
 
     def tunedLeftJoin[W](
       tuner: Tuner,
-      smaller: TypedPipe[(K, W)],
-      msj: Option[MapSideJoin[K, V, W, TypedPipe, ValuePipe]] = None
+      smaller: Context.U[(K, W)],
+      msj: Option[MapSideJoin[K, V, W, Context.U, Context.E]] = None
     )(implicit
       ev1: Ordering[K],
       ev2: K => Array[Byte],
       ev3: ClassTag[K],
       ev4: ClassTag[W]
-    ): TypedPipe[(K, (V, Option[W]))] = (tuner, msj) match {
+    ): Context.U[(K, (V, Option[W]))] = (tuner, msj) match {
       case (InMemory(_), Some(m)) => pipe.mapWithValue(m.compact(smaller)) { case ((k, v), t) =>
         (k, (v, m.join(k, v, t.getOrElse(m.empty))))
       }
@@ -153,16 +154,16 @@ private[scalding] object ScaldingImplicits {
 
     def tunedOuterJoin[W](
       tuner: Tuner,
-      smaller: TypedPipe[(K, W)]
+      smaller: Context.U[(K, W)]
     )(implicit
       ev1: Ordering[K],
       ev2: K => Array[Byte]
-    ): TypedPipe[(K, (Option[V], Option[W]))] = tuner.parameters match {
+    ): Context.U[(K, (Option[V], Option[W]))] = tuner.parameters match {
       case Reducers(reducers) => pipe.group.withReducers(reducers).outerJoin(smaller)
       case _ => pipe.group.outerJoin(smaller)
     }
 
-    def tunedReduce(tuner: Tuner, reduction: (V, V) => V)(implicit ev: Ordering[K]): TypedPipe[(K, V)] = pipe
+    def tunedReduce(tuner: Tuner, reduction: (V, V) => V)(implicit ev: Ordering[K]): Context.U[(K, V)] = pipe
       .tuneReducers(tuner)
       .reduce(reduction)
 
@@ -177,7 +178,7 @@ private[scalding] object ScaldingImplicits {
     )(implicit
       ev1: Ordering[K],
       ev2: K => Array[Byte]
-    ): TypedPipe[(K, (V, V))] = tuner match {
+    ): Context.U[(K, (V, V))] = tuner match {
       case InMemory(_) =>
         pipe.flatMapWithValue(pipe.group.toList.map { case (k, l) => Map(k -> l) }.sum) {
           case ((k, v), Some(m)) =>
@@ -196,12 +197,12 @@ private[scalding] object ScaldingImplicits {
     }
   }
 
-  implicit class PipeTuner[P](pipe: TypedPipe[P]) {
+  implicit class PipeTuner[P](pipe: Context.U[P]) {
     def tunedCross[X](
       tuner: Tuner,
       filter: (P, X) => Boolean,
-      smaller: TypedPipe[X]
-    ): TypedPipe[(P, X)] = tuner match {
+      smaller: Context.U[X]
+    ): Context.U[(P, X)] = tuner match {
       case InMemory(_) => pipe.flatMapWithValue(smaller.map { case p => List(p) }.sum) { case (v, w) =>
           w.map { case l => l.collect { case x if filter(v, x) => (v, x) } }.getOrElse(List())
         }
@@ -219,18 +220,18 @@ private[scalding] object ScaldingImplicits {
         .values
     }
 
-    def tunedDistinct(tuner: Tuner)(implicit ev: Ordering[P]): TypedPipe[P] = tuner.parameters match {
+    def tunedDistinct(tuner: Tuner)(implicit ev: Ordering[P]): Context.U[P] = tuner.parameters match {
       case Reducers(reducers) => pipe.asKeys.withReducers(reducers).sum.keys
       case _ => pipe.asKeys.sum.keys
     }
 
-    def tunedRedistribute(tuner: Tuner): TypedPipe[P] = tuner match {
+    def tunedRedistribute(tuner: Tuner): Context.U[P] = tuner match {
       case Redistribute(reducers) => pipe.shard(reducers)
       case _ => pipe
     }
 
     def tunedSaveAsText(ctx: Context, tuner: Tuner, file: String) = {
-      import ctx._
+      import ctx.implicits.environment._
 
       pipe.tunedRedistribute(tuner).write(TypedSink(TextLine(file)))
     }
@@ -238,9 +239,9 @@ private[scalding] object ScaldingImplicits {
     def tunedSelfCross(
       tuner: Tuner,
       filter: (P, P) => Boolean
-    ): TypedPipe[(P, P)] = tunedCross(tuner, filter, pipe)
+    ): Context.U[(P, P)] = tunedCross(tuner, filter, pipe)
 
-    def tunedSize(tuner: Tuner)(implicit ev: Ordering[P]): TypedPipe[(P, Long)] = tuner.parameters match {
+    def tunedSize(tuner: Tuner)(implicit ev: Ordering[P]): Context.U[(P, Long)] = tuner.parameters match {
       case Reducers(reducers) => pipe.asKeys.withReducers(reducers).size
       case _ => pipe.asKeys.size
     }

@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.framework
+package commbank.grimlock.framework.metadata
 
-/** Base trait for variable types. */
+/** Trait for variable types. */
 trait Type extends java.io.Serializable {
   /** Returns the most general super type of `this`. */
   def getRootType: Type = parent.map(_.getRootType).getOrElse(this)

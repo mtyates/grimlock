@@ -14,56 +14,53 @@
 
 package commbank.grimlock.scalding.content
 
-import commbank.grimlock.framework.{ Default, Tuner }
+import commbank.grimlock.framework.{ Persist => FwPersist }
 import commbank.grimlock.framework.content.{
   Contents => FwContents,
   IndexedContents => FwIndexedContents,
   Content
 }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 import commbank.grimlock.framework.position.Position
 
+import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.Persist
-
-import com.twitter.scalding.typed.TypedPipe
 
 import shapeless.Nat
 
-/**
- * Rich wrapper around a `TypedPipe[Content]`.
- *
- * @param data The `TypedPipe[Content]`.
- */
-case class Contents(data: TypedPipe[Content]) extends FwContents with Persist[Content] {
-  type SaveAsTextTuners[T] = PersistParition[T]
+/** Rich wrapper around a `TypedPipe[Content]`. */
+case class Contents(
+  context: Context,
+  data: Context.U[Content]
+) extends FwContents[Context.U, Context.E, Context]
+  with Persist[Content] {
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter,
+    writer: FwPersist.TextWriter[Content],
     tuner: T = Default()
-  ): U[Content] = saveText(ctx, file, writer, tuner)
+  )(implicit
+    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+  ): Context.U[Content] = saveText(file, writer, tuner)
 }
 
-/**
- * Rich wrapper around a `TypedPipe[(Position[P], Content]`.
- *
- * @param data The `TypedPipe[(Position[P], Content]`.
- */
+/** Rich wrapper around a `TypedPipe[(Position[P], Content]`. */
 case class IndexedContents[
   P <: Nat
 ](
-  data: TypedPipe[(Position[P], Content)]
-) extends FwIndexedContents[P]
+  context: Context,
+  data: Context.U[(Position[P], Content)]
+) extends FwIndexedContents[P, Context.U, Context.E, Context]
   with Persist[(Position[P], Content)] {
-  type SaveAsTextTuners[T] = PersistParition[T]
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter,
+    writer: FwPersist.TextWriter[(Position[P], Content)],
     tuner: T = Default()
-  ): U[(Position[P], Content)] = saveText(ctx, file, writer, tuner)
+  )(implicit
+    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+  ): Context.U[(Position[P], Content)] = saveText(file, writer, tuner)
 }
 

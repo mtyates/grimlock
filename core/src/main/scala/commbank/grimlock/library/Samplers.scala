@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
 
 package commbank.grimlock.library.sample
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.sample._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.extract.Extract
+import commbank.grimlock.framework.sample.{ Sampler, SamplerWithValue }
 
 import scala.util.Random
 

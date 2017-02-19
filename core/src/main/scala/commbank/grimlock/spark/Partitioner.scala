@@ -14,68 +14,80 @@
 
 package commbank.grimlock.spark.partition
 
-import commbank.grimlock.framework.{ Cell, Default, Tuner }
-import commbank.grimlock.framework.DefaultTuners.TP1
+import commbank.grimlock.framework.{ Cell, Persist => FwPersist }
+import commbank.grimlock.framework.environment.tuner.{ Default, NoParameters, Reducers, Tuner }
 import commbank.grimlock.framework.partition.{ Partitions => FwPartitions }
 
+import commbank.grimlock.spark.environment._
+import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 import commbank.grimlock.spark.Persist
-import commbank.grimlock.spark.SparkImplicits._
-
-import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
 import shapeless.Nat
 
-/**
- * Rich wrapper around a `RDD[(I, Cell[P])]`.
- *
- * @param data The `RDD[(I, Cell[P])]`.
- */
+/** Rich wrapper around a `RDD[(I, Cell[P])]`. */
 case class Partitions[
   P <: Nat,
   I : Ordering
 ](
-  data: RDD[(I, Cell[P])]
-) extends FwPartitions[P, I]
+  context: Context,
+  data: Context.U[(I, Cell[P])]
+) extends FwPartitions[P, I, Context.U, Context.E, Context]
   with Persist[(I, Cell[P])] {
-  def add(id: I, partition: U[Cell[P]]): U[(I, Cell[P])] = data ++ (partition.map { case c => (id, c) })
+  def add(id: I, partition: Context.U[Cell[P]]): Context.U[(I, Cell[P])] = data ++ (partition.map { case c => (id, c) })
 
-  type ForAllTuners[T] = TP1[T]
   def forAll[
     Q <: Nat,
-    T <: Tuner : ForAllTuners
+    T <: Tuner
   ](
-    fn: (I, U[Cell[P]]) => U[Cell[Q]],
+    fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]],
     exclude: List[I],
     tuner: T = Default()
   )(implicit
-    ev1: ClassTag[I]
-  ): U[(I, Cell[Q])] = forEach(ids(tuner).toLocalIterator.toList.filter { case i => !exclude.contains(i) }, fn)
+    ev1: ClassTag[I],
+    ev2: FwPartitions.ForAllTuners[Context.U, T]
+  ): Context.U[(I, Cell[Q])] = {
+    val identifiers = tuner.parameters match {
+      case NoParameters() => ids(Default())
+      case Reducers(r) => ids(Default(r))
+    }
 
-  def forEach[Q <: Nat](ids: List[I], fn: (I, U[Cell[P]]) => U[Cell[Q]]): U[(I, Cell[Q])] = ids
+    val keys = identifiers
+      .toLocalIterator
+      .toList
+      .filter { case i => !exclude.contains(i) }
+
+    forEach(keys, fn)
+  }
+
+  def forEach[Q <: Nat](ids: List[I], fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]]): Context.U[(I, Cell[Q])] = ids
     .map { case i => fn(i, get(i)).map { case c => (i, c) } }
-    .reduce[U[(I, Cell[Q])]]((x, y) => x ++ y)
+    .reduce[Context.U[(I, Cell[Q])]]((x, y) => x ++ y)
 
-  def get(id: I): U[Cell[P]] = data.collect { case (i, c) if (id == i) => c }
+  def get(id: I): Context.U[Cell[P]] = data.collect { case (i, c) if (id == i) => c }
 
-  type IdsTuners[T] = TP1[T]
-  def ids[T <: Tuner : IdsTuners](tuner: T = Default())(implicit ev1: ClassTag[I]): U[I] = data
-    .map { case (i, _) => i }
-    .tunedDistinct(tuner)
-
-  def merge(ids: List[I]): U[Cell[P]] = data.collect { case (i, c) if (ids.contains(i)) => c }
-
-  def remove(id: I): U[(I, Cell[P])] = data.filter { case (i, _) => i != id }
-
-  type SaveAsTextTuners[T] = PersistParition[T]
-  def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+  def ids[
+    T <: Tuner
   ](
-    ctx: C,
-    file: String,
-    writer: TextWriter,
     tuner: T = Default()
-  ): U[(I, Cell[P])] = saveText(ctx, file, writer, tuner)
+  )(implicit
+    ev1: ClassTag[I],
+    ev2: FwPartitions.IdsTuners[Context.U, T]
+  ): Context.U[I] = data.map { case (i, _) => i }.tunedDistinct(tuner)
+
+  def merge(ids: List[I]): Context.U[Cell[P]] = data.collect { case (i, c) if (ids.contains(i)) => c }
+
+  def remove(id: I): Context.U[(I, Cell[P])] = data.filter { case (i, _) => i != id }
+
+  def saveAsText[
+    T <: Tuner
+  ](
+    file: String,
+    writer: FwPersist.TextWriter[(I, Cell[P])],
+    tuner: T = Default()
+  )(implicit
+    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+  ): Context.U[(I, Cell[P])] = saveText(file, writer, tuner)
 }
 

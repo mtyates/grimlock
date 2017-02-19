@@ -14,15 +14,16 @@
 
 package commbank.grimlock.spark.statistics
 
-import commbank.grimlock.framework.{ Cell, Default, NumericType, Tuner }
+import commbank.grimlock.framework.Cell
 import commbank.grimlock.framework.content.Content
-import commbank.grimlock.framework.content.metadata.{ ContinuousSchema, DiscreteSchema }
-import commbank.grimlock.framework.DefaultTuners.TP1
-import commbank.grimlock.framework.statistics.{ Statistics => FwStatistics }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
+import commbank.grimlock.framework.metadata.{ ContinuousSchema, DiscreteSchema, NumericType }
 import commbank.grimlock.framework.position.{ Position, Slice }
+import commbank.grimlock.framework.statistics.{ Statistics => FwStatistics }
 
+import commbank.grimlock.spark.environment.Context
+import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 import commbank.grimlock.spark.Matrix
-import commbank.grimlock.spark.SparkImplicits._
 
 import com.twitter.algebird.{ Aggregator, Moments, Monoid }
 
@@ -33,40 +34,42 @@ import shapeless.nat._1
 import shapeless.ops.nat.Diff
 
 /** Trait for computing common statistics from a matrix. */
-trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L, P] =>
-  type CountsTuners[T] = TP1[T]
+trait Statistics[
+  L <: Nat,
+  P <: Nat
+] extends FwStatistics[L, P, Context.U, Context.E, Context] { self: Matrix[L, P] =>
   def counts[
-    T <: Tuner : CountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T = Default()
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.CountsTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = data
     .map { case c => slice.selected(c.position) }
     .tunedSize(tuner)
     .map { case (p, c) => Cell(p, Content(DiscreteSchema[Long](), c)) }
 
-  type DistinctCountsTuners[T] = TP1[T]
   def distinctCounts[
-    T <: Tuner : DistinctCountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T = Default()
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.DistinctCountsTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = data
     .map { case c => (slice.selected(c.position), c.content.value.toShortString) }
     .tunedSize(tuner)
     .map { case ((p, v), c) => p }
     .tunedSize(tuner)
     .map { case (p, c) => Cell(p, Content(DiscreteSchema[Long](), c)) }
 
-  type PredicateCountsTuners[T] = TP1[T]
   def predicateCounts[
-    T <: Tuner : PredicateCountsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -74,26 +77,26 @@ trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L
     predicate: (Content) => Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.PredicateCountsTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = data
     .collect { case c if (predicate(c.content)) => slice.selected(c.position) }
     .tunedSize(tuner)
     .map { case (p, c) => Cell(p, Content(DiscreteSchema[Long](), c)) }
 
-  type MeanTuners[T] = TP1[T]
   def mean[
-    T <: Tuner : MeanTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.mean(m))
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.MeanTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.mean(m))
 
-  type StandardDeviationTuners[T] = TP1[T]
   def standardDeviation[
-    T <: Tuner : StandardDeviationTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -101,23 +104,23 @@ trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L
     biased: Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.sd(m, biased))
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.StandardDeviationTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.sd(m, biased))
 
-  type SkewnessTuners[T] = TP1[T]
   def skewness[
-    T <: Tuner : SkewnessTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.skewness(m))
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.SkewnessTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.skewness(m))
 
-  type KurtosisTuners[T] = TP1[T]
   def kurtosis[
-    T <: Tuner : KurtosisTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -125,52 +128,53 @@ trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L
     excess: Boolean
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.kurtosis(m, excess))
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.KurtosisTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = moments(slice, tuner, m => FwStatistics.kurtosis(m, excess))
 
-  type MinimumTuners[T] = TP1[T]
   def minimum[
-    T <: Tuner : MinimumTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = range(slice, tuner, Aggregator.min)
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.MinimumTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = range(slice, tuner, Aggregator.min)
 
-  type MaximumTuners[T] = TP1[T]
   def maximum[
-    T <: Tuner : MaximumTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = range(slice, tuner, Aggregator.max)
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.MaximumTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = range(slice, tuner, Aggregator.max)
 
-  type MaximumAbsoluteTuners[T] = TP1[T]
   def maximumAbsolute[
-    T <: Tuner : MaximumAbsoluteTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = range(slice, tuner, Aggregator.max[Double].composePrepare(d => math.abs(d)))
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.MaximumAbsoluteTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = range(slice, tuner, Aggregator.max[Double].composePrepare(d => math.abs(d)))
 
-  type SumsTuners[T] = TP1[T]
   def sums[
-    T <: Tuner : SumsTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+    ev2: Diff.Aux[P, _1, L],
+    ev3: FwStatistics.SumsTuners[Context.U, T]
+  ): Context.U[Cell[slice.S]] = data
     .collect { case c if (c.content.schema.classification.isOfType(NumericType)) =>
       (slice.selected(c.position), c.content.value)
     }
@@ -184,7 +188,7 @@ trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L
     extract: (Moments) => Double
   )(implicit
     ev: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+  ): Context.U[Cell[slice.S]] = data
     .collect { case c if (c.content.schema.classification.isOfType(NumericType)) =>
       (slice.selected(c.position), c.content.value)
     }
@@ -198,7 +202,7 @@ trait Statistics[L <: Nat, P <: Nat] extends FwStatistics[L, P] { self: Matrix[L
     agg: Aggregator[Double, Double, Double]
   )(implicit
     ev: Diff.Aux[P, _1, L]
-  ): U[Cell[slice.S]] = data
+  ): Context.U[Cell[slice.S]] = data
     .collect { case c if (c.content.schema.classification.isOfType(NumericType)) =>
       (slice.selected(c.position), c.content.value)
     }

@@ -14,11 +14,13 @@
 
 package commbank.grimlock.framework.distribution
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.utility._
+import commbank.grimlock.framework.{ Cell, Locate, Matrix }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.metadata.ContinuousSchema
+import commbank.grimlock.framework.position.{ Position, Slice }
+import commbank.grimlock.framework.utility.=:!=
 
 import com.tdunning.math.stats.AVLTreeDigest
 
@@ -31,10 +33,7 @@ import shapeless.nat.{ _0, _1 }
 import shapeless.ops.nat.{ Diff, GT }
 
 /** Trait for computing approximate distributions from a matrix. */
-trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
-  /** Specifies tuners permitted on a call to `histogram`. */
-  type HistogramTuners[_]
-
+trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] { self: Matrix[L, P, U, E, C] =>
   /**
    * Compute histogram.
    *
@@ -47,7 +46,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    */
   def histogram[
     Q <: Nat,
-    T <: Tuner : HistogramTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -57,11 +56,9 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
   )(implicit
     ev1: ClassTag[Position[Q]],
     ev2: GT[Q, slice.S],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: ApproximateDistribution.HistogramTuners[U, T]
   ): U[Cell[Q]]
-
-  /** Specifies tuners permitted on a call to `quantile`. */
-  type QuantileTuners[_]
 
   /**
    * Compute sample quantiles.
@@ -78,15 +75,15 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    *
    * @note Non numeric values result in `NaN` quantiles, while missing counts result in no quantiles.
    */
-  def quantile[
+  def quantiles[
     Q <: Nat,
-    T <: Tuner : QuantileTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(
     probs: List[Double],
-    quantiser: Quantile.Quantiser,
+    quantiser: Quantiles.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
     nan: Boolean = false
@@ -94,11 +91,9 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: ApproximateDistribution.QuantilesTuners[U, T]
   ): U[Cell[Q]]
-
-  /** Specifies tuners permitted on a call to `countMapQuantiles`. */
-  type CountMapQuantilesTuners[_]
 
   /**
    * Compute quantiles using a count map.
@@ -117,13 +112,13 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    */
   def countMapQuantiles[
     Q <: Nat,
-    T <: Tuner : CountMapQuantilesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(
     probs: List[Double],
-    quantiser: Quantile.Quantiser,
+    quantiser: Quantiles.Quantiser,
     name: Locate.FromSelectedAndOutput[slice.S, Double, Q],
     filter: Boolean = true,
     nan: Boolean = false
@@ -131,11 +126,9 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: ApproximateDistribution.CountMapQuantilesTuners[U, T]
   ): U[Cell[Q]]
-
-  /** Specifies tuners permitted on a call to `tDigestQuantiles`. */
-  type TDigestQuantilesTuners[_]
 
   /**
    * Compute approximate quantiles using a t-digest.
@@ -154,7 +147,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    */
   def tDigestQuantiles[
     Q <: Nat,
-    T <: Tuner : TDigestQuantilesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -168,11 +161,9 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: ApproximateDistribution.TDigestQuantilesTuners[U, T]
   ): U[Cell[Q]]
-
-  /** Specifies tuners permitted on a call to `uniformQuantiles`. */
-  type UniformQuantilesTuners[_]
 
   /**
    * Compute `count` uniformly spaced approximate quantiles using an online streaming parallel histogram.
@@ -190,7 +181,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
    */
   def uniformQuantiles[
     Q <: Nat,
-    T <: Tuner : UniformQuantilesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
@@ -203,12 +194,31 @@ trait ApproximateDistribution[L <: Nat, P <: Nat] { self: Matrix[L, P] =>
     ev1: slice.R =:!= _0,
     ev2: ClassTag[Position[slice.S]],
     ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L]
+    ev4: Diff.Aux[P, _1, L],
+    ev5: ApproximateDistribution.UniformQuantilesTuners[U, T]
   ): U[Cell[Q]]
 }
 
+/** Companion object to `ApproximateDistribution` with implicits, types, etc. */
+object ApproximateDistribution {
+  /** Trait for tuners permitted on a call to `histogram`. */
+  trait HistogramTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `quantiles`. */
+  trait QuantilesTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `countMapQuantiles`. */
+  trait CountMapQuantilesTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `tDigestQuantiles`. */
+  trait TDigestQuantilesTuners[U[_], T <: Tuner]
+
+  /** Trait for tuners permitted on a call to `uniformQuantiles`. */
+  trait UniformQuantilesTuners[U[_], T <: Tuner]
+}
+
 /** Contains implementations for the quantisers as per R's quantile function. */
-object Quantile {
+object Quantiles {
   /** Type of quantiser function. */
   type Quantiser = (Double, Long) => (Long, Double)
 
@@ -307,7 +317,7 @@ private[grimlock] case class QuantileImpl[
   Q <: Nat
 ](
   probs: List[Double],
-  quantiser: Quantile.Quantiser,
+  quantiser: Quantiles.Quantiser,
   position: Locate.FromSelectedAndOutput[S, Double, Q],
   nan: Boolean
 ) {
@@ -368,7 +378,7 @@ private[grimlock] object QuantileImpl {
    */
   def boundaries(
     probs: List[Double],
-    quantiser: Quantile.Quantiser,
+    quantiser: Quantiles.Quantiser,
     count: Long
   ): List[(Long, Double, Double)] = probs
     .sorted
@@ -472,7 +482,7 @@ private[grimlock] object CountMap {
     t: T,
     probs: List[Double],
     pos: Position[S],
-    quantiser: Quantile.Quantiser,
+    quantiser: Quantiles.Quantiser,
     name: Locate.FromSelectedAndOutput[S, Double, Q],
     nan: Boolean
   )(implicit

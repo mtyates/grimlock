@@ -1,4 +1,4 @@
-// Copyright 2015,2016 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commbank.grimlock.framework
+package commbank.grimlock.framework.extract
 
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.position.{ Position, Slice }
 
 import shapeless.{ Nat, Witness }
 import shapeless.nat._1
 import shapeless.ops.nat.{ Diff, LTEq, ToInt }
 
-/** Base trait for extracting data from a user provided value given a cell. */
+/** Trait for extracting data from a user provided value given a cell. */
 trait Extract[P <: Nat, V, T] extends java.io.Serializable { self =>
   /**
    * Extract value for the given cell.

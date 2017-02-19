@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
 
 package commbank.grimlock.framework.window
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.position.Position
 
 import shapeless.Nat
 import shapeless.ops.nat.GTEq
 
 /**
- * Base trait for generating windowed data.
+ * Trait for generating windowed data.
  *
  * Windowed data is derived from two or more values, for example deltas or gradients. To generate this, the process is
  * as follows. First each cell is prepared for windowed operations. This involves return the input data to slide over.
@@ -161,7 +161,7 @@ object Window {
 }
 
 /**
- * Base trait for initialising a windowed with a user supplied value.
+ * Trait for initialising a windowed with a user supplied value.
  *
  * Windowed data is derived from two or more values, for example deltas or gradients. To generate this, the process is
  * as follows. First each cell is prepared for windowed operations. This involves return the input data to slide over.

@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
 
 package commbank.grimlock.framework.position
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.utility._
+import commbank.grimlock.framework.Persist
+import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.environment.Context
+import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.utility.=:!=
 
 import play.api.libs.json.{ JsArray, JsError, Json, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
 
@@ -24,12 +26,12 @@ import scala.reflect.ClassTag
 import scala.util.matching.Regex
 import scala.collection.immutable.ListSet
 
-import shapeless.{ AdditiveCollection, Nat, Sized, Succ }
+import shapeless.{ Nat, Sized, Succ }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8, _9 }
 import shapeless.ops.nat.{ Diff, GT, LTEq, ToInt }
 import shapeless.syntax.sized._
 
-/** Base trait for dealing with positions. */
+/** Trait for dealing with positions. */
 sealed trait Position[P <: Nat] {
   /** List of coordinates of the position. */
   val coordinates: List[Value]
@@ -307,17 +309,12 @@ object Position {
   )(implicit
     ev1: Diff.Aux[P, _1, L]
   ): ReduciblePosition[L, P] = ReduciblePositionImpl(pos.coordinates)
-
-  /** Implicit for permuting a position. */
-  implicit def listSetAdditiveCollection[T]: AdditiveCollection[ListSet[T]] = new AdditiveCollection[ListSet[T]] {}
 }
 
 private case class PositionImpl[P <: Nat](coordinates: List[Value]) extends Position[P]
 
 /** Trait for operations that modify a position (but keep the number of dimensions the same). */
 trait PermutablePosition[P <: Nat] extends Position[P] {
-  import Position.listSetAdditiveCollection
-
   /**
    * Permute the order of coordinates.
    *
@@ -384,11 +381,8 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
 
 private case class ReduciblePositionImpl[L <: Nat, P <: Nat](coordinates: List[Value]) extends ReduciblePosition[L, P]
 
-/** Base trait that represents the positions of a matrix. */
-trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
-  /** Specifies tuners permitted on a call to `names`. */
-  type NamesTuners[_]
-
+/** Trait that represents the positions of a matrix. */
+trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[Position[P], U, E, C] {
   /**
    * Returns the distinct position(s) (or names) for a given `slice`.
    *
@@ -398,23 +392,20 @@ trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
    * @return A `U[Position[slice.S]]` of the distinct position(s).
    */
   def names[
-    T <: Tuner : NamesTuners
+    T <: Tuner
   ](
     slice: Slice[L, P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
     ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L]
+    ev3: Diff.Aux[P, _1, L],
+    ev4: Positions.NamesTuners[U, T]
   ): U[Position[slice.S]]
-
-  /** Specifies tuners permitted on a call to `saveAsText`. */
-  type SaveAsTextTuners[_]
 
   /**
    * Persist to disk.
    *
-   * @param ctx    The context used to persist these positions.
    * @param file   Name of the output file.
    * @param writer Writer that converts `Position[N]` to string.
    * @param tuner  The tuner for the job.
@@ -422,12 +413,13 @@ trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
    * @return A `U[Position[P]]` which is this object's data.
    */
   def saveAsText[
-    T <: Tuner : SaveAsTextTuners
+    T <: Tuner
   ](
-    ctx: C,
     file: String,
-    writer: TextWriter = Position.toString(),
+    writer: Persist.TextWriter[Position[P]] = Position.toString(),
     tuner: T
+  )(implicit
+    ev: Persist.SaveAsTextTuners[U, T]
   ): U[Position[P]]
 
   /**
@@ -486,5 +478,11 @@ trait Positions[L <: Nat, P <: Nat] extends Persist[Position[P]] {
   ): U[Position[P]] = slice(keep, p => positions.contains(p))
 
   protected def slice(keep: Boolean, f: Position[P] => Boolean)(implicit ev: ClassTag[Position[P]]): U[Position[P]]
+}
+
+/** Companion object to `Positions` with types, implicits, etc. */
+object Positions {
+  /** Trait for tuners permitted on a call to `names`. */
+  trait NamesTuners[U[_], T <: Tuner]
 }
 

@@ -23,9 +23,9 @@ import com.twitter.scalding.typed.{ IterablePipe, TypedPipe }
 
 import org.apache.log4j.{ Level, Logger }
 import org.apache.spark.{ SparkConf, SparkContext }
-import org.apache.spark.rdd._
+import org.apache.spark.rdd.RDD
 
-import org.scalatest._
+import org.scalatest.{ FlatSpec, Matchers }
 
 import scala.reflect.ClassTag
 

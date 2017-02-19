@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
 
 package commbank.grimlock.framework.transform
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
 
 import shapeless.Nat
 import shapeless.ops.nat.GTEq
 
-/** Base trait for transformations from `P` to `Q`. */
+/** Trait for transformations from `P` to `Q`. */
 trait Transformer[P <: Nat, Q <: Nat] extends TransformerWithValue[P, Q] { self =>
   type V = Any
 
@@ -106,7 +106,7 @@ object Transformer {
   }
 }
 
-/** Base trait for transformations from `P` to `Q` that use a user supplied value. */
+/** Trait for transformations from `P` to `Q` that use a user supplied value. */
 trait TransformerWithValue[P <: Nat, Q <: Nat] extends java.io.Serializable { self =>
   /** Type of the external value. */
   type V

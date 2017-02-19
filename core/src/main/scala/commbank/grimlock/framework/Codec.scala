@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 package commbank.grimlock.framework.encoding
 
-import commbank.grimlock.framework.Type
+import commbank.grimlock.framework.metadata.Type
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,7 +22,7 @@ import java.util.Date
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.Try
 
-/** Base trait for encoding/decoding (basic) data types. */
+/** Trait for encoding/decoding (basic) data types. */
 trait Codec { self =>
   /** The data type. */
   type D
@@ -311,7 +311,7 @@ case object TypeCodec extends Codec {
   override def tag(): Option[ClassTag[D]] = Option(classTag[D])
 }
 
-/** Base trait for dealing with structured data. */
+/** Trait for dealing with structured data. */
 trait StructuredCodec extends Codec {
   type T <: Structured
 }

@@ -14,9 +14,9 @@
 
 package commbank.grimlock.framework
 
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ Codec, StringCodec, Value }
+import commbank.grimlock.framework.position.Position
 
 import com.twitter.scrooge.ThriftStruct
 

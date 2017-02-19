@@ -16,8 +16,9 @@ package commbank.grimlock.spark.examples
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.nlp._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.transform._
@@ -26,7 +27,6 @@ import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.spark.environment._
-import commbank.grimlock.spark.environment.Context._
 
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.apache.spark.rdd.RDD
@@ -48,7 +48,7 @@ case class ExampleEvent(
 object ExampleEvent {
   // Function to read a file with event data.
   def load(file: String)(implicit ctx: Context): RDD[Cell[_1]] = ctx
-    .context
+    .spark
     .textFile(file)
     .flatMap { case line =>
       ExampleEventCodec.decode(line).map(ev => Cell(Position(ev.value.eventId), Content(ExampleEventSchema, ev)))
@@ -200,7 +200,7 @@ object InstanceCentricTfIdf {
       //  AugmentedTf(ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble))
       //)
       .transformWithValue(idf, TfIdf(extractIdf))
-      .saveAsText(ctx, s"./demo.${output}/tfidf_entity.out")
+      .saveAsText(s"./demo.${output}/tfidf_entity.out")
   }
 }
 

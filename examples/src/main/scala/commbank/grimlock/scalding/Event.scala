@@ -16,8 +16,9 @@ package commbank.grimlock.scalding.examples
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.extract._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.nlp._
 import commbank.grimlock.framework.position._
 import commbank.grimlock.framework.transform._
@@ -26,7 +27,6 @@ import commbank.grimlock.library.aggregate._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.Context._
 
 import com.twitter.scalding.{ Args, Job, TextLine }
 import com.twitter.scalding.TDsl.sourceToTypedPipe
@@ -199,6 +199,6 @@ class InstanceCentricTfIdf(args: Args) extends Job(args) {
     //  AugmentedTf(ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble))
     //)
     .transformWithValue(idf, TfIdf(extractIdf))
-    .saveAsText(ctx, s"./demo.${output}/tfidf_entity.out")
+    .saveAsText(s"./demo.${output}/tfidf_entity.out")
 }
 

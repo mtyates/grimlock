@@ -16,8 +16,8 @@ package commbank.grimlock.test
 
 import commbank.grimlock.framework._
 import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.content.metadata._
 import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.metadata._
 import commbank.grimlock.framework.position._
 
 import commbank.grimlock.library.squash._
