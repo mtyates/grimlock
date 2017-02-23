@@ -133,7 +133,7 @@ trait Matrix[
       .map { case c => (slice.selected(c.position), ev3.toMap(slice)(c)) }
       .tunedReduce(tuner, (l, r) => ev3.combineMaps(slice)(l, r))
       .values
-      .reduce { case (lm, rm) => lm ++ rm }
+      .fold(Map[Position[slice.S], V[slice.R]]()) { case (lm, rm) => lm ++ rm }
   }
 
   def domain[
