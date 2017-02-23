@@ -2389,6 +2389,24 @@ class TestScaldingMatrixCompact extends TestMatrixCompact {
       .compact(Along(_3), Default()).toTypedPipe
       .toList shouldBe List(result11)
   }
+
+  it should "return its empty map" in {
+    toPipe(List[Cell[_3]]())
+      .compact(Along(_3), Default()).toTypedPipe
+      .toList shouldBe List(Map())
+  }
+
+  it should "return its compacted 1D" in {
+    toPipe(data1)
+      .compact().toTypedPipe
+      .toList shouldBe List(result1)
+  }
+
+  it should "return its empty compacted" in {
+    toPipe(List[Cell[_2]]())
+      .compact().toTypedPipe
+      .toList shouldBe List(Map())
+  }
 }
 
 class TestSparkMatrixCompact extends TestMatrixCompact {
@@ -2446,6 +2464,21 @@ class TestSparkMatrixCompact extends TestMatrixCompact {
   it should "return its third along map in 3D" in {
     toRDD(data3)
       .compact(Along(_3), Default()) shouldBe result11
+  }
+
+  it should "return its empty map" in {
+    toRDD(List[Cell[_3]]())
+      .compact(Along(_3), Default()) shouldBe Map()
+  }
+
+  it should "return its compacted 1D" in {
+    toRDD(data1)
+      .compact() shouldBe result1
+  }
+
+  it should "return its empty compacted" in {
+    toRDD(List[Cell[_2]]())
+      .compact() shouldBe Map()
   }
 }
 

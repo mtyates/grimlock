@@ -63,6 +63,7 @@ import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
 import commbank.grimlock.scalding.statistics.Statistics
 
 import com.twitter.algebird.Semigroup
+import com.twitter.scalding.typed.ValuePipe
 
 import org.apache.hadoop.io.Writable
 
@@ -116,9 +117,9 @@ trait Matrix[
       def plus(l: Map[Position[P], Content], r: Map[Position[P], Content]) = l ++ r
     }
 
-    data
-      .map { case c => Map(c.position -> c.content) }
-      .sum(semigroup)
+    ValuePipe(Map[Position[P], Content]())
+      .leftCross(data.map { case c => Map(c.position -> c.content) }.sum(semigroup))
+      .map { case (e, m) => m.getOrElse(e) }
   }
 
   def compact[
@@ -138,11 +139,15 @@ trait Matrix[
       def plus(l: Map[Position[slice.S], V[slice.R]], r: Map[Position[slice.S], V[slice.R]]) = l ++ r
     }
 
-    data
-      .map { case c => (slice.selected(c.position), ev3.toMap(slice)(c)) }
-      .tunedReduce(tuner, (l, r) => ev3.combineMaps(slice)(l, r))
-      .values
-      .sum(semigroup)
+    ValuePipe(Map[Position[slice.S], V[slice.R]]())
+      .leftCross(
+        data
+          .map { case c => (slice.selected(c.position), ev3.toMap(slice)(c)) }
+          .tunedReduce(tuner, (l, r) => ev3.combineMaps(slice)(l, r))
+          .values
+          .sum(semigroup)
+      )
+      .map { case (e, m) => m.getOrElse(e) }
   }
 
   def domain[
