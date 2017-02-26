@@ -255,7 +255,9 @@ trait Matrix[
     tuner: T = Default()
   )(implicit
     ev: FwMatrix.MaterialiseTuners[Context.U, T]
-  ): List[Cell[P]] = data.collect.toList
+  ): List[Cell[P]] = data
+    .collect
+    .toList
 
   def names[
     T <: Tuner

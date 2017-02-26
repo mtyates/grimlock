@@ -29,14 +29,6 @@ case class NoParameters() extends Parameters { }
  */
 case class Reducers(reducers: Int) extends Parameters { }
 
-/**
- * Create a pair of tuner parameters
- *
- * @param first  The first parameter of the pair.
- * @param second The second parameter of the pair.
- */
-case class Pair[F <: Parameters, S <: Parameters](first: F, second: S) extends Parameters { }
-
 /** Trait that indicates size/shape of the data for tuning. */
 sealed trait Tuner extends java.io.Serializable {
   /** The parameters used for tuning. */
@@ -62,20 +54,6 @@ case class Default[T <: Parameters](parameters: T = NoParameters()) extends Tune
 /** Companion object to `Default`. */
 object Default {
   /**
-   * Create a tuner with a pair of tuner parameters.
-   *
-   * @param first  The first parameter of the pair.
-   * @param second The second parameter of the pair.
-   */
-  def apply[
-    F <: Parameters,
-    S <: Parameters
-  ](
-    first: F,
-    second: S
-  ): Default[Pair[F, S]] = Default(Pair(first, second))
-
-  /**
    * Create a tuner with a number of reducers.
    *
    * @param reducers The number of reducers.
@@ -88,20 +66,6 @@ case class Unbalanced[T <: Parameters](parameters: T) extends Tuner { }
 
 /** Companion object to `Unbalanced`. */
 object Unbalanced {
-  /**
-   * Create an unbalanced tuner with a pair of tuner parameters.
-   *
-   * @param first  The first parameter of the pair.
-   * @param second The second parameter of the pair.
-   */
-  def apply[
-    F <: Parameters,
-    S <: Parameters
-  ](
-    first: F,
-    second: S
-  ): Unbalanced[Pair[F, S]] = Unbalanced(Pair(first, second))
-
   /**
    * Create an unbalanced tuner with a number of reducers.
    *

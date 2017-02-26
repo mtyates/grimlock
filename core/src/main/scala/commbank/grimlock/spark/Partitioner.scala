@@ -15,10 +15,10 @@
 package commbank.grimlock.spark.partition
 
 import commbank.grimlock.framework.{ Cell, Persist => FwPersist }
-import commbank.grimlock.framework.environment.tuner.{ Default, NoParameters, Reducers, Tuner }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 import commbank.grimlock.framework.partition.{ Partitions => FwPartitions }
 
-import commbank.grimlock.spark.environment._
+import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 import commbank.grimlock.spark.Persist
 
@@ -48,17 +48,13 @@ case class Partitions[
     ev1: ClassTag[I],
     ev2: FwPartitions.ForAllTuners[Context.U, T]
   ): Context.U[(I, Cell[Q])] = {
-    val identifiers = tuner.parameters match {
-      case NoParameters() => ids(Default())
-      case Reducers(r) => ids(Default(r))
-    }
-
-    val keys = identifiers
+    val ids = data
+      .collect { case (i, _) if !exclude.contains(i) => i }
+      .tunedDistinct(tuner)
       .toLocalIterator
       .toList
-      .filter { case i => !exclude.contains(i) }
 
-    forEach(keys, fn)
+    forEach(ids, fn)
   }
 
   def forEach[Q <: Nat](ids: List[I], fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]]): Context.U[(I, Cell[Q])] = ids

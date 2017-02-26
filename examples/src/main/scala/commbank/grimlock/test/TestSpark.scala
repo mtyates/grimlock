@@ -64,12 +64,7 @@ object TestSpark1 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test1[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test1(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -78,12 +73,7 @@ object TestSpark2 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test2[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test2(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -92,12 +82,7 @@ object TestSpark3 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test3[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test3(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -106,12 +91,7 @@ object TestSpark4 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test4[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test4(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -120,12 +100,7 @@ object TestSpark5 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test5[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test5(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -134,12 +109,7 @@ object TestSpark6 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test6[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test6(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -148,12 +118,7 @@ object TestSpark7 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test7[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test7(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -162,12 +127,7 @@ object TestSpark8 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test8[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test8(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -176,12 +136,7 @@ object TestSpark9 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test9[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test9(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -190,12 +145,7 @@ object TestSpark10 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test10[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test10(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -204,12 +154,7 @@ object TestSpark11 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test11[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test11(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -218,12 +163,7 @@ object TestSpark12 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test12[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test12(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -232,12 +172,7 @@ object TestSpark13 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test13[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test13(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -246,12 +181,7 @@ object TestSpark14 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test14[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test14(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -260,12 +190,7 @@ object TestSpark15 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test15[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test15(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -274,12 +199,7 @@ object TestSpark16 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test16[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test16(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -288,12 +208,7 @@ object TestSpark17 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test17[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test17(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -302,12 +217,7 @@ object TestSpark18 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test18[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test18(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
@@ -316,22 +226,13 @@ object TestSpark19 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test19[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test19(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
 object TestSpark20 {
   def main(args: Array[String]) {
-    Shared.test20[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test20(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
@@ -340,128 +241,79 @@ object TestSpark21 {
     val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
     val path = args(1)
 
-    Shared.test21[Context.U, Context.E, Context](
-      ctx,
-      load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-      path,
-      "spark"
-    )
+    Shared.test21(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
 }
 
 object TestSpark22 {
   def main(args: Array[String]) {
-    Shared.test22[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test22(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark23 {
   def main(args: Array[String]) {
-    Shared.test23[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test23(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark24 {
   def main(args: Array[String]) {
-    Shared.test24[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test24(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark25 {
   def main(args: Array[String]) {
-    Shared.test25[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test25(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark26 {
   def main(args: Array[String]) {
-    Shared.test26[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test26(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark27 {
   def main(args: Array[String]) {
-    Shared.test27[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test27(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark28 {
   def main(args: Array[String]) {
-    Shared.test28[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      CutRules,
-      "spark"
-    )
+    Shared.test28(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), CutRules, "spark")
   }
 }
 
 object TestSpark29 {
   def main(args: Array[String]) {
-    Shared.test29[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      "spark"
-    )
+    Shared.test29(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
   }
 }
 
 object TestSpark30 {
   def main(args: Array[String]) {
-    Shared.test30[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      args(1),
-      "spark"
-    )
+    Shared.test30(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
   }
 }
 
 object TestSpark31 {
   def main(args: Array[String]) {
-    Shared.test31[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      "spark"
-    )
+    Shared.test31(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
   }
 }
 
 object TestSpark32 {
   def main(args: Array[String]) {
-    Shared.test32[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      "spark"
-    )
+    Shared.test32(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
   }
 }
 
 object TestSpark33 {
   def main(args: Array[String]) {
-    Shared.test33[Context.U, Context.E, Context](
-      Context(new SparkContext(args(0), "Test Spark", new SparkConf())),
-      "spark"
-    )
+    Shared.test33(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
   }
 }
 

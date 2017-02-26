@@ -30,7 +30,6 @@ import commbank.grimlock.framework.environment.tuner.{
   Default,
   InMemory,
   NoParameters,
-  Pair,
   Redistribute,
   Reducers,
   Ternary,
@@ -83,7 +82,6 @@ import commbank.grimlock.framework.statistics.Statistics.{
 import commbank.grimlock.framework.utility.UnionTypes.{ In, Is, OneOf }
 
 import commbank.grimlock.scalding.content.{ Contents, IndexedContents }
-import commbank.grimlock.scalding.environment.tuner.Execution
 import commbank.grimlock.scalding.partition.Partitions
 import commbank.grimlock.scalding.position.Positions
 
@@ -168,11 +166,8 @@ package object environment {
 
   // *** Partition tuners
 
-  /** Type alias for forAll tuners. */
-  type PipeForAllTuners[T] = T In OneOf[Default[Execution]]#Or[Default[Pair[Reducers, Execution]]]
-
   /** Implicit for checking tuners on a call to `forAll`. */
-  implicit def pipeForAllTuners[T <: Tuner : PipeForAllTuners] = new ForAllTuners[Context.U, T] { }
+  implicit def pipeForAllTuners[T <: Tuner : PipeDefaultTuners] = new ForAllTuners[Context.U, T] { }
 
   /** Implicit for checking tuners on a call to `ids`. */
   implicit def pipeIdsTuners[T <: Tuner : PipeDefaultTuners] = new IdsTuners[Context.U, T] { }
@@ -257,7 +252,7 @@ package object environment {
     Or[Binary[Default[Reducers], Unbalanced[Reducers]]]
 
   /** Type alias for materialise tuners. */
-  type PipeMaterialiseTuners[T] = T Is Default[Execution]
+  type PipeMaterialiseTuners[T] = T Is Default[NoParameters]
 
   /** Type alias for pairwise tuners. */
   type PipePairwiseTuners[T] = T In OneOf[InMemory[NoParameters]]#

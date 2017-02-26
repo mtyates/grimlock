@@ -103,11 +103,8 @@ case class EnvironmentImplicits(
   /** Implicit FlowDef for write operations. */
   implicit val implicitFlow = context.flow
 
-  /** Implicit Mode for write and Execution.waitFor operations. */
+  /** Implicit Mode for write operations. */
   implicit val implicitMode = context.mode
-
-  /** Implicit Config for Execution.waitFor operations. */
-  implicit val implicitConfig = context.config
 }
 
 /** Implements all matrix implicits for `context`. */
