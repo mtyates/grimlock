@@ -58,7 +58,7 @@ import commbank.grimlock.framework.window.{ Window, WindowWithValue }
 import commbank.grimlock.scalding.distance.PairwiseDistance
 import commbank.grimlock.scalding.distribution.ApproximateDistribution
 import commbank.grimlock.scalding.environment.Context
-import commbank.grimlock.scalding.environment.tuner.{ Execution, MapMapSideJoin, SetMapSideJoin }
+import commbank.grimlock.scalding.environment.tuner.{ MapMapSideJoin, SetMapSideJoin }
 import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
 import commbank.grimlock.scalding.statistics.Statistics
 
@@ -267,21 +267,14 @@ trait Matrix[
   def materialise[
     T <: Tuner
   ](
-    tuner: T
+    tuner: T = Default()
   )(implicit
     ev: FwMatrix.MaterialiseTuners[Context.U, T]
-  ): List[Cell[P]] = {
-    val context = tuner.parameters match {
-      case Execution(ctx) => ctx
-    }
-
-    data
-      .toIterableExecution
-      .waitFor(context.config, context.mode) match {
-        case scala.util.Success(itr) => itr.toList
-        case _ => List.empty
-      }
-  }
+  ): List[Cell[P]] = data
+    .toIterableExecution
+    .waitFor(context.config, context.mode)
+    .getOrElse(Iterable.empty)
+    .toList
 
   def names[
     T <: Tuner

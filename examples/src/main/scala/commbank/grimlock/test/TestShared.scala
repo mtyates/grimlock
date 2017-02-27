@@ -46,10 +46,9 @@ import shapeless.ops.nat.{ LTEq, ToInt }
 object Shared {
   def test1[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -87,10 +86,9 @@ object Shared {
 
   def test2[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -122,10 +120,9 @@ object Shared {
 
   def test3[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -155,10 +152,9 @@ object Shared {
 
   def test4[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -205,10 +201,9 @@ object Shared {
 
   def test5[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -263,10 +258,9 @@ object Shared {
 
   def test6[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -342,10 +336,9 @@ object Shared {
 
   def test7[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -375,10 +368,9 @@ object Shared {
 
   def test8[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -434,10 +426,9 @@ object Shared {
 
   def test9[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -506,10 +497,9 @@ object Shared {
 
   def test10[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -568,10 +558,9 @@ object Shared {
 
   def test11[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -602,10 +591,9 @@ object Shared {
 
   def test12[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -637,10 +625,9 @@ object Shared {
 
   def test13[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -694,10 +681,9 @@ object Shared {
 
   def test14[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -720,10 +706,9 @@ object Shared {
 
   def test15[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -776,10 +761,9 @@ object Shared {
 
   def test16[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -800,10 +784,9 @@ object Shared {
 
   def test17[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -882,10 +865,9 @@ object Shared {
 
   def test18[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -941,10 +923,9 @@ object Shared {
 
   def test19[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -1034,10 +1015,9 @@ object Shared {
 
   def test20[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1056,10 +1036,9 @@ object Shared {
 
   def test21[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     data: U[Cell[_3]],
     path: String,
     tool: String
@@ -1093,10 +1072,9 @@ object Shared {
 
   def test22[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1143,10 +1121,9 @@ object Shared {
 
   def test23[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1185,10 +1162,9 @@ object Shared {
 
   def test24[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1231,10 +1207,9 @@ object Shared {
 
   def test25[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1266,10 +1241,9 @@ object Shared {
 
   def test26[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1293,10 +1267,9 @@ object Shared {
 
   def test27[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1363,10 +1336,9 @@ object Shared {
 
   def test28[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     rules: CutRules[E],
     tool: String
   )(implicit
@@ -1456,10 +1428,9 @@ object Shared {
 
   def test29[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     tool: String
   )(implicit
     ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
@@ -1494,10 +1465,9 @@ object Shared {
 
   def test30[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     path: String,
     tool: String
   )(implicit
@@ -1519,10 +1489,9 @@ object Shared {
 
   def test31[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     tool: String
   )(implicit
     ev: Matrix.SaveAsIVTuners[U, Default[NoParameters]]
@@ -1604,10 +1573,9 @@ object Shared {
 
   def test32[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     tool: String
   )(implicit
     ev: Matrix.SaveAsVWTuners[U, Default[NoParameters]]
@@ -1659,10 +1627,9 @@ object Shared {
 
   def test33[
     U[_],
-    E[_],
-    C <: Context[U, E]
+    E[_]
   ](
-    ctx: C,
+    ctx: Context[U, E],
     tool: String
   )(implicit
     ev1: Persist.SaveAsTextTuners[U, Redistribute],

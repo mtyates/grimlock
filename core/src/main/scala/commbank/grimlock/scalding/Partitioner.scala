@@ -15,11 +15,10 @@
 package commbank.grimlock.scalding.partition
 
 import commbank.grimlock.framework.{ Cell, Persist => FwPersist }
-import commbank.grimlock.framework.environment.tuner.{ Default, Pair, Reducers, Tuner }
+import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 import commbank.grimlock.framework.partition.{ Partitions => FwPartitions }
 
-import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.tuner.Execution
+import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
 import commbank.grimlock.scalding.Persist
 
@@ -44,24 +43,20 @@ case class Partitions[
   ](
     fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]],
     exclude: List[I],
-    tuner: T
+    tuner: T = Default()
   )(implicit
     ev1: ClassTag[I],
     ev2: FwPartitions.ForAllTuners[Context.U, T]
   ): Context.U[(I, Cell[Q])] = {
-    val (context, identifiers) = tuner.parameters match {
-      case Execution(ctx) => (ctx, ids(Default()))
-      case Pair(Reducers(r), Execution(ctx)) => (ctx, ids(Default(r)))
-    }
-
-    val keys = identifiers
-      .collect { case i if !exclude.contains(i) => List(i) }
-      .sum
-      .getExecution
+    val ids = data
+      .collect { case (i, _) if !exclude.contains(i) => i }
+      .tunedDistinct(tuner)
+      .toIterableExecution
       .waitFor(context.config, context.mode)
-      .getOrElse(throw new Exception("unable to get ids list"))
+      .getOrElse(Iterable.empty)
+      .toList
 
-    forEach(keys, fn)
+    forEach(ids, fn)
   }
 
   def forEach[Q <: Nat](ids: List[I], fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]]): Context.U[(I, Cell[Q])] = ids

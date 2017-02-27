@@ -34,7 +34,6 @@ import commbank.grimlock.library.squash._
 import commbank.grimlock.library.transform._
 
 import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.tuner._
 
 import commbank.grimlock.spark.environment._
 
@@ -10507,7 +10506,7 @@ class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
     tupleToPipeMatrix2(data)
-      .materialise(Default(Execution(scaldingCtx)))
+      .materialise(Default())
       .sortBy(_.position) shouldBe result.sortBy(_.position)
   }
 }

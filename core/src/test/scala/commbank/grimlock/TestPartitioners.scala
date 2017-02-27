@@ -24,7 +24,6 @@ import commbank.grimlock.framework.position._
 import commbank.grimlock.library.partition._
 
 import commbank.grimlock.scalding.environment._
-import commbank.grimlock.scalding.environment.tuner._
 
 import commbank.grimlock.spark.environment._
 
@@ -380,17 +379,13 @@ class TestScaldingPartitions extends TestPartitions {
 
   it should "forall should apply to selected partitions" in {
     toPipe(data)
-      .forAll(TestPartitions.doubleT, List("train", "not.there"), Default(Execution(scaldingCtx)))
+      .forAll(TestPartitions.doubleT, List("train", "not.there"), Default())
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions with reducers" in {
     toPipe(data)
-      .forAll(
-        TestPartitions.doubleT,
-        List("train", "not.there"),
-        Default(Pair(Reducers(123), Execution(scaldingCtx)))
-      )
+      .forAll(TestPartitions.doubleT, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }

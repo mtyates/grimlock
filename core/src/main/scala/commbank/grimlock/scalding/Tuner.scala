@@ -24,7 +24,6 @@ import commbank.grimlock.framework.environment.tuner.{
   InMemory,
   MapMapSideJoin => FwMapMapSideJoin,
   MapSideJoin,
-  Parameters,
   Redistribute,
   Reducers,
   SetMapSideJoin => FwSetMapSideJoin,
@@ -37,13 +36,6 @@ import commbank.grimlock.scalding.environment.Context
 
 import scala.reflect.ClassTag
 import scala.util.Random
-
-/**
- * Trait for tuned jobs involving a `Execution`.
- *
- * @param context Scalding operating contex.
- */
-case class Execution(context: Context) extends Parameters { }
 
 private[scalding] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, Context.U, Context.E] {
   def compact(

@@ -60,295 +60,191 @@ class TestScalding1(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test1[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test1(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding2(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test2[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test2(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding3(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test3[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test3(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding4(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test4[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test4(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding5(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test5[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test5(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding6(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test6[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test6(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding7(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test7[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test7(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding8(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test8[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test8(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding9(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test9[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test9(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding10(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test10[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test10(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding11(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test11[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test11(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding12(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test12[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test12(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding13(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test13[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test13(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding14(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test14[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test14(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding15(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test15[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test15(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding16(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test16[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test16(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding17(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test17[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test17(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding18(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test18[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test18(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding19(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test19[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test19(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding20(args : Args) extends Job(args) {
-  Shared.test20[Context.U, Context.E, Context](
-    Context(),
-    args("path"),
-    "scalding"
-  )
+  Shared.test20(Context(), args("path"), "scalding")
 }
 
 class TestScalding21(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test21[Context.U, Context.E, Context](
-    ctx,
-    load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
-    path,
-    "scalding"
-  )
+  Shared.test21(ctx, load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
 
 class TestScalding22(args : Args) extends Job(args) {
-  Shared.test22[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test22(Context(), args("path"), "scalding")
 }
 
 class TestScalding23(args : Args) extends Job(args) {
-  Shared.test23[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test23(Context(), args("path"), "scalding")
 }
 
 class TestScalding24(args: Args) extends Job(args) {
-  Shared.test24[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test24(Context(), args("path"), "scalding")
 }
 
 class TestScalding25(args: Args) extends Job(args) {
-  Shared.test25[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test25(Context(), args("path"), "scalding")
 }
 
 class TestScalding26(args: Args) extends Job(args) {
-  Shared.test26[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test26(Context(), args("path"), "scalding")
 }
 
 class TestScalding27(args: Args) extends Job(args) {
-  Shared.test27[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test27(Context(), args("path"), "scalding")
 }
 
 class TestScalding28(args: Args) extends Job(args) {
-  Shared.test28[Context.U, Context.E, Context](Context(), CutRules, "scalding")
+  Shared.test28(Context(), CutRules, "scalding")
 }
 
 class TestScalding29(args: Args) extends Job(args) {
-  Shared.test29[Context.U, Context.E, Context](Context(), "scalding")
+  Shared.test29(Context(), "scalding")
 }
 
 class TestScalding30(args: Args) extends Job(args) {
-  Shared.test30[Context.U, Context.E, Context](Context(), args("path"), "scalding")
+  Shared.test30(Context(), args("path"), "scalding")
 }
 
 class TestScalding31(args: Args) extends Job(args) {
-  Shared.test31[Context.U, Context.E, Context](Context(), "scalding")
+  Shared.test31(Context(), "scalding")
 }
 
 class TestScalding32(args: Args) extends Job(args) {
-  Shared.test32[Context.U, Context.E, Context](Context(), "scalding")
+  Shared.test32(Context(), "scalding")
 }
 
 class TestScalding33(args: Args) extends Job(args) {
-  Shared.test33[Context.U, Context.E, Context](Context(), "scalding")
+  Shared.test33(Context(), "scalding")
 }
 
