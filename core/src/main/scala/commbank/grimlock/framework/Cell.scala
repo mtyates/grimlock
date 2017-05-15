@@ -1488,7 +1488,7 @@ object Cell {
     codecs: Sized[List[Codec], Q],
     parser: CellContentParser
   ): TraversableOnce[Either[String, Cell[Q]]] = List(
-    Json.fromJson[Cell[Q]](Json.parse(json))(reads(codecs, parser)) match {
+    Json.fromJson[Cell[Q]](Json.parse(json))(reads(codecs, parser.getJSONParser)) match {
       case JsSuccess(cell, _) => Right(cell)
       case _ => Left(s"Unable to decode: '" + json + "'")
     }
@@ -1502,7 +1502,7 @@ object Cell {
    */
   def reads[P <: Nat : ToInt](
     codecs: Sized[List[Codec], P],
-    parser: CellContentParser
+    parser: (List[Value]) => Option[Content.Parser]
   ): Reads[Cell[P]] = new Reads[Cell[P]] {
     implicit val prd = Position.reads(codecs)
 
@@ -1513,7 +1513,7 @@ object Cell {
         (
           for {
             pos <- fields.get("position").map(_.as[Position[P]])
-            con <- fields.get("content").map(_.as[Content](Content.reads(parser.getJSONParser(pos.coordinates))))
+            con <- fields.get("content").map(_.as[Content](Content.reads(parser(pos.coordinates))))
           } yield JsSuccess(Cell(pos, con))
         ).getOrElse(JsError("Unable to parse cell"))
       else
