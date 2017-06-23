@@ -89,6 +89,8 @@ case class Context(spark: SparkContext) extends FwContext[Context.U, Context.E] 
   def empty[T : ClassTag]: Context.U[T] = spark.parallelize(List.empty[T])
 
   def from[T : ClassTag](seq: Seq[T]): Context.U[T] = spark.parallelize(seq)
+
+  def nop(): Unit = ()
 }
 
 /** Companion object to `Context` with implicit. */
