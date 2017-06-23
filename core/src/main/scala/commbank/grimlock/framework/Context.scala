@@ -75,5 +75,16 @@ trait Context[U[_], E[_]] {
 
   /** Create an instance of `U` from `seq`. */
   def from[T : ClassTag](seq: Seq[T]): U[T]
+
+  /**
+   * Create an empty instance of `U`, writes it but discards its output.
+   *
+   * This is a work around for Scalding when Matrix.materialise is the only output of a job. In that case it is
+   * possible for cascading to throw a PlannerException as there is no sink on disk. Calling this function
+   * creates an empty `U` and writes it to a null file, causing a flow but discarding the output.
+   *
+   * See https://github.com/twitter/scalding/wiki/Common-Exceptions-and-possible-reasons
+   */
+  def nop(): Unit
 }
 

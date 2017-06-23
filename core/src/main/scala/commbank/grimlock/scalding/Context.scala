@@ -20,6 +20,7 @@ import cascading.flow.FlowDef
 
 import com.twitter.scalding.{ Config, Mode }
 import com.twitter.scalding.{ TextLine, WritableSequenceFile }
+import com.twitter.scalding.source.NullSink
 import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
 import com.twitter.scrooge.ThriftStruct
 
@@ -80,6 +81,14 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
   def empty[T : ClassTag]: Context.U[T] = TypedPipe.empty
 
   def from[T : ClassTag](seq: Seq[T]): Context.U[T] = TypedPipe.from(seq)
+
+  def nop(): Unit = {
+    import implicits.environment._
+
+    val _ = TypedPipe.empty.write(NullSink)
+
+    ()
+  }
 }
 
 /** Companion object to `Context` with additional constructors and implicit. */
