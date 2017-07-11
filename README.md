@@ -164,7 +164,7 @@ After the last command, the console should appear as follows:
 import com.twitter.scalding._
 import com.twitter.scalding.ReplImplicits._
 import com.twitter.scalding.ReplImplicitContext._
-Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.7.0_75).
+Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_92).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -297,24 +297,24 @@ The examples below are executed in the Spark REPL. To use grimlock in the REPL f
 
 1. Download the latest source code release for Spark from [here](http://spark.apache.org/downloads.html).
 2. You can, optionally, suppress much of the console INFO output. Follow [these](http://stackoverflow.com/questions/28189408/how-to-reduce-the-verbosity-of-sparks-runtime-output) instructions.
-3. Update the shapeless jar (in the `jars` folder) to version: `shapeless_2.11-2.3.0.jar`.
-4. Start REPL; `./bin/spark-shell --master local --jars <path to>/grimlock.jar`.
+3. Update the shapeless jar (in the `jars` folder) to version: `shapeless_2.11-2.3.2.jar`.
+4. Start REPL; `./bin/spark-shell --master local --jars <path to>/grimlock-core_2.11-assembly.jar`.
 
 After the last command, the console should appear as follows:
 
 ```
-> ./bin/spark-shell --master local --jars <path to>/grimlock.jar
+> ./bin/spark-shell --master local --jars <path to>/grimlock-core_2.11-assembly.jar
 ...
-Spark context available as sc.
-SQL context available as sqlContext.
+Spark context available as sc (master = local, ...).
+Spark session available as 'spark'
 Welcome to
       ____              __
      / __/__  ___ _____/ /__
     _\ \/ _ \/ _ `/ __/  '_/
-   /___/ .__/\_,_/_/ /_/\_\   version 2.1.0
+   /___/ .__/\_,_/_/ /_/\_\   version 2.1.1
       /_/
 
-Using Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.7.0_101)
+Using Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.8.0_92)
 Type in expressions to have them evaluated.
 Type :help for more information.
 

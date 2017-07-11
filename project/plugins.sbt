@@ -21,15 +21,14 @@ resolvers ++= Seq(
       "[organization]/[module]_[scalaVersion]_[sbtVersion]/[revision]/[artifact](-[classifier])-[revision].[ext]"
     )
   ),
-  "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local",
-  "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/"
+  "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 )
 
-val uniformVersion = "1.14.2-20161220001943-4f352b6"
+val uniformVersion = "1.15.1-20170426071414-6d891a6"
 
-addSbtPlugin("au.com.cba.omnia" % "uniform-core"       % uniformVersion)
-addSbtPlugin("au.com.cba.omnia" % "uniform-dependency" % uniformVersion)
-addSbtPlugin("au.com.cba.omnia" % "uniform-assembly"   % uniformVersion)
-addSbtPlugin("au.com.cba.omnia" % "uniform-thrift"     % uniformVersion)
+addSbtPlugin("au.com.cba.omnia" % "uniform-core"         % uniformVersion)
+addSbtPlugin("au.com.cba.omnia" % "uniform-assembly"     % uniformVersion)
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
+addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
+

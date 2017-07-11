@@ -67,7 +67,7 @@ case class Context(spark: SparkContext) extends FwContext[Context.U, Context.E] 
     file: String,
     parser: Cell.ParquetParser[T, P]
   ): (Context.U[Cell[P]], Context.U[String]) = {
-    val job = new Job()
+    val job = Job.getInstance()
 
     ParquetInputFormat.setReadSupportClass(job, classOf[ScroogeReadSupport[T]])
 
