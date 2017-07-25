@@ -41,7 +41,7 @@ import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
 
 import shapeless.{ Nat, Succ }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5 }
-import shapeless.ops.nat.{ Diff, LTEq, ToInt }
+import shapeless.ops.nat.{ LTEq, ToInt }
 
 trait TestMatrix extends TestGrimlock {
 
@@ -5797,11 +5797,9 @@ trait TestMatrixPairwise extends TestMatrix {
     Cell(Position("(qux|1+baz|2)", "xyz"), Content(ContinuousSchema[Double](), 12.56 + 5 + 1))
   )
 
-  def plus[L <: Nat, P <: Nat](slice: Slice[L, P])(implicit ev: Diff.Aux[P, _1, L]) =
-    Locate.PrependPairwiseSelectedStringToRemainder[L, P](slice, "(%1$s+%2$s)")
+  def plus[P <: Nat](slice: Slice[P]) = Locate.PrependPairwiseSelectedStringToRemainder(slice, "(%1$s+%2$s)")
 
-  def minus[L <: Nat, P <: Nat](slice: Slice[L, P])(implicit ev: Diff.Aux[P, _1, L]) =
-    Locate.PrependPairwiseSelectedStringToRemainder[L, P](slice, "(%1$s-%2$s)")
+  def minus[P <: Nat](slice: Slice[P]) = Locate.PrependPairwiseSelectedStringToRemainder(slice, "(%1$s-%2$s)")
 }
 
 object TestMatrixPairwise {
@@ -5837,7 +5835,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
 
   it should "return its first over pairwise in 2D" in {
     toPipe(num2)
-      .pairwise(Over(_1), Default())(Lower, Plus(plus[_1, _2](Over(_1))))
+      .pairwise(Over(_1), Default())(Lower, Plus(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result2
   }
 
@@ -5845,7 +5843,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
     toPipe(num2)
       .pairwise(Along(_1), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
-        List(Plus(plus[_1, _2](Along(_1))), Minus(minus[_1, _2](Along(_1))))
+        List(Plus(plus[_2](Along(_1))), Minus(minus[_2](Along(_1))))
       )
       .toList.sortBy(_.position) shouldBe result3
   }
@@ -5854,24 +5852,21 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
     toPipe(num2)
       .pairwise(Over(_2), Ternary(InMemory(), Default(12), Unbalanced(12)))(
         Lower,
-        Plus(plus[_1, _2](Over(_2))),
-        Minus(minus[_1, _2](Over(_2)))
+        Plus(plus(Over(_2))),
+        Minus(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its second along pairwise in 2D" in {
     toPipe(num2)
-      .pairwise(Along(_2), Ternary(InMemory(), Unbalanced(12), Default(12)))(
-        Lower,
-        Plus(plus[_1, _2](Along(_2)))
-      )
+      .pairwise(Along(_2), Ternary(InMemory(), Unbalanced(12), Default(12)))(Lower, Plus(plus(Along(_2))))
       .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first over pairwise in 3D" in {
     toPipe(num3)
-      .pairwise(Over(_1), Ternary(InMemory(), Unbalanced(12), Unbalanced(12)))(Lower, Plus(plus[_2, _3](Over(_1))))
+      .pairwise(Over(_1), Ternary(InMemory(), Unbalanced(12), Unbalanced(12)))(Lower, Plus(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result6
   }
 
@@ -5879,7 +5874,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
     toPipe(num3)
       .pairwise(Along(_1), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
-        List(Plus(plus[_2, _3](Along(_1))), Minus(minus[_2, _3](Along(_1))))
+        List(Plus(plus[_3](Along(_1))), Minus(minus[_3](Along(_1))))
       )
       .toList.sortBy(_.position) shouldBe result7
   }
@@ -5888,18 +5883,15 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
     toPipe(num3)
       .pairwise(Over(_2), Ternary(Default(12), Default(12), Unbalanced(12)))(
         Lower,
-        Plus(plus[_2, _3](Over(_2))),
-        Minus(minus[_2, _3](Over(_2)))
+        Plus(plus(Over(_2))),
+        Minus(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along pairwise in 3D" in {
     toPipe(num3)
-      .pairwise(Along(_2), Ternary(Default(12), Unbalanced(12), Default(12)))(
-        Lower,
-        Plus(plus[_2, _3](Along(_2)))
-      )
+      .pairwise(Along(_2), Ternary(Default(12), Unbalanced(12), Default(12)))(Lower, Plus(plus(Along(_2))))
       .toList.sortBy(_.position) shouldBe result9
   }
 
@@ -5907,14 +5899,14 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
     toPipe(num3)
       .pairwise(Over(_3), Ternary(Default(12), Unbalanced(12), Unbalanced(12)))(
         Lower,
-        List(Plus(plus[_2, _3](Over(_3))), Minus(minus[_2, _3](Over(_3))))
+        List(Plus(plus[_3](Over(_3))), Minus(minus[_3](Over(_3))))
       )
       .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its third along pairwise in 3D" in {
     toPipe(num3)
-      .pairwise(Along(_3), InMemory())(Lower, Plus(plus[_2, _3](Along(_3))))
+      .pairwise(Along(_3), InMemory())(Lower, Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe result11
   }
 
@@ -5933,7 +5925,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Over(_1), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result13
   }
@@ -5943,8 +5935,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_1), Ternary(InMemory(), Default(12), Unbalanced(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_1))),
-        TestMatrixPairwise.MinusX(minus[_1, _2](Along(_1)))
+        TestMatrixPairwise.PlusX(plus(Along(_1))),
+        TestMatrixPairwise.MinusX(minus(Along(_1)))
       )
       .toList.sortBy(_.position) shouldBe result14
   }
@@ -5955,8 +5947,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         ValuePipe(ext),
         List(
-          TestMatrixPairwise.PlusX(plus[_1, _2](Over(_2))),
-          TestMatrixPairwise.MinusX(minus[_1, _2](Over(_2)))
+          TestMatrixPairwise.PlusX(plus[_2](Over(_2))),
+          TestMatrixPairwise.MinusX(minus[_2](Over(_2)))
         )
       )
       .toList.sortBy(_.position) shouldBe result15
@@ -5967,7 +5959,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_2), Ternary(InMemory(), Unbalanced(12), Unbalanced(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result16
   }
@@ -5977,7 +5969,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Over(_1), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result17
   }
@@ -5987,8 +5979,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_1), Ternary(Default(12), Default(12), Unbalanced(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_1))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Along(_1)))
+        TestMatrixPairwise.PlusX(plus(Along(_1))),
+        TestMatrixPairwise.MinusX(minus(Along(_1)))
       )
       .toList.sortBy(_.position) shouldBe result18
   }
@@ -5999,8 +5991,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         ValuePipe(ext),
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Over(_2))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Over(_2)))
+          TestMatrixPairwise.PlusX(plus[_3](Over(_2))),
+          TestMatrixPairwise.MinusX(minus[_3](Over(_2)))
         )
       )
       .toList.sortBy(_.position) shouldBe result19
@@ -6011,7 +6003,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_2), Ternary(Default(12), Unbalanced(12), Unbalanced(12)))(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result20
   }
@@ -6021,8 +6013,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Over(_3), InMemory())(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_3))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Over(_3)))
+        TestMatrixPairwise.PlusX(plus(Over(_3))),
+        TestMatrixPairwise.MinusX(minus(Over(_3)))
       )
       .toList.sortBy(_.position) shouldBe result21
   }
@@ -6032,7 +6024,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_3), Default())(
         Lower,
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_3)))
+        TestMatrixPairwise.PlusX(plus(Along(_3)))
       )
       .toList.sortBy(_.position) shouldBe result22
   }
@@ -6052,7 +6044,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_1), Ternary(InMemory(), Default(12), Unbalanced(12)))(
         Lower,
         toPipe(dataB),
-        Plus(plus[_1, _2](Over(_1)))
+        Plus(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result24
   }
@@ -6062,7 +6054,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_1), Ternary(InMemory(), Unbalanced(12), Default(12)))(
         Lower,
         toPipe(dataC),
-        List(Plus(plus[_1, _2](Along(_1))), Minus(minus[_1, _2](Along(_1))))
+        List(Plus(plus[_2](Along(_1))), Minus(minus[_2](Along(_1))))
       )
       .toList.sortBy(_.position) shouldBe result25
   }
@@ -6072,8 +6064,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_2), Ternary(InMemory(), Unbalanced(12), Unbalanced(12)))(
         Lower,
         toPipe(dataD),
-        Plus(plus[_1, _2](Over(_2))),
-        Minus(minus[_1, _2](Over(_2)))
+        Plus(plus(Over(_2))),
+        Minus(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result26
   }
@@ -6083,7 +6075,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_2), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         toPipe(dataE),
-        Plus(plus[_1, _2](Along(_2)))
+        Plus(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result27
   }
@@ -6093,7 +6085,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_1), Ternary(Default(12), Default(12), Unbalanced(12)))(
         Lower,
         toPipe(dataF),
-        Plus(plus[_2, _3](Over(_1)))
+        Plus(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result28
   }
@@ -6103,7 +6095,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_1), Ternary(Default(12), Unbalanced(12), Default(12)))(
         Lower,
         toPipe(dataG),
-        List(Plus(plus[_2, _3](Along(_1))), Minus(minus[_2, _3](Along(_1))))
+        List(Plus(plus[_3](Along(_1))), Minus(minus[_3](Along(_1))))
       )
       .toList.sortBy(_.position) shouldBe result29
   }
@@ -6113,15 +6105,15 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_2), Ternary(Default(12), Unbalanced(12), Unbalanced(12)))(
         Lower,
         toPipe(dataH),
-        Plus(plus[_2, _3](Over(_2))),
-        Minus(minus[_2, _3](Over(_2)))
+        Plus(plus(Over(_2))),
+        Minus(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result30
   }
 
   it should "return its second along pairwise in 3D" in {
     toPipe(num3)
-      .pairwiseBetween(Along(_2), InMemory())(Lower, toPipe(dataI), Plus(plus[_2, _3](Along(_2))))
+      .pairwiseBetween(Along(_2), InMemory())(Lower, toPipe(dataI), Plus(plus(Along(_2))))
       .toList.sortBy(_.position) shouldBe result31
   }
 
@@ -6130,7 +6122,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_3), Default())(
         Lower,
         toPipe(dataJ),
-        List(Plus(plus[_2, _3](Over(_3))), Minus(minus[_2, _3](Over(_3))))
+        List(Plus(plus[_3](Over(_3))), Minus(minus[_3](Over(_3))))
       )
       .toList.sortBy(_.position) shouldBe result32
   }
@@ -6140,7 +6132,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_3), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         toPipe(dataK),
-        Plus(plus[_2, _3](Along(_3)))
+        Plus(plus(Along(_3)))
       )
       .toList.sortBy(_.position) shouldBe result33
   }
@@ -6162,7 +6154,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataM),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result35
   }
@@ -6173,8 +6165,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataN),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_1))),
-        TestMatrixPairwise.MinusX(minus[_1, _2](Along(_1)))
+        TestMatrixPairwise.PlusX(plus(Along(_1))),
+        TestMatrixPairwise.MinusX(minus(Along(_1)))
       )
       .toList.sortBy(_.position) shouldBe result36
   }
@@ -6186,8 +6178,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         toPipe(dataO),
         ValuePipe(ext),
         List(
-          TestMatrixPairwise.PlusX(plus[_1, _2](Over(_2))),
-          TestMatrixPairwise.MinusX(minus[_1, _2](Over(_2)))
+          TestMatrixPairwise.PlusX(plus[_2](Over(_2))),
+          TestMatrixPairwise.MinusX(minus[_2](Over(_2)))
         )
       )
       .toList.sortBy(_.position) shouldBe result37
@@ -6199,7 +6191,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataP),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result38
   }
@@ -6210,7 +6202,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataQ),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result39
   }
@@ -6221,8 +6213,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataR),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_1))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Along(_1)))
+        TestMatrixPairwise.PlusX(plus(Along(_1))),
+        TestMatrixPairwise.MinusX(minus(Along(_1)))
       )
       .toList.sortBy(_.position) shouldBe result40
   }
@@ -6234,8 +6226,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         toPipe(dataS),
         ValuePipe(ext),
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Over(_2))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Over(_2)))
+          TestMatrixPairwise.PlusX(plus[_3](Over(_2))),
+          TestMatrixPairwise.MinusX(minus[_3](Over(_2)))
         )
       )
       .toList.sortBy(_.position) shouldBe result41
@@ -6247,7 +6239,7 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataT),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result42
   }
@@ -6258,8 +6250,8 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataU),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_3))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Over(_3)))
+        TestMatrixPairwise.PlusX(plus(Over(_3))),
+        TestMatrixPairwise.MinusX(minus(Over(_3)))
       )
       .toList.sortBy(_.position) shouldBe result43
   }
@@ -6270,20 +6262,20 @@ class TestScaldingMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toPipe(dataV),
         ValuePipe(ext),
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_3)))
+        TestMatrixPairwise.PlusX(plus(Along(_3)))
       )
       .toList.sortBy(_.position) shouldBe result44
   }
 
   it should "return empty data - InMemory" in {
     toPipe(num3)
-      .pairwiseBetween(Along(_3), InMemory())(Lower, TypedPipe.empty, Plus(plus[_2, _3](Along(_3))))
+      .pairwiseBetween(Along(_3), InMemory())(Lower, TypedPipe.empty, Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe List()
   }
 
   it should "return empty data - Default" in {
     toPipe(num3)
-      .pairwiseBetween(Along(_3), Default())(Lower, TypedPipe.empty, Plus(plus[_2, _3](Along(_3))))
+      .pairwiseBetween(Along(_3), Default())(Lower, TypedPipe.empty, Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe List()
   }
 }
@@ -6298,7 +6290,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
 
   it should "return its first over pairwise in 2D" in {
     toRDD(num2)
-      .pairwise(Over(_1), Default())(Lower, Plus(plus[_1, _2](Over(_1))))
+      .pairwise(Over(_1), Default())(Lower, Plus(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result2
   }
 
@@ -6306,7 +6298,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
     toRDD(num2)
       .pairwise(Along(_1), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
-        List(Plus(plus[_1, _2](Along(_1))), Minus(minus[_1, _2](Along(_1))))
+        List(Plus(plus[_2](Along(_1))), Minus(minus[_2](Along(_1))))
       )
       .toList.sortBy(_.position) shouldBe result3
   }
@@ -6315,20 +6307,20 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
     toRDD(num2)
       .pairwise(Over(_2), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
-        List(Plus(plus[_1, _2](Over(_2))), Minus(minus[_1, _2](Over(_2))))
+        List(Plus(plus[_2](Over(_2))), Minus(minus[_2](Over(_2))))
       )
       .toList.sortBy(_.position) shouldBe result4
   }
 
   it should "return its second along pairwise in 2D" in {
     toRDD(num2)
-      .pairwise(Along(_2), InMemory())(Lower, Plus(plus[_1, _2](Along(_2))))
+      .pairwise(Along(_2), InMemory())(Lower, Plus(plus(Along(_2))))
       .toList.sortBy(_.position) shouldBe result5
   }
 
   it should "return its first over pairwise in 3D" in {
     toRDD(num3)
-      .pairwise(Over(_1), Default())(Lower, Plus(plus[_2, _3](Over(_1))))
+      .pairwise(Over(_1), Default())(Lower, Plus(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result6
   }
 
@@ -6336,7 +6328,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
     toRDD(num3)
       .pairwise(Along(_1), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
-        Plus(plus[_2, _3](Along(_1))), Minus(minus[_2, _3](Along(_1)))
+        Plus(plus(Along(_1))),
+        Minus(minus(Along(_1)))
       )
       .toList.sortBy(_.position) shouldBe result7
   }
@@ -6345,26 +6338,26 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
     toRDD(num3)
       .pairwise(Over(_2), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
-        List(Plus(plus[_2, _3](Over(_2))), Minus(minus[_2, _3](Over(_2))))
+        List(Plus(plus[_3](Over(_2))), Minus(minus[_3](Over(_2))))
       )
       .toList.sortBy(_.position) shouldBe result8
   }
 
   it should "return its second along pairwise in 3D" in {
     toRDD(num3)
-      .pairwise(Along(_2), InMemory())(Lower, Plus(plus[_2, _3](Along(_2))))
+      .pairwise(Along(_2), InMemory())(Lower, Plus(plus(Along(_2))))
       .toList.sortBy(_.position) shouldBe result9
   }
 
   it should "return its third over pairwise in 3D" in {
     toRDD(num3)
-      .pairwise(Over(_3), Default())(Lower, Plus(plus[_2, _3](Over(_3))), Minus(minus[_2, _3](Over(_3))))
+      .pairwise(Over(_3), Default())(Lower, Plus(plus(Over(_3))), Minus(minus(Over(_3))))
       .toList.sortBy(_.position) shouldBe result10
   }
 
   it should "return its third along pairwise in 3D" in {
     toRDD(num3)
-      .pairwise(Along(_3), Ternary(InMemory(), Default(12), Default(12)))(Lower, Plus(plus[_2, _3](Along(_3))))
+      .pairwise(Along(_3), Ternary(InMemory(), Default(12), Default(12)))(Lower, Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe result11
   }
 
@@ -6380,7 +6373,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
 
   it should "return its first over pairwise in 2D" in {
     toRDD(num2)
-      .pairwiseWithValue(Over(_1), InMemory())(Lower, ext, TestMatrixPairwise.PlusX(plus[_1, _2](Over(_1))))
+      .pairwiseWithValue(Over(_1), InMemory())(Lower, ext, TestMatrixPairwise.PlusX(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result13
   }
 
@@ -6390,8 +6383,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_1, _2](Along(_1))),
-          TestMatrixPairwise.MinusX(minus[_1, _2](Along(_1)))
+          TestMatrixPairwise.PlusX(plus[_2](Along(_1))),
+          TestMatrixPairwise.MinusX(minus[_2](Along(_1)))
         )
       )
       .toList.sortBy(_.position) shouldBe result14
@@ -6402,8 +6395,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Over(_2), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         ext,
-        TestMatrixPairwise.PlusX(plus[_1, _2](Over(_2))),
-        TestMatrixPairwise.MinusX(minus[_1, _2](Over(_2)))
+        TestMatrixPairwise.PlusX(plus(Over(_2))),
+        TestMatrixPairwise.MinusX(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result15
   }
@@ -6413,14 +6406,14 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_2), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         ext,
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result16
   }
 
   it should "return its first over pairwise in 3D" in {
     toRDD(num3)
-      .pairwiseWithValue(Over(_1), InMemory())(Lower, ext, TestMatrixPairwise.PlusX(plus[_2, _3](Over(_1))))
+      .pairwiseWithValue(Over(_1), InMemory())(Lower, ext, TestMatrixPairwise.PlusX(plus(Over(_1))))
       .toList.sortBy(_.position) shouldBe result17
   }
 
@@ -6430,8 +6423,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Along(_1))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Along(_1)))
+          TestMatrixPairwise.PlusX(plus[_3](Along(_1))),
+          TestMatrixPairwise.MinusX(minus[_3](Along(_1)))
         )
       )
       .toList.sortBy(_.position) shouldBe result18
@@ -6442,8 +6435,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Over(_2), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_2))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Over(_2)))
+        TestMatrixPairwise.PlusX(plus(Over(_2))),
+        TestMatrixPairwise.MinusX(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result19
   }
@@ -6453,7 +6446,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseWithValue(Along(_2), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result20
   }
@@ -6464,8 +6457,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Over(_3))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Over(_3)))
+          TestMatrixPairwise.PlusX(plus[_3](Over(_3))),
+          TestMatrixPairwise.MinusX(minus[_3](Over(_3)))
         )
       )
       .toList.sortBy(_.position) shouldBe result21
@@ -6473,7 +6466,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
 
   it should "return its third along pairwise in 3D" in {
     toRDD(num3)
-      .pairwiseWithValue(Along(_3), Default())(Lower, ext, TestMatrixPairwise.PlusX(plus[_2, _3](Along(_3))))
+      .pairwiseWithValue(Along(_3), Default())(Lower, ext, TestMatrixPairwise.PlusX(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe result22
   }
 
@@ -6492,18 +6485,14 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_1), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         toRDD(dataB),
-        Plus(plus[_1, _2](Over(_1)))
+        Plus(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result24
   }
 
   it should "return its first along pairwise in 2D" in {
     toRDD(num2)
-      .pairwiseBetween(Along(_1), InMemory())(
-        Lower,
-        toRDD(dataC),
-        Plus(plus[_1, _2](Along(_1))), Minus(minus[_1, _2](Along(_1)))
-      )
+      .pairwiseBetween(Along(_1), InMemory())(Lower, toRDD(dataC), Plus(plus(Along(_1))), Minus(minus(Along(_1))))
       .toList.sortBy(_.position) shouldBe result25
   }
 
@@ -6512,7 +6501,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_2), Default())(
         Lower,
         toRDD(dataD),
-        List(Plus(plus[_1, _2](Over(_2))), Minus(minus[_1, _2](Over(_2))))
+        List(Plus(plus[_2](Over(_2))), Minus(minus[_2](Over(_2))))
       )
       .toList.sortBy(_.position) shouldBe result26
   }
@@ -6522,7 +6511,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_2), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         toRDD(dataE),
-        Plus(plus[_1, _2](Along(_2)))
+        Plus(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result27
   }
@@ -6532,19 +6521,14 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_1), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         toRDD(dataF),
-        Plus(plus[_2, _3](Over(_1)))
+        Plus(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result28
   }
 
   it should "return its first along pairwise in 3D" in {
     toRDD(num3)
-      .pairwiseBetween(Along(_1), InMemory())(
-        Lower,
-        toRDD(dataG),
-        Plus(plus[_2, _3](Along(_1))),
-        Minus(minus[_2, _3](Along(_1)))
-      )
+      .pairwiseBetween(Along(_1), InMemory())(Lower, toRDD(dataG), Plus(plus(Along(_1))), Minus(minus(Along(_1))))
       .toList.sortBy(_.position) shouldBe result29
   }
 
@@ -6553,7 +6537,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_2), Default())(
         Lower,
         toRDD(dataH),
-        List(Plus(plus[_2, _3](Over(_2))), Minus(minus[_2, _3](Over(_2))))
+        List(Plus(plus[_3](Over(_2))), Minus(minus[_3](Over(_2))))
       )
       .toList.sortBy(_.position) shouldBe result30
   }
@@ -6563,7 +6547,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Along(_2), Ternary(InMemory(), Default(12), Default(12)))(
         Lower,
         toRDD(dataI),
-        Plus(plus[_2, _3](Along(_2)))
+        Plus(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result31
   }
@@ -6573,19 +6557,15 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
       .pairwiseBetween(Over(_3), Ternary(Default(12), Default(12), Default(12)))(
         Lower,
         toRDD(dataJ),
-        Plus(plus[_2, _3](Over(_3))),
-        Minus(minus[_2, _3](Over(_3)))
+        Plus(plus(Over(_3))),
+        Minus(minus(Over(_3)))
       )
       .toList.sortBy(_.position) shouldBe result32
   }
 
   it should "return its third along pairwise in 3D" in {
     toRDD(num3)
-      .pairwiseBetween(Along(_3), InMemory())(
-        Lower,
-        toRDD(dataK),
-        Plus(plus[_2, _3](Along(_3)))
-      )
+      .pairwiseBetween(Along(_3), InMemory())(Lower, toRDD(dataK), Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe result33
   }
 
@@ -6606,7 +6586,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataM),
         ext,
-        TestMatrixPairwise.PlusX(plus[_1, _2](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result35
   }
@@ -6618,8 +6598,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         toRDD(dataN),
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_1, _2](Along(_1))),
-          TestMatrixPairwise.MinusX(minus[_1, _2](Along(_1)))
+          TestMatrixPairwise.PlusX(plus[_2](Along(_1))),
+          TestMatrixPairwise.MinusX(minus[_2](Along(_1)))
         )
       )
       .toList.sortBy(_.position) shouldBe result36
@@ -6631,8 +6611,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataO),
         ext,
-        TestMatrixPairwise.PlusX(plus[_1, _2](Over(_2))),
-        TestMatrixPairwise.MinusX(minus[_1, _2](Over(_2)))
+        TestMatrixPairwise.PlusX(plus(Over(_2))),
+        TestMatrixPairwise.MinusX(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result37
   }
@@ -6643,7 +6623,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataP),
         ext,
-        TestMatrixPairwise.PlusX(plus[_1, _2](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result38
   }
@@ -6654,7 +6634,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataQ),
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_1)))
+        TestMatrixPairwise.PlusX(plus(Over(_1)))
       )
       .toList.sortBy(_.position) shouldBe result39
   }
@@ -6666,8 +6646,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         toRDD(dataR),
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Along(_1))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Along(_1)))
+          TestMatrixPairwise.PlusX(plus[_3](Along(_1))),
+          TestMatrixPairwise.MinusX(minus[_3](Along(_1)))
         )
       )
       .toList.sortBy(_.position) shouldBe result40
@@ -6679,8 +6659,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataS),
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Over(_2))),
-        TestMatrixPairwise.MinusX(minus[_2, _3](Over(_2)))
+        TestMatrixPairwise.PlusX(plus(Over(_2))),
+        TestMatrixPairwise.MinusX(minus(Over(_2)))
       )
       .toList.sortBy(_.position) shouldBe result41
   }
@@ -6691,7 +6671,7 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataT),
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_2)))
+        TestMatrixPairwise.PlusX(plus(Along(_2)))
       )
       .toList.sortBy(_.position) shouldBe result42
   }
@@ -6703,8 +6683,8 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         toRDD(dataU),
         ext,
         List(
-          TestMatrixPairwise.PlusX(plus[_2, _3](Over(_3))),
-          TestMatrixPairwise.MinusX(minus[_2, _3](Over(_3)))
+          TestMatrixPairwise.PlusX(plus[_3](Over(_3))),
+          TestMatrixPairwise.MinusX(minus[_3](Over(_3)))
         )
       )
       .toList.sortBy(_.position) shouldBe result43
@@ -6716,14 +6696,14 @@ class TestSparkMatrixPairwise extends TestMatrixPairwise {
         Lower,
         toRDD(dataV),
         ext,
-        TestMatrixPairwise.PlusX(plus[_2, _3](Along(_3)))
+        TestMatrixPairwise.PlusX(plus(Along(_3)))
       )
       .toList.sortBy(_.position) shouldBe result44
   }
 
   it should "return empty data - Default" in {
     toRDD(num3)
-      .pairwiseBetween(Along(_3), Default())(Lower, toRDD(List.empty[Cell[_3]]), Plus(plus[_2, _3](Along(_3))))
+      .pairwiseBetween(Along(_3), Default())(Lower, toRDD(List.empty[Cell[_3]]), Plus(plus(Along(_3))))
       .toList.sortBy(_.position) shouldBe List()
   }
 }
@@ -10505,7 +10485,7 @@ trait TestMatrixMaterialise extends TestMatrix {
 class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tupleToPipeMatrix2(data)
+    tuple2ToPipeMatrix(data)
       .materialise(Default())
       .sortBy(_.position) shouldBe result.sortBy(_.position)
   }
@@ -10514,7 +10494,7 @@ class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 class TestSparkMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tupleToRDDMatrix2(data)
+    tuple2ToRDDMatrix(data)
       .materialise(Default())
       .sortBy(_.position) shouldBe result.sortBy(_.position)
   }

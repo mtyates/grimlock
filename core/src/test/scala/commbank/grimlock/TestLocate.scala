@@ -26,7 +26,7 @@ class TestRenameDimension extends TestGrimlock {
   val cell = Cell(Position("foo"), Content(ContinuousSchema[Double](), 1.0))
 
   "A RenameDimension" should "extract" in {
-    val f = Locate.RenameDimension[_1](_1, "%1$s.postfix")
+    val f = Locate.RenameDimension[_1, _1](_1, "%1$s.postfix")
     f(cell) shouldBe Option(Position("foo.postfix"))
   }
 }
@@ -36,7 +36,7 @@ class TestRenameDimensionWithContent extends TestGrimlock {
   val cell = Cell(Position("foo"), Content(ContinuousSchema[Double](), 1.0))
 
   "A RenameDimensionWithContent" should "extract" in {
-    val f = Locate.RenameDimensionWithContent[_1](_1, "%2$s<-%1$s")
+    val f = Locate.RenameDimensionWithContent[_1, _1](_1, "%2$s<-%1$s")
     f(cell) shouldBe Option(Position("1.0<-foo"))
   }
 }
@@ -57,16 +57,16 @@ class TestPrependPairwiseSelectedStringToRemainder extends TestGrimlock {
   val right = Cell(Position("right", "def", 456), Content(ContinuousSchema[Double](), 2.0))
 
   "A PrependPairwiseSelectedToRemainder" should "extract with all" in {
-    val f = Locate.PrependPairwiseSelectedStringToRemainder[_2, _3](Over(_1), "%1$s-%2$s", false)
+    val f = Locate.PrependPairwiseSelectedStringToRemainder[_3](Over(_1), "%1$s-%2$s", false)
     f(left, right) shouldBe None
-    val g = Locate.PrependPairwiseSelectedStringToRemainder[_2, _3](Over(_1), "%1$s-%2$s", false)
+    val g = Locate.PrependPairwiseSelectedStringToRemainder[_3](Over(_1), "%1$s-%2$s", false)
     g(right, right) shouldBe Option(Position("right-right", "def", 456))
   }
 
   it should "extract with non-all" in {
-    val f = Locate.PrependPairwiseSelectedStringToRemainder[_2, _3](Over(_1), "%1$s-%2$s", true)
+    val f = Locate.PrependPairwiseSelectedStringToRemainder[_3](Over(_1), "%1$s-%2$s", true)
     f(left, right) shouldBe Option(Position("left-right", "abc", 123))
-    val g = Locate.PrependPairwiseSelectedStringToRemainder[_2, _3](Over(_1), "%1$s-%2$s", true)
+    val g = Locate.PrependPairwiseSelectedStringToRemainder[_3](Over(_1), "%1$s-%2$s", true)
     g(right, left) shouldBe Option(Position("right-left", "def", 456))
   }
 }
@@ -77,9 +77,9 @@ class TestAppendRemainderDimension extends TestGrimlock {
   val rem = Position("abc", 123)
 
   "A AppendRemainderDimension" should "extract" in {
-    val f = Locate.AppendRemainderDimension[_1, _2](_1)
+    val f = Locate.AppendRemainderDimension[_1, _2, _1](_1)
     f(sel, rem) shouldBe Option(Position("foo", "abc"))
-    val g = Locate.AppendRemainderDimension[_1, _2](_2)
+    val g = Locate.AppendRemainderDimension[_1, _2, _2](_2)
     g(sel, rem) shouldBe Option(Position("foo", 123))
   }
 }
@@ -134,7 +134,7 @@ class TestAppendDimensionAndContentString extends TestGrimlock {
   val con = Content(DiscreteSchema[Long](), 42)
 
   "A AppendDimensionAndContentString" should "extract" in {
-    val f = Locate.AppendDimensionAndContentString[_1](_1, "%2$s!=%1$s")
+    val f = Locate.AppendDimensionAndContentString[_1, _1](_1, "%2$s!=%1$s")
     f(pos, con) shouldBe Option(Position("foo", "42!=foo"))
   }
 }

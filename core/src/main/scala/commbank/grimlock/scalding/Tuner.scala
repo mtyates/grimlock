@@ -37,6 +37,8 @@ import commbank.grimlock.scalding.environment.Context
 import scala.reflect.ClassTag
 import scala.util.Random
 
+import shapeless.Nat
+
 private[scalding] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, Context.U, Context.E] {
   def compact(
     smaller: Context.U[(K, W)]
@@ -62,6 +64,8 @@ private[scalding] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, 
 }
 
 private[scalding] object ScaldingImplicits {
+  implicit def positionOrdering[N <: Nat] = Position.ordering[N]()
+
   implicit def serialisePosition[T <: Position[_]](key: T): Array[Byte] = key
     .toShortString("|")
     .toCharArray

@@ -74,8 +74,6 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
     (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
   }
 
-  type C = Context
-
   val implicits = Implicits(this)
 
   def empty[T : ClassTag]: Context.U[T] = TypedPipe.empty

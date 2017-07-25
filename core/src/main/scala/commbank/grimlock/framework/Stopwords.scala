@@ -69,6 +69,7 @@ object Stopwords {
     "doesn’t", "don’t", "hadn’t", "hasn’t", "haven’t", "he’s", "here’s", "i’d", "i’ll", "i’m", "i’ve", "isn’t", "it’d",
     "it’ll", "it’s", "let’s", "shouldn’t", "t’s", "that’s", "there’s", "they’d", "they’ll", "they’re", "they’ve",
     "wasn’t", "we’d", "we’ll", "we’re", "we’ve", "weren’t", "what’s", "where’s", "who’s", "won’t", "wouldn’t", "you’d",
-    "you’ll", "you’re", "you’ve", "dear", "tis", "twas")
+    "you’ll", "you’re", "you’ve", "dear", "tis", "twas"
+  )
 }
 

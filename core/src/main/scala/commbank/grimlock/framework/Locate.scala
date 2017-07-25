@@ -18,9 +18,8 @@ import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.position.{ Position, Slice }
 
-import shapeless.{ Nat, Succ, Witness }
-import shapeless.nat._1
-import shapeless.ops.nat.{ Diff, LTEq, ToInt }
+import shapeless.{ Nat, Succ }
+import shapeless.ops.nat.{ LTEq, ToInt }
 
 object Locate {
   /** Extract position. */
@@ -64,16 +63,17 @@ object Locate {
    * @param name The rename pattern. Use `%1$``s` for the coordinate.
    */
   def RenameDimension[
-    P <: Nat
+    P <: Nat,
+    D <: Nat : ToInt
   ](
-    dim: Nat,
+    dim: D,
     name: String
   )(implicit
-    ev1: LTEq[dim.N, P],
-    ev2: ToInt[dim.N],
-    ev3: Witness.Aux[dim.N]
-  ): FromCell[P, P] = (cell: Cell[P]) =>
-    cell.position.update(ev3.value, name.format(cell.position(ev3.value).toShortString)).toOption
+    ev: LTEq[D, P]
+  ): FromCell[P, P] = (cell: Cell[P]) => cell
+    .position
+    .update(dim, name.format(cell.position(dim).toShortString))
+    .toOption
 
   /**
    * Rename coordinate according a name pattern.
@@ -83,27 +83,24 @@ object Locate {
    *             representations of the coordinate, and the content.
    */
   def RenameDimensionWithContent[
-    P <: Nat
+    P <: Nat,
+    D <: Nat : ToInt
   ](
-    dim: Nat,
+    dim: D,
     name: String = "%1$s=%2$s"
   )(implicit
-    ev1: LTEq[dim.N, P],
-    ev2: ToInt[dim.N],
-    ev3: Witness.Aux[dim.N]
-  ): FromCell[P, P] = (cell: Cell[P]) =>
-    cell
-      .position
-      .update(ev3.value, name.format(cell.position(ev3.value).toShortString, cell.content.value.toShortString))
-      .toOption
+    ev: LTEq[D, P]
+  ): FromCell[P, P] = (cell: Cell[P]) => cell
+    .position
+    .update(dim, name.format(cell.position(dim).toShortString, cell.content.value.toShortString))
+    .toOption
 
   /**
    * Append a coordinate to the position.
    *
    * @param name The coordinate to append to the outcome cell.
    */
-  def AppendValue[P <: Nat](name: Value): FromCell[P, Succ[P]] = (cell: Cell[P]) =>
-    cell.position.append(name).toOption
+  def AppendValue[P <: Nat](name: Value): FromCell[P, Succ[P]] = (cell: Cell[P]) => cell.position.append(name).toOption
 
   /**
    * Extract position use a name pattern.
@@ -118,15 +115,12 @@ object Locate {
    * @note If a position is returned then it's always right cell's remainder with an additional coordinate prepended.
    */
   def PrependPairwiseSelectedStringToRemainder[
-    L <: Nat,
     P <: Nat
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     pattern: String,
     all: Boolean = false,
     separator: String = "|"
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
   ): FromPairwiseCells[P, Succ[slice.R]] = (left: Cell[P], right: Cell[P]) => {
     val reml = slice.remainder(left.position)
     val remr = slice.remainder(right.position)
@@ -151,15 +145,13 @@ object Locate {
    */
   def AppendRemainderDimension[
     S <: Nat,
-    R <: Nat
+    R <: Nat,
+    D <: Nat : ToInt
   ](
-    dim: Nat
+    dim: D
   )(implicit
-    ev1: LTEq[dim.N, R],
-    ev2: ToInt[dim.N],
-    ev3: Witness.Aux[dim.N]
-  ): FromSelectedAndRemainder[S, R, Succ[S]] = (sel: Position[S], rem: Position[R]) =>
-    sel.append(rem(ev3.value)).toOption
+    ev: LTEq[D, R]
+  ): FromSelectedAndRemainder[S, R, Succ[S]] = (sel: Position[S], rem: Position[R]) => sel.append(rem(dim)).toOption
 
   /**
    * Extract position using string of `rem`.
@@ -171,8 +163,9 @@ object Locate {
     R <: Nat
   ](
     separator: String = "|"
-  ): FromSelectedAndRemainder[S, R, Succ[S]] = (sel: Position[S], rem: Position[R]) =>
-    sel.append(rem.toShortString(separator)).toOption
+  ): FromSelectedAndRemainder[S, R, Succ[S]] = (sel: Position[S], rem: Position[R]) => sel
+    .append(rem.toShortString(separator))
+    .toOption
 
   /**
    * Extract position using string of current and previous `rem`.
@@ -187,8 +180,9 @@ object Locate {
   ](
     pattern: String,
     separator: String = "|"
-  ): FromSelectedAndPairwiseRemainder[S, R, Succ[S]] = (sel: Position[S], curr: Position[R], prev: Position[R]) =>
-    sel.append(pattern.format(prev.toShortString(separator), curr.toShortString(separator))).toOption
+  ): FromSelectedAndPairwiseRemainder[S, R, Succ[S]] = (sel: Position[S], curr: Position[R], prev: Position[R]) => sel
+    .append(pattern.format(prev.toShortString(separator), curr.toShortString(separator)))
+    .toOption
 
   /**
    * Expand position by appending a string coordinate from double.
@@ -199,12 +193,14 @@ object Locate {
     S <: Nat
   ](
     name: String = "%1$f%%"
-  ): FromSelectedAndOutput[S, Double, Succ[S]] = (sel: Position[S], value: Double) =>
-    sel.append(name.format(value)).toOption
+  ): FromSelectedAndOutput[S, Double, Succ[S]] = (sel: Position[S], value: Double) => sel
+    .append(name.format(value))
+    .toOption
 
   /** Append the content string to the position. */
-  def AppendContentString[S <: Nat](): FromSelectedAndContent[S, Succ[S]] = (sel: Position[S], con: Content) =>
-    sel.append(con.value.toShortString).toOption
+  def AppendContentString[S <: Nat](): FromSelectedAndContent[S, Succ[S]] = (sel: Position[S], con: Content) => sel
+    .append(con.value.toShortString)
+    .toOption
 
   /**
    * Append a coordinate according a name pattern.
@@ -214,15 +210,15 @@ object Locate {
    *             representations of the coordinate, and the content.
    */
   def AppendDimensionAndContentString[
-    S <: Nat
+    S <: Nat,
+    D <: Nat : ToInt
   ](
-    dim: Nat,
+    dim: D,
     name: String = "%1$s=%2$s"
   )(implicit
-    ev1: LTEq[dim.N, S],
-    ev2: ToInt[dim.N],
-    ev3: Witness.Aux[dim.N]
-  ): FromSelectedAndContent[S, Succ[S]] = (sel: Position[S], con: Content) =>
-    sel.append(name.format(sel(ev3.value).toShortString, con.value.toShortString)).toOption
+    ev: LTEq[D, S]
+  ): FromSelectedAndContent[S, Succ[S]] = (sel: Position[S], con: Content) => sel
+    .append(name.format(sel(dim).toShortString, con.value.toShortString))
+    .toOption
 }
 

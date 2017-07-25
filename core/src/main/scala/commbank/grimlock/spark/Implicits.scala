@@ -29,9 +29,9 @@ import commbank.grimlock.framework.environment.implicits.{
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.position.Position
-import commbank.grimlock.framework.utility.=:!=
 
 import commbank.grimlock.spark.{
+  Matrix,
   Matrix1D,
   Matrix2D,
   Matrix3D,
@@ -41,6 +41,7 @@ import commbank.grimlock.spark.{
   Matrix7D,
   Matrix8D,
   Matrix9D,
+  MultiDimensionMatrix,
   SaveStringsAsText
 }
 import commbank.grimlock.spark.content.{ Contents, IndexedContents }
@@ -50,12 +51,12 @@ import commbank.grimlock.spark.position.Positions
 
 import scala.reflect.ClassTag
 
-import shapeless.Nat
+import shapeless.{ =:!=, Nat }
 import shapeless.nat.{ _1, _2, _3, _4, _5, _6, _7, _8, _9 }
-import shapeless.ops.nat.Diff
+import shapeless.ops.nat.GT
 
 /** Implements all implicits for `context`. */
-case class Implicits(context: Context) extends FwImplicits[Context.U, Context.E, Context] {
+case class Implicits(context: Context) extends FwImplicits[Context.U, Context.E] {
   val cell = CellImplicits(context)
   val content = ContentImplicits(context)
   val environment = EnvironmentImplicits(context)
@@ -65,18 +66,14 @@ case class Implicits(context: Context) extends FwImplicits[Context.U, Context.E,
 }
 
 /** Implements all cell implicits for `context`. */
-case class CellImplicits(
-  context: Context
-) extends FwCellImplicits[Context.U, Context.E, Context] {
-  implicit def cellToU[P <: Nat](t: Cell[P]): Context.U[Cell[P]] = context.spark.parallelize(List(t))
+case class CellImplicits(context: Context) extends FwCellImplicits[Context.U] {
+  implicit def cellToU[P <: Nat](c: Cell[P]): Context.U[Cell[P]] = context.spark.parallelize(List(c))
 
-  implicit def listCellToU[P <: Nat](t: List[Cell[P]]): Context.U[Cell[P]] = context.spark.parallelize(t)
+  implicit def listCellToU[P <: Nat](l: List[Cell[P]]): Context.U[Cell[P]] = context.spark.parallelize(l)
 }
 
 /** Implements all content implicits for `context`. */
-case class ContentImplicits(
-  context: Context
-) extends FwContentImplicits[Context.U, Context.E, Context] {
+case class ContentImplicits(context: Context) extends FwContentImplicits[Context.U] {
   implicit def toContents(data: Context.U[Content]): Contents = Contents(context, data)
 
   implicit def toIndexed[
@@ -87,9 +84,7 @@ case class ContentImplicits(
 }
 
 /** Implements all environment implicits for `context`. */
-case class EnvironmentImplicits(
-  context: Context
-) extends FwEnvironmentImplicits[Context.U, Context.E, Context]  {
+case class EnvironmentImplicits(context: Context) extends FwEnvironmentImplicits[Context.U, Context.E]  {
   implicit def saveStringsAsText(data: Context.U[String]): SaveStringsAsText = SaveStringsAsText(context, data)
 
   implicit def nativeFunctions[X](data: Context.U[X]): NativeOperations[X] = NativeOperations(data)
@@ -100,9 +95,9 @@ case class EnvironmentImplicits(
 }
 
 /** Implements all matrix implicits for `context`. */
-case class MatrixImplicits(
-  context: Context
-) extends FwMatrixImplicits[Context.U, Context.E, Context] {
+case class MatrixImplicits(context: Context) extends FwMatrixImplicits[Context.U, Context.E] {
+  implicit def toMatrix[P <: Nat](data: Context.U[Cell[P]]): Matrix[P] = Matrix(context, data)
+
   implicit def toMatrix1D(data: Context.U[Cell[_1]]): Matrix1D = Matrix1D(context, data)
 
   implicit def toMatrix2D(data: Context.U[Cell[_2]]): Matrix2D = Matrix2D(context, data)
@@ -120,6 +115,16 @@ case class MatrixImplicits(
   implicit def toMatrix8D(data: Context.U[Cell[_8]]): Matrix8D = Matrix8D(context, data)
 
   implicit def toMatrix9D(data: Context.U[Cell[_9]]): Matrix9D = Matrix9D(context, data)
+
+  implicit def toMultiDimensionMatrix[
+    P <: Nat
+  ](
+    data: Context.U[Cell[P]]
+  )(implicit
+    ev: GT[P, _1]
+  ): MultiDimensionMatrix[P] = MultiDimensionMatrix(context, data)
+
+  implicit def listToMatrix[P <: Nat](data: List[Cell[P]]): Matrix[P] = Matrix(context, context.spark.parallelize(data))
 
   implicit def listToMatrix1D(data: List[Cell[_1]]): Matrix1D = Matrix1D(context, context.spark.parallelize(data))
 
@@ -139,126 +144,371 @@ case class MatrixImplicits(
 
   implicit def listToMatrix9D(data: List[Cell[_9]]): Matrix9D = Matrix9D(context, context.spark.parallelize(data))
 
-  implicit def tupleToMatrix1D[
+  implicit def listToMultiDimensionMatrix[
+    P <: Nat
+  ](
+    data: List[Cell[P]]
+  )(implicit
+    ev: GT[P, _1]
+  ): MultiDimensionMatrix[P] = MultiDimensionMatrix(context, context.spark.parallelize(data))
+
+  implicit def tuple1ToMatrix[
+    V <% Value
+  ](
+    list: List[(V, Content)]
+  ): Matrix[_1] = Matrix(context, context.spark.parallelize(list.map { case (v, c) => Cell(Position(v), c) }))
+
+  implicit def tuple1ToMatrix1D[
     V <% Value
   ](
     list: List[(V, Content)]
   ): Matrix1D = Matrix1D(context, context.spark.parallelize(list.map { case (v, c) => Cell(Position(v), c) }))
 
-  implicit def tupleToMatrix2D[
-    V <% Value,
-    W <% Value
+  implicit def tuple2ToMatrix[
+    V1 <% Value,
+    V2 <% Value
   ](
-    list: List[(V, W, Content)]
-  ): Matrix2D = Matrix2D(context, context.spark.parallelize(list.map { case (v, w, c) => Cell(Position(v, w), c) }))
+    list: List[(V1, V2, Content)]
+  ): Matrix[_2] = Matrix(context, context.spark.parallelize(list.map { case (v1, v2, c) => Cell(Position(v1, v2), c) }))
 
-  implicit def tupleToMatrix3D[
-    V <% Value,
-    W <% Value,
-    X <% Value
+  implicit def tuple2ToMatrix2D[
+    V1 <% Value,
+    V2 <% Value
   ](
-    list: List[(V, W, X, Content)]
+    list: List[(V1, V2, Content)]
+  ): Matrix2D = Matrix2D(context, context.spark.parallelize(list.map { case (v1, v2, c) => Cell(Position(v1, v2), c) }))
+
+  implicit def tuple2ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value
+  ](
+    list: List[(V1, V2, Content)]
+  ): MultiDimensionMatrix[_2] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, c) => Cell(Position(v1, v2), c) })
+  )
+
+  implicit def tuple3ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value
+  ](
+    list: List[(V1, V2, V3, Content)]
+  ): Matrix[_3] = Matrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, c) => Cell(Position(v1, v2, v3), c) })
+  )
+
+  implicit def tuple3ToMatrix3D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value
+  ](
+    list: List[(V1, V2, V3, Content)]
   ): Matrix3D = Matrix3D(
     context,
-    context.spark.parallelize(list.map { case (v, w, x, c) => Cell(Position(v, w, x), c) })
+    context.spark.parallelize(list.map { case (v1, v2, v3, c) => Cell(Position(v1, v2, v3), c) })
   )
 
-  implicit def tupleToMatrix4D[
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value
+  implicit def tuple3ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value
   ](
-    list: List[(V, W, X, Y, Content)]
+    list: List[(V1, V2, V3, Content)]
+  ): MultiDimensionMatrix[_3] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, c) => Cell(Position(v1, v2, v3), c) })
+  )
+
+  implicit def tuple4ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, Content)]
+  ): Matrix[_4] = Matrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, c) => Cell(Position(v1, v2, v3, v4), c) })
+  )
+
+  implicit def tuple4ToMatrix4D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, Content)]
   ): Matrix4D = Matrix4D(
     context,
-    context.spark.parallelize(list.map { case (v, w, x, y, c) => Cell(Position(v, w, x, y), c) })
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, c) => Cell(Position(v1, v2, v3, v4), c) })
   )
 
-  implicit def tupleToMatrix5D[
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value,
-    Z <% Value
+  implicit def tuple4ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value
   ](
-    list: List[(V, W, X, Y, Z, Content)]
+    list: List[(V1, V2, V3, V4, Content)]
+  ): MultiDimensionMatrix[_4] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, c) => Cell(Position(v1, v2, v3, v4), c) })
+  )
+
+  implicit def tuple5ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, Content)]
+  ): Matrix[_5] = Matrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, v5, c) => Cell(Position(v1, v2, v3, v4, v5), c) })
+  )
+
+  implicit def tuple5ToMatrix5D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, Content)]
   ): Matrix5D = Matrix5D(
     context,
-    context.spark.parallelize(list.map { case (v, w, x, y, z, c) => Cell(Position(v, w, x, y, z), c) })
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, v5, c) => Cell(Position(v1, v2, v3, v4, v5), c) })
   )
 
-  implicit def tupleToMatrix6D[
-    T <% Value,
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value,
-    Z <% Value
+  implicit def tuple5ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value
   ](
-    list: List[(T, V, W, X, Y, Z, Content)]
+    list: List[(V1, V2, V3, V4, V5, Content)]
+  ): MultiDimensionMatrix[_5] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(list.map { case (v1, v2, v3, v4, v5, c) => Cell(Position(v1, v2, v3, v4, v5), c) })
+  )
+
+  implicit def tuple6ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, Content)]
+  ): Matrix[_6] = Matrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, c) => Cell(Position(v1, v2, v3, v4, v5, v6), c) }
+    )
+  )
+
+  implicit def tuple6ToMatrix6D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, Content)]
   ): Matrix6D = Matrix6D(
     context,
-    context.spark.parallelize(list.map { case (t, v, w, x, y, z, c) => Cell(Position(t, v, w, x, y, z), c) })
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, c) => Cell(Position(v1, v2, v3, v4, v5, v6), c) }
+    )
   )
 
-  implicit def tupleToMatrix7D[
-    S <% Value,
-    T <% Value,
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value,
-    Z <% Value
+  implicit def tuple6ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value
   ](
-    list: List[(S, T, V, W, X, Y, Z, Content)]
+    list: List[(V1, V2, V3, V4, V5, V6, Content)]
+  ): MultiDimensionMatrix[_6] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, c) => Cell(Position(v1, v2, v3, v4, v5, v6), c) }
+    )
+  )
+
+  implicit def tuple7ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
+  ): Matrix[_7] = Matrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7), c) }
+    )
+  )
+
+  implicit def tuple7ToMatrix7D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
   ): Matrix7D = Matrix7D(
     context,
-    context.spark.parallelize(list.map { case (s, t, v, w, x, y, z, c) => Cell(Position(s, t, v, w, x, y, z), c) })
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7), c) }
+    )
   )
 
-  implicit def tupleToMatrix8D[
-    R <% Value,
-    S <% Value,
-    T <% Value,
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value,
-    Z <% Value
+  implicit def tuple7ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value
   ](
-    list: List[(R, S, T, V, W, X, Y, Z, Content)]
+    list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
+  ): MultiDimensionMatrix[_7] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7), c) }
+    )
+  )
+
+  implicit def tuple8ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
+  ): Matrix[_8] = Matrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8), c) }
+    )
+  )
+
+  implicit def tuple8ToMatrix8D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
   ): Matrix8D = Matrix8D(
     context,
-    context
-      .spark
-      .parallelize(list.map { case (r, s, t, v, w, x, y, z, c) => Cell(Position(r, s, t, v, w, x, y, z), c) })
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8), c) }
+    )
   )
 
-  implicit def tupleToMatrix9D[
-    Q <% Value,
-    R <% Value,
-    S <% Value,
-    T <% Value,
-    V <% Value,
-    W <% Value,
-    X <% Value,
-    Y <% Value,
-    Z <% Value
+  implicit def tuple8ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value
   ](
-    list: List[(Q, R, S, T, V, W, X, Y, Z, Content)]
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
+  ): MultiDimensionMatrix[_8] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8), c) }
+    )
+  )
+
+  implicit def tuple9ToMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value,
+    V9 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
+  ): Matrix[_9] = Matrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, v9, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8, v9), c) }
+    )
+  )
+
+  implicit def tuple9ToMatrix9D[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value,
+    V9 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
   ): Matrix9D = Matrix9D(
     context,
-    context
-      .spark
-      .parallelize(list.map { case (q, r, s, t, v, w, x, y, z, c) => Cell(Position(q, r, s, t, v, w, x, y, z), c) })
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, v9, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8, v9), c) }
+    )
+  )
+
+  implicit def tuple9ToMultiDimensionMatrix[
+    V1 <% Value,
+    V2 <% Value,
+    V3 <% Value,
+    V4 <% Value,
+    V5 <% Value,
+    V6 <% Value,
+    V7 <% Value,
+    V8 <% Value,
+    V9 <% Value
+  ](
+    list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
+  ): MultiDimensionMatrix[_9] = MultiDimensionMatrix(
+    context,
+    context.spark.parallelize(
+      list.map { case (v1, v2, v3, v4, v5, v6, v7, v8, v9, c) => Cell(Position(v1, v2, v3, v4, v5, v6, v7, v8, v9), c) }
+    )
   )
 }
 
 /** Implements all partition implicits for `context`. */
-case class PartitionImplicits(
-  context: Context
-) extends FwPartitionImplicits[Context.U, Context.E, Context] {
+case class PartitionImplicits(context: Context) extends FwPartitionImplicits[Context.U] {
   implicit def toPartitions[
     P <: Nat,
     I : Ordering
@@ -268,49 +518,24 @@ case class PartitionImplicits(
 }
 
 /** Implements all position implicits for `context`. */
-case class PositionImplicits(
-  context: Context
-) extends FwPositionImplicits[Context.U, Context.E, Context] {
-  implicit def valueToU[
-    T <% Value
-  ](
-    t: T
-  ): Context.U[Position[_1]] = context.spark.parallelize(List(Position(t)))
+case class PositionImplicits(context: Context) extends FwPositionImplicits[Context.U] {
+  implicit def valueToU[V <% Value](v: V): Context.U[Position[_1]] = context.spark.parallelize(List(Position(v)))
 
   implicit def listValueToU[
-    T <% Value
+    V <% Value
   ](
-    t: List[T]
-  ): Context.U[Position[_1]] = context.spark.parallelize(t.map { case c => Position(c) })
+    l: List[V]
+  ): Context.U[Position[_1]] = context.spark.parallelize(l.map { case v => Position(v) })
 
-  implicit def positionToU[
-    T <: Nat
-  ](
-    t: Position[T]
-  ): Context.U[Position[T]] = context.spark.parallelize(List(t))
+  implicit def positionToU[P <: Nat](p: Position[P]): Context.U[Position[P]] = context.spark.parallelize(List(p))
 
-  implicit def listPositionToU[
-    T <: Nat
-  ](
-    t: List[Position[T]]
-  ): Context.U[Position[T]] = context.spark.parallelize(t)
+  implicit def listPositionToU[P <: Nat](l: List[Position[P]]): Context.U[Position[P]] = context.spark.parallelize(l)
 
-  implicit def toPositions[
-    L <: Nat,
-    P <: Nat
-  ](
-    data: Context.U[Position[P]]
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
-  ): Positions[L, P] = Positions(context, data)
+  implicit def toPositions[P <: Nat](data: Context.U[Position[P]]): Positions[P] = Positions(context, data)
 }
 
 /** Implements all native operations for `context`. */
-case class NativeOperations[
-  X
-](
-  data: Context.U[X]
-) extends FwNativeOperations[X, Context.U, Context.E, Context] {
+case class NativeOperations[X](data: Context.U[X]) extends FwNativeOperations[X, Context.U] {
   def ++(other: Context.U[X]): Context.U[X] = data ++ other
 
   def filter(f: (X) => Boolean): Context.U[X] = data.filter(f)
@@ -321,11 +546,7 @@ case class NativeOperations[
 }
 
 /** Implements all value operations for `context`. */
-case class ValueOperations[
-  X
-](
-  value: Context.E[X]
-) extends FwValueOperations[X, Context.U, Context.E, Context] {
+case class ValueOperations[X](value: Context.E[X]) extends FwValueOperations[X, Context.E] {
   def cross[Y](that: Context.E[Y])(implicit ev: Y =:!= Nothing): Context.E[(X, Y)] = (value, that)
 
   def map[Y](f: (X) => Y): Context.E[Y] = f(value)

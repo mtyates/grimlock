@@ -20,14 +20,6 @@ import java.util.Date
 
 import scala.util.matching.Regex
 
-/** Hetrogeneous comparison results. */
-sealed private trait CompareResult
-private case object GreaterEqual extends CompareResult
-private case object Greater extends CompareResult
-private case object Equal extends CompareResult
-private case object Less extends CompareResult
-private case object LessEqual extends CompareResult
-
 /** Trait for representing strutured data. */
 trait Structured
 
@@ -278,4 +270,12 @@ case class StructuredValue[U <: Structured, C <: StructuredCodec { type D = U }]
 
   override def asStructured: Option[Structured] = Option(value)
 }
+
+/** Hetrogeneous comparison results. */
+sealed private trait CompareResult
+private case object GreaterEqual extends CompareResult
+private case object Greater extends CompareResult
+private case object Equal extends CompareResult
+private case object Less extends CompareResult
+private case object LessEqual extends CompareResult
 

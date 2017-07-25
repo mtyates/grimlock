@@ -19,7 +19,7 @@ import commbank.grimlock.framework.position.{ Position, Slice }
 
 import shapeless.{ Nat, Witness }
 import shapeless.nat._1
-import shapeless.ops.nat.{ Diff, LTEq, ToInt }
+import shapeless.ops.nat.{ LTEq, ToInt }
 
 /** Trait for extracting data from a user provided value given a cell. */
 trait Extract[P <: Nat, V, T] extends java.io.Serializable { self =>
@@ -136,7 +136,7 @@ case class ExtractWithPositionAndKey[
 }
 
 /** Extract from a `Map[Position[S], T]` using the selected position(s) of the cell. */
-trait ExtractWithSelected[L <: Nat, P <: Nat, S <: Nat, T] extends Extract[P, Map[Position[S], T], T] { }
+trait ExtractWithSelected[P <: Nat, S <: Nat, T] extends Extract[P, Map[Position[S], T], T] { }
 
 /** Companion object to `ExtractWithSelected`. */
 object ExtractWithSelected {
@@ -147,14 +147,11 @@ object ExtractWithSelected {
    *              into the map.
    */
   def apply[
-    L <: Nat,
     P <: Nat,
     T
   ](
-    slice: Slice[L, P]
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
-  ): ExtractWithSelected[L, P, slice.S, T] = new ExtractWithSelected[L, P, slice.S, T] {
+    slice: Slice[P]
+  ): ExtractWithSelected[P, slice.S, T] = new ExtractWithSelected[P, slice.S, T] {
     def extract(cell: Cell[P], ext: Map[Position[slice.S], T]): Option[T] = ext.get(slice.selected(cell.position))
   }
 }
@@ -164,7 +161,6 @@ object ExtractWithSelected {
  * the provided key.
  */
 trait ExtractWithSelectedAndKey[
-  L <: Nat,
   P <: Nat,
   S <: Nat,
   T
@@ -181,15 +177,12 @@ object ExtractWithSelectedAndKey {
    * @param key   The key used for extracting from the inner map.
    */
   def apply[
-    L <: Nat,
     P <: Nat,
     T
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     key: Position[_1]
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
-  ): ExtractWithSelectedAndKey[L, P, slice.S, T] = new ExtractWithSelectedAndKey[L, P, slice.S, T] {
+  ): ExtractWithSelectedAndKey[P, slice.S, T] = new ExtractWithSelectedAndKey[P, slice.S, T] {
     def extract(cell: Cell[P], ext: Map[Position[slice.S], Map[Position[_1], T]]): Option[T] = ext
       .get(slice.selected(cell.position))
       .flatMap(_.get(key))
@@ -198,7 +191,6 @@ object ExtractWithSelectedAndKey {
 
 /** Extract from a `Map[Position[S], Map[Position[R], T]]` using the selected and remainder position(s) of the cell. */
 trait ExtractWithSlice[
-  L <: Nat,
   P <: Nat,
   S <: Nat,
   R <: Nat,
@@ -215,14 +207,11 @@ object ExtractWithSlice {
    *              as the keys into the outer and inner maps.
    */
   def apply[
-    L <: Nat,
     P <: Nat,
     T
   ](
-    slice: Slice[L, P]
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
-  ): ExtractWithSlice[L, P, slice.S, slice.R, T] = new ExtractWithSlice[L, P, slice.S, slice.R, T] {
+    slice: Slice[P]
+  ): ExtractWithSlice[P, slice.S, slice.R, T] = new ExtractWithSlice[P, slice.S, slice.R, T] {
     def extract(cell: Cell[P], ext: Map[Position[slice.S], Map[Position[slice.R], T]]): Option[T] = ext
       .get(slice.selected(cell.position))
       .flatMap(_.get(slice.remainder(cell.position)))

@@ -33,63 +33,6 @@ import shapeless.nat.{ _1, _2, _3, _4, _5, _6, _7, _8, _9 }
 import shapeless.ops.nat.{ LTEq, ToInt }
 import shapeless.syntax.sized._
 
-private trait CellContentParser {
-  val textParts: Int
-
-  def getTextParser(pos: Array[String]): Option[(Array[String]) => Option[Content]]
-  def getJSONParser(pos: List[Value]): Option[Content.Parser]
-}
-
-private case class ParserFromParts(separator: String = "") extends CellContentParser {
-  val textParts = 3
-
-  def getTextParser(pos: Array[String]) = Option(
-    (con: Array[String]) => con match {
-      case Array(c, s, v) => Content.fromComponents(c, s, v)
-      case _ => None
-    }
-  )
-  def getJSONParser(pos: List[Value]) = None
-}
-
-private case class ParserFromSchema(schema: Content.Parser) extends CellContentParser {
-  val textParts = 1
-
-  def getTextParser(pos: Array[String]) = Option(
-    (con: Array[String]) => con match {
-      case Array(v) => schema(v)
-      case _ => None
-    }
-  )
-  def getJSONParser(pos: List[Value]) = Option(schema)
-}
-
-private case class ParserFromDictionary[D <: Nat : ToInt](
-  dict: Map[String, Content.Parser]
-) extends CellContentParser {
-  val textParts = 1
-
-  def getTextParser(pos: Array[String]) = {
-    val parser = for {
-      key <- Try(pos(if (idx == 0) pos.length - 1 else idx - 1)).toOption
-      prs <- dict.get(key)
-    } yield prs
-
-    parser.map(dec =>
-      (con: Array[String]) => con match {
-        case Array(v) => dec(v)
-        case _ => None
-      }
-    )
-  }
-  def getJSONParser(pos: List[Value]) = for {
-    key <- Try(pos(if (idx == 0) pos.length - 1 else idx - 1)).toOption
-    parser <- dict.get(key.toShortString)
-  } yield parser
-
-  private val idx = Nat.toInt[D]
-}
-
 /**
  * Cell in a matrix.
  *
@@ -211,17 +154,18 @@ object Cell {
    * @param first     The codec for decoding the first dimension.
    * @param second    The codec for decoding the second dimension.
    */
-  def parse2DWithDictionary(
+  def parse2DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _2],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _2]
   ): (String) => TraversableOnce[Either[String, Cell[_2]]] = line =>
-    parseXD(line, separator, Sized.wrap(List(first, second)), ParserFromDictionary[dim.N](dict))
+    parseXD(line, separator, Sized.wrap(List(first, second)), ParserFromDictionary[D](dict))
 
   /**
    * Parse a line into a `Cell[_2]` with a schema.
@@ -265,18 +209,19 @@ object Cell {
    * @param second    The codec for decoding the second dimension.
    * @param third     The codec for decoding the third dimension.
    */
-  def parse3DWithDictionary(
+  def parse3DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _3],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _3]
   ): (String) => TraversableOnce[Either[String, Cell[_3]]] = line =>
-    parseXD(line, separator, Sized.wrap(List(first, second, third)), ParserFromDictionary[dim.N](dict))
+    parseXD(line, separator, Sized.wrap(List(first, second, third)), ParserFromDictionary[D](dict))
 
   /**
    * Parse a line into a `Cell[_3]` with a schema.
@@ -325,19 +270,20 @@ object Cell {
    * @param third     The codec for decoding the third dimension.
    * @param fourth    The codec for decoding the fourth dimension.
    */
-  def parse4DWithDictionary(
+  def parse4DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
     fourth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _4],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _4]
   ): (String) => TraversableOnce[Either[String, Cell[_4]]] = line =>
-    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth)), ParserFromDictionary[dim.N](dict))
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth)), ParserFromDictionary[D](dict))
 
   /**
    * Parse a line into a `Cell[_4]` with a schema.
@@ -391,9 +337,11 @@ object Cell {
    * @param fourth    The codec for decoding the fourth dimension.
    * @param fifth     The codec for decoding the fifth dimension.
    */
-  def parse5DWithDictionary(
+  def parse5DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
@@ -401,10 +349,9 @@ object Cell {
     fourth: Codec = StringCodec,
     fifth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _5],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _5]
   ): (String) => TraversableOnce[Either[String, Cell[_5]]] = line =>
-    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth)), ParserFromDictionary[dim.N](dict))
+    parseXD(line, separator, Sized.wrap(List(first, second, third, fourth, fifth)), ParserFromDictionary[D](dict))
 
   /**
    * Parse a line into a `Cell[_5]` with a schema.
@@ -463,9 +410,11 @@ object Cell {
    * @param fifth     The codec for decoding the fifth dimension.
    * @param sixth     The codec for decoding the sixth dimension.
    */
-  def parse6DWithDictionary(
+  def parse6DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
@@ -474,14 +423,13 @@ object Cell {
     fifth: Codec = StringCodec,
     sixth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _6],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _6]
   ): (String) => TraversableOnce[Either[String, Cell[_6]]] = line =>
     parseXD(
       line,
       separator,
       Sized.wrap(List(first, second, third, fourth, fifth, sixth)),
-      ParserFromDictionary[dim.N](dict)
+      ParserFromDictionary[D](dict)
     )
 
   /**
@@ -551,9 +499,11 @@ object Cell {
    * @param sixth     The codec for decoding the sixth dimension.
    * @param seventh   The codec for decoding the seventh dimension.
    */
-  def parse7DWithDictionary(
+  def parse7DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
@@ -563,14 +513,13 @@ object Cell {
     sixth: Codec = StringCodec,
     seventh: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _7],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _7]
   ): (String) => TraversableOnce[Either[String, Cell[_7]]] = line =>
     parseXD(
       line,
       separator,
       Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh)),
-      ParserFromDictionary[dim.N](dict)
+      ParserFromDictionary[D](dict)
     )
 
   /**
@@ -650,9 +599,11 @@ object Cell {
    * @param seventh   The codec for decoding the seventh dimension.
    * @param eighth    The codec for decoding the eighth dimension.
    */
-  def parse8DWithDictionary(
+  def parse8DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
@@ -663,14 +614,13 @@ object Cell {
     seventh: Codec = StringCodec,
     eighth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _8],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _8]
   ): (String) => TraversableOnce[Either[String, Cell[_8]]] = line =>
     parseXD(
       line,
       separator,
       Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth)),
-      ParserFromDictionary[dim.N](dict)
+      ParserFromDictionary[D](dict)
     )
 
   /**
@@ -755,9 +705,11 @@ object Cell {
    * @param eighth    The codec for decoding the eighth dimension.
    * @param ninth     The codec for decoding the ninth dimension.
    */
-  def parse9DWithDictionary(
+  def parse9DWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     separator: String = "|",
     first: Codec = StringCodec,
     second: Codec = StringCodec,
@@ -769,14 +721,13 @@ object Cell {
     eighth: Codec = StringCodec,
     ninth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _9],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _9]
   ): (String) => TraversableOnce[Either[String, Cell[_9]]] = line =>
     parseXD(
       line,
       separator,
       Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
-      ParserFromDictionary[dim.N](dict)
+      ParserFromDictionary[D](dict)
     )
 
   /**
@@ -897,16 +848,17 @@ object Cell {
    * @param first  The codec for decoding the first dimension.
    * @param second The codec for decoding the second dimension.
    */
-  def parse2DJSONWithDictionary(
+  def parse2DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _2],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _2]
   ): (String) => TraversableOnce[Either[String, Cell[_2]]] = json =>
-    parseXDJSON(json, Sized.wrap(List(first, second)), ParserFromDictionary[dim.N](dict))
+    parseXDJSON(json, Sized.wrap(List(first, second)), ParserFromDictionary[D](dict))
 
   /**
    * Parse JSON into a `Cell[_2]` with a schema.
@@ -945,17 +897,18 @@ object Cell {
    * @param second The codec for decoding the second dimension.
    * @param third  The codec for decoding the third dimension.
    */
-  def parse3DJSONWithDictionary(
+  def parse3DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
     dim: Nat,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _3],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _3]
   ): (String) => TraversableOnce[Either[String, Cell[_3]]] = json =>
-    parseXDJSON(json, Sized.wrap(List(first, second, third)), ParserFromDictionary[dim.N](dict))
+    parseXDJSON(json, Sized.wrap(List(first, second, third)), ParserFromDictionary[D](dict))
 
   /**
    * Parse JSON into a `Cell[_3]` with a schema.
@@ -999,18 +952,19 @@ object Cell {
    * @param third  The codec for decoding the third dimension.
    * @param fourth The codec for decoding the fourth dimension.
    */
-  def parse4DJSONWithDictionary(
+  def parse4DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
     fourth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _4],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _4]
   ): (String) => TraversableOnce[Either[String, Cell[_4]]] = json =>
-    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth)), ParserFromDictionary[dim.N](dict))
+    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth)), ParserFromDictionary[D](dict))
 
   /**
    * Parse JSON into a `Cell[_4]` with a schema.
@@ -1059,19 +1013,20 @@ object Cell {
    * @param fourth The codec for decoding the fourth dimension.
    * @param fifth  The codec for decoding the fifth dimension.
    */
-  def parse5DJSONWithDictionary(
+  def parse5DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
     fourth: Codec = StringCodec,
     fifth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _5],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _5]
   ): (String) => TraversableOnce[Either[String, Cell[_5]]] = json =>
-    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth, fifth)), ParserFromDictionary[dim.N](dict))
+    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth, fifth)), ParserFromDictionary[D](dict))
 
   /**
    * Parse JSON into a `Cell[_5]` with a schema.
@@ -1125,9 +1080,11 @@ object Cell {
    * @param fifth  The codec for decoding the fifth dimension.
    * @param sixth  The codec for decoding the sixth dimension.
    */
-  def parse6DJSONWithDictionary(
+  def parse6DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
@@ -1135,10 +1092,9 @@ object Cell {
     fifth: Codec = StringCodec,
     sixth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _6],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _6]
   ): (String) => TraversableOnce[Either[String, Cell[_6]]] = json =>
-    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth, fifth, sixth)), ParserFromDictionary[dim.N](dict))
+    parseXDJSON(json, Sized.wrap(List(first, second, third, fourth, fifth, sixth)), ParserFromDictionary[D](dict))
 
   /**
    * Parse JSON into a `Cell[_6]` with a schema.
@@ -1197,9 +1153,11 @@ object Cell {
    * @param sixth   The codec for decoding the sixth dimension.
    * @param seventh The codec for decoding the seventh dimension.
    */
-  def parse7DJSONWithDictionary(
+  def parse7DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
@@ -1208,13 +1166,12 @@ object Cell {
     sixth: Codec = StringCodec,
     seventh: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _7],
-    ev2: ToInt[dim.N]
+    ev: LTEq[D, _7]
   ): (String) => TraversableOnce[Either[String, Cell[_7]]] = json =>
     parseXDJSON(
       json,
       Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh)),
-      ParserFromDictionary[dim.N](dict)
+      ParserFromDictionary[D](dict)
     )
 
   /**
@@ -1279,9 +1236,11 @@ object Cell {
    * @param seventh The codec for decoding the seventh dimension.
    * @param eighth  The codec for decoding the eighth dimension.
    */
-  def parse8DJSONWithDictionary(
+  def parse8DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
@@ -1291,14 +1250,12 @@ object Cell {
     seventh: Codec = StringCodec,
     eighth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _8],
-    ev2: ToInt[dim.N]
-  ): (String) => TraversableOnce[Either[String, Cell[_8]]] = json =>
-    parseXDJSON(
-      json,
-      Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth)),
-      ParserFromDictionary[dim.N](dict)
-    )
+    ev: LTEq[D, _8]
+  ): (String) => TraversableOnce[Either[String, Cell[_8]]] = json => parseXDJSON(
+    json,
+    Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth)),
+    ParserFromDictionary[D](dict)
+  )
 
   /**
    * Parse JSON into a `Cell[_8]` with a schema.
@@ -1323,12 +1280,11 @@ object Cell {
     sixth: Codec = StringCodec,
     seventh: Codec = StringCodec,
     eighth: Codec = StringCodec
-  ): (String) => TraversableOnce[Either[String, Cell[_8]]] = json =>
-    parseXDJSON(
-      json,
-      Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth)),
-      ParserFromSchema(schema)
-    )
+  ): (String) => TraversableOnce[Either[String, Cell[_8]]] = json => parseXDJSON(
+    json,
+    Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth)),
+    ParserFromSchema(schema)
+  )
 
   /**
    * Parse JSON into a `Cell[_9]`.
@@ -1353,12 +1309,11 @@ object Cell {
     seventh: Codec = StringCodec,
     eighth: Codec = StringCodec,
     ninth: Codec = StringCodec
-  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json =>
-    parseXDJSON(
-      json,
-      Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
-      ParserFromParts()
-    )
+  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json => parseXDJSON(
+    json,
+    Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
+    ParserFromParts()
+  )
 
   /**
    * Parse JSON into a `Cell[_9]` with a dictionary.
@@ -1375,9 +1330,11 @@ object Cell {
    * @param eighth  The codec for decoding the eighth dimension.
    * @param ninth   The codec for decoding the ninth dimension.
    */
-  def parse9DJSONWithDictionary(
+  def parse9DJSONWithDictionary[
+    D <: Nat : ToInt
+  ](
     dict: Map[String, Content.Parser],
-    dim: Nat,
+    dim: D,
     first: Codec = StringCodec,
     second: Codec = StringCodec,
     third: Codec = StringCodec,
@@ -1388,14 +1345,12 @@ object Cell {
     eighth: Codec = StringCodec,
     ninth: Codec = StringCodec
   )(implicit
-    ev1: LTEq[dim.N, _9],
-    ev2: ToInt[dim.N]
-  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json =>
-    parseXDJSON(
-      json,
-      Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
-      ParserFromDictionary[dim.N](dict)
-    )
+    ev: LTEq[D, _9]
+  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json => parseXDJSON(
+    json,
+    Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
+    ParserFromDictionary[D](dict)
+  )
 
   /**
    * Parse JSON into a `Cell[_9]` with a schema.
@@ -1422,12 +1377,11 @@ object Cell {
     seventh: Codec = StringCodec,
     eighth: Codec = StringCodec,
     ninth: Codec = StringCodec
-  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json =>
-    parseXDJSON(
-      json,
-      Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
-      ParserFromSchema(schema)
-    )
+  ): (String) => TraversableOnce[Either[String, Cell[_9]]] = json => parseXDJSON(
+    json,
+    Sized.wrap(List(first, second, third, fourth, fifth, sixth, seventh, eighth, ninth)),
+    ParserFromSchema(schema)
+  )
 
   /**
    * Return function that returns a string representation of a cell.
@@ -1453,6 +1407,44 @@ object Cell {
    */
   def toJSON[P <: Nat ](pretty: Boolean = false, descriptive: Boolean = true): (Cell[P]) => TraversableOnce[String] =
     (t: Cell[P]) => List(t.toJSON(pretty, descriptive))
+
+  /**
+   * Return a `Reads` for parsing a JSON cell.
+   *
+   * @param codecs List of codecs for parsing the position.
+   * @param parser Optional parser; in case the JSON content is not self describing.
+   */
+  def reads[P <: Nat : ToInt](
+    codecs: Sized[List[Codec], P],
+    parser: (List[Value]) => Option[Content.Parser]
+  ): Reads[Cell[P]] = new Reads[Cell[P]] {
+    implicit val prd = Position.reads(codecs)
+
+    def reads(json: JsValue): JsResult[Cell[P]] = {
+      val fields = json.as[JsObject].value
+
+      if (fields.size == 2)
+        (
+          for {
+            pos <- fields.get("position").map(_.as[Position[P]])
+            con <- fields.get("content").map(_.as[Content](Content.reads(parser(pos.coordinates))))
+          } yield JsSuccess(Cell(pos, con))
+        ).getOrElse(JsError("Unable to parse cell"))
+      else
+        JsError("Incorrect number of fields")
+    }
+  }
+
+  /**
+   * Return a `Writes` for writing JSON cell.
+   *
+   * @param descriptive Indicator if the JSON should be self describing (true) or not.
+   */
+  def writes[P <: Nat](descriptive: Boolean): Writes[Cell[P]] = new Writes[Cell[P]] {
+    implicit val wrt = Content.writes(descriptive)
+
+    def writes(o: Cell[P]): JsValue = Json.obj("position" -> o.position, "content" -> o.content)
+  }
 
   private def parseXD[
     Q <: Nat : ToInt
@@ -1493,43 +1485,62 @@ object Cell {
       case _ => Left(s"Unable to decode: '" + json + "'")
     }
   )
+}
 
-  /**
-   * Return a `Reads` for parsing a JSON cell.
-   *
-   * @param codecs List of codecs for parsing the position.
-   * @param parser Optional parser; in case the JSON content is not self describing.
-   */
-  def reads[P <: Nat : ToInt](
-    codecs: Sized[List[Codec], P],
-    parser: (List[Value]) => Option[Content.Parser]
-  ): Reads[Cell[P]] = new Reads[Cell[P]] {
-    implicit val prd = Position.reads(codecs)
+private trait CellContentParser {
+  val textParts: Int
 
-    def reads(json: JsValue): JsResult[Cell[P]] = {
-      val fields = json.as[JsObject].value
+  def getTextParser(pos: Array[String]): Option[(Array[String]) => Option[Content]]
+  def getJSONParser(pos: List[Value]): Option[Content.Parser]
+}
 
-      if (fields.size == 2)
-        (
-          for {
-            pos <- fields.get("position").map(_.as[Position[P]])
-            con <- fields.get("content").map(_.as[Content](Content.reads(parser(pos.coordinates))))
-          } yield JsSuccess(Cell(pos, con))
-        ).getOrElse(JsError("Unable to parse cell"))
-      else
-        JsError("Incorrect number of fields")
+private case class ParserFromParts(separator: String = "") extends CellContentParser {
+  val textParts = 3
+
+  def getTextParser(pos: Array[String]) = Option(
+    (con: Array[String]) => con match {
+      case Array(c, s, v) => Content.fromComponents(c, s, v)
+      case _ => None
     }
-  }
+  )
+  def getJSONParser(pos: List[Value]) = None
+}
 
-  /**
-   * Return a `Writes` for writing JSON cell.
-   *
-   * @param descriptive Indicator if the JSON should be self describing (true) or not.
-   */
-  def writes[P <: Nat](descriptive: Boolean): Writes[Cell[P]] = new Writes[Cell[P]] {
-    implicit val wrt = Content.writes(descriptive)
+private case class ParserFromSchema(schema: Content.Parser) extends CellContentParser {
+  val textParts = 1
 
-    def writes(o: Cell[P]): JsValue = Json.obj("position" -> o.position, "content" -> o.content)
+  def getTextParser(pos: Array[String]) = Option(
+    (con: Array[String]) => con match {
+      case Array(v) => schema(v)
+      case _ => None
+    }
+  )
+  def getJSONParser(pos: List[Value]) = Option(schema)
+}
+
+private case class ParserFromDictionary[D <: Nat : ToInt](
+  dict: Map[String, Content.Parser]
+) extends CellContentParser {
+  val textParts = 1
+
+  def getTextParser(pos: Array[String]) = {
+    val parser = for {
+      key <- Try(pos(if (idx == 0) pos.length - 1 else idx - 1)).toOption
+      prs <- dict.get(key)
+    } yield prs
+
+    parser.map(dec =>
+      (con: Array[String]) => con match {
+        case Array(v) => dec(v)
+        case _ => None
+      }
+    )
   }
+  def getJSONParser(pos: List[Value]) = for {
+    key <- Try(pos(if (idx == 0) pos.length - 1 else idx - 1)).toOption
+    parser <- dict.get(key.toShortString)
+  } yield parser
+
+  private val idx = Nat.toInt[D]
 }
 

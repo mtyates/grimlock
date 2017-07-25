@@ -76,36 +76,6 @@ object Schema {
   }
 }
 
-/** Functions for dealing with schema parameters. */
-private object SchemaParameters {
-  def parse(codec: Codec, value: String): Option[codec.D] = codec.decode(value).map(_.value)
-
-  def splitRange(range: String): Option[(String, String)] = range.split(":") match {
-    case Array(lower, upper) => Option((lower, upper))
-    case _ => None
-  }
-
-  def splitSet(set: String): Set[String] = set.split("(?<!\\\\),").toSet
-
-  def writeRange[D](short: Boolean, range: Option[(D, D)], f: (D) => String): String = range
-    .map { case (lower, upper) => f(lower) + (if (short) ":" else ",") + f(upper) }
-    .getOrElse("")
-
-  def writeSet[D](short: Boolean, set: Set[D], f: (D) => String): String = writeList(short, set.toList, f, "Set")
-
-  def writeOrderedSet[D : Ordering](short: Boolean, set: Set[D], f: (D) => String): String =
-    writeList(short, set.toList.sorted, f, "Set")
-
-  def writeList[D](short: Boolean, list: List[D], f: (D) => String, name: String): String =
-    if (list.isEmpty)
-      ""
-    else {
-      val args = list.map(f(_).replaceAll(",", "\\\\,")).mkString(",")
-
-      if (short) args else name + "(" + args + ")"
-    }
-}
-
 /** Trait for schemas for numerical variables. */
 trait NumericalSchema[T] extends Schema { self =>
   type D = T
@@ -531,4 +501,34 @@ object DateSchema {
 
 /** Schema for structured data variables. */
 trait StructuredSchema extends Schema
+
+/** Functions for dealing with schema parameters. */
+private object SchemaParameters {
+  def parse(codec: Codec, value: String): Option[codec.D] = codec.decode(value).map(_.value)
+
+  def splitRange(range: String): Option[(String, String)] = range.split(":") match {
+    case Array(lower, upper) => Option((lower, upper))
+    case _ => None
+  }
+
+  def splitSet(set: String): Set[String] = set.split("(?<!\\\\),").toSet
+
+  def writeRange[D](short: Boolean, range: Option[(D, D)], f: (D) => String): String = range
+    .map { case (lower, upper) => f(lower) + (if (short) ":" else ",") + f(upper) }
+    .getOrElse("")
+
+  def writeSet[D](short: Boolean, set: Set[D], f: (D) => String): String = writeList(short, set.toList, f, "Set")
+
+  def writeOrderedSet[D : Ordering](short: Boolean, set: Set[D], f: (D) => String): String =
+    writeList(short, set.toList.sorted, f, "Set")
+
+  def writeList[D](short: Boolean, list: List[D], f: (D) => String, name: String): String =
+    if (list.isEmpty)
+      ""
+    else {
+      val args = list.map(f(_).replaceAll(",", "\\\\,")).mkString(",")
+
+      if (short) args else name + "(" + args + ")"
+    }
+}
 

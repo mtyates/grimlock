@@ -140,15 +140,15 @@ class TestExtractWithSelected extends TestGrimlock {
   val ext = Map(Position("abc") -> 3.14)
 
   "A ExtractWithSelected" should "extract with Over" in {
-    ExtractWithSelected[_1, _2, Double](Over(_1)).extract(cell, ext) shouldBe Option(3.14)
+    ExtractWithSelected[_2, Double](Over(_1)).extract(cell, ext) shouldBe Option(3.14)
   }
 
   it should "extract with Along" in {
-    ExtractWithSelected[_1, _2, Double](Along(_1)).extract(cell, ext) shouldBe None
+    ExtractWithSelected[_2, Double](Along(_1)).extract(cell, ext) shouldBe None
   }
 
   it should "extract and present" in {
-    ExtractWithSelected[_1, _2, Double](Over(_1))
+    ExtractWithSelected[_2, Double](Over(_1))
       .andThenPresent(d => Option(d * 2))
       .extract(cell, ext) shouldBe Option(6.28)
   }
@@ -160,23 +160,23 @@ class TestExtractWithSelectedAndKey extends TestGrimlock {
   val ext = Map(Position("abc") -> Map(Position("xyz") -> 3.14))
 
   "A ExtractWithSelectedAndKey" should "extract with Over" in {
-    ExtractWithSelectedAndKey[_1, _2, Double](Over(_1), "xyz").extract(cell, ext) shouldBe Option(3.14)
+    ExtractWithSelectedAndKey[_2, Double](Over(_1), "xyz").extract(cell, ext) shouldBe Option(3.14)
   }
 
   it should "extract with Along" in {
-    ExtractWithSelectedAndKey[_1, _2, Double](Along(_1), "xyz").extract(cell, ext) shouldBe None
+    ExtractWithSelectedAndKey[_2, Double](Along(_1), "xyz").extract(cell, ext) shouldBe None
   }
 
   it should "extract with missing key" in {
-    ExtractWithSelectedAndKey[_1, _2, Double](Over(_1), "abc").extract(cell, ext) shouldBe None
+    ExtractWithSelectedAndKey[_2, Double](Over(_1), "abc").extract(cell, ext) shouldBe None
   }
 
   it should "extract with Along and missing key" in {
-    ExtractWithSelectedAndKey[_1, _2, Double](Along(_1), "abc").extract(cell, ext) shouldBe None
+    ExtractWithSelectedAndKey[_2, Double](Along(_1), "abc").extract(cell, ext) shouldBe None
   }
 
   it should "extract and present" in {
-    ExtractWithSelectedAndKey[_1, _2, Double](Over(_1), "xyz")
+    ExtractWithSelectedAndKey[_2, Double](Over(_1), "xyz")
       .andThenPresent(d => Option(d * 2))
       .extract(cell, ext) shouldBe Option(6.28)
   }
@@ -190,23 +190,23 @@ class TestExtractWithSlice extends TestGrimlock {
   val ext = Map(Position("abc") -> Map(Position("def") -> 3.14))
 
   "A ExtractWithSlice" should "extract with Over" in {
-    ExtractWithSlice[_1, _2, Double](Over(_1)).extract(cell1, ext) shouldBe Option(3.14)
+    ExtractWithSlice[_2, Double](Over(_1)).extract(cell1, ext) shouldBe Option(3.14)
   }
 
   it should "extract with Along" in {
-    ExtractWithSlice[_1, _2, Double](Along(_1)).extract(cell1, ext) shouldBe None
+    ExtractWithSlice[_2, Double](Along(_1)).extract(cell1, ext) shouldBe None
   }
 
   it should "extract with missing selected" in {
-    ExtractWithSlice[_1, _2, Double](Over(_1)).extract(cell2, ext) shouldBe None
+    ExtractWithSlice[_2, Double](Over(_1)).extract(cell2, ext) shouldBe None
   }
 
   it should "extract with missing remaider" in {
-    ExtractWithSlice[_1, _2, Double](Over(_1)).extract(cell3, ext) shouldBe None
+    ExtractWithSlice[_2, Double](Over(_1)).extract(cell3, ext) shouldBe None
   }
 
   it should "extract and present" in {
-    ExtractWithSlice[_1, _2, Double](Over(_1))
+    ExtractWithSlice[_2, Double](Over(_1))
       .andThenPresent(d => Option(d * 2))
       .extract(cell1, ext) shouldBe Option(6.28)
   }
