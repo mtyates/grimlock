@@ -21,7 +21,13 @@ import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
 
 /** Trait for peristing a `TypedPipe`. */
-trait Persist[X] extends FwPersist[X, Context.U, Context.E, Context] {
+trait Persist[X] extends FwPersist[X, Context.U] {
+  /** Operating context for the data. */
+  val context: Context
+
+  /** The underlying data. */
+  val data: Context.U[X]
+
   protected def saveText[T <: Tuner](file: String, writer: FwPersist.TextWriter[X], tuner: T): Context.U[X] = {
     data
       .flatMap { case x => writer(x) }
@@ -35,7 +41,7 @@ trait Persist[X] extends FwPersist[X, Context.U, Context.E, Context] {
 case class SaveStringsAsText(
   context: Context,
   data: Context.U[String]
-) extends FwSaveStringsAsText[Context.U, Context.E, Context]
+) extends FwSaveStringsAsText[Context.U]
   with Persist[String] {
   def saveAsText[
     T <: Tuner
@@ -43,7 +49,7 @@ case class SaveStringsAsText(
     file: String,
     tuner: T = Default()
   )(implicit
-    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+    ev: FwPersist.SaveAsTextTuner[Context.U, T]
   ): Context.U[String] = saveText(file, Option(_), tuner)
 }
 

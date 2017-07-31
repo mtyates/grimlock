@@ -14,21 +14,16 @@
 
 package commbank.grimlock.framework.distance
 
-import commbank.grimlock.framework.{ Cell, Locate, Matrix }
+import commbank.grimlock.framework.{ Cell, Locate, MultiDimensionMatrix }
 import commbank.grimlock.framework.content.Content
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.{ CategoricalType, ContinuousSchema, NumericType }
 import commbank.grimlock.framework.position.{ Position, Slice }
 
-import scala.reflect.ClassTag
-
 import shapeless.Nat
-import shapeless.nat._1
-import shapeless.ops.nat.Diff
 
 /** Trait for computing pairwise distances from a matrix. */
-trait PairwiseDistance[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends { self: Matrix[L, P, U, E, C] =>
+trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, E] =>
   /**
    * Compute correlations.
    *
@@ -45,16 +40,14 @@ trait PairwiseDistance[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] exten
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean = true,
     strict: Boolean = true
   )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L],
-    ev3: PairwiseDistance.CorrelationTuners[U, T]
+    ev: PairwiseDistance.CorrelationTuner[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -72,37 +65,32 @@ trait PairwiseDistance[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] exten
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean = true,
     log: (Double) => Double = (x: Double) => math.log(x) / math.log(2)
   )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L],
-    ev3: PairwiseDistance.MutualInformationTuners[U, T]
+    ev: PairwiseDistance.MutualInformationTuner[U, T]
   ): U[Cell[Q]]
 }
 
 /** Companion object to `PairwiseDistance` with types, implicits, etc. */
 object PairwiseDistance {
   /** Trait for tuners permitted on a call to `correlation`. */
-  trait CorrelationTuners[U[_], T <: Tuner]
+  trait CorrelationTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `mutualInformation`. */
-  trait MutualInformationTuners[U[_], T <: Tuner]
+  trait MutualInformationTuner[U[_], T <: Tuner]
 
   private[grimlock] def prepareCorrelation[
-    L <: Nat,
     P <: Nat
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     cell: Cell[P],
     filter: Boolean,
     strict: Boolean
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
   ): Option[(Position[slice.S], Position[slice.R], Double)] = {
     if (!filter || cell.content.schema.classification.isOfType(NumericType)) {
       val value = cell.content.value.asDouble
@@ -126,14 +114,11 @@ object PairwiseDistance {
     .map { case pos => Cell(pos, Content(ContinuousSchema[Double](), lval / rval)) }
 
   private[grimlock] def prepareMutualInformation[
-    L <: Nat,
     P <: Nat
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     cell: Cell[P],
     filter: Boolean
-  )(implicit
-    ev: Diff.Aux[P, _1, L]
   ): Option[(Position[slice.S], Position[slice.R], String)] = {
     if (!filter || cell.content.schema.classification.isOfType(CategoricalType))
       Option((slice.selected(cell.position), slice.remainder(cell.position), cell.content.value.toShortString))

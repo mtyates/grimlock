@@ -16,19 +16,16 @@ package commbank.grimlock.framework.position
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{ Codec, Value }
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
-import commbank.grimlock.framework.utility.=:!=
 
 import play.api.libs.json.{ JsArray, JsError, Json, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
 
-import scala.reflect.ClassTag
 import scala.util.matching.Regex
 import scala.collection.immutable.ListSet
 
-import shapeless.{ Nat, Sized, Succ }
+import shapeless.{ ::, =:!=, HNil, IsDistinctConstraint, Nat, Sized, Succ }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8, _9 }
-import shapeless.ops.nat.{ Diff, GT, LTEq, ToInt }
+import shapeless.ops.nat.{ GT, LTEq, Pred, ToInt }
 import shapeless.syntax.sized._
 
 /** Trait for dealing with positions. */
@@ -137,13 +134,14 @@ sealed trait Position[P <: Nat] {
     else
       coordinates.length.compare(that.coordinates.length)
 
-  def toIndex[D <: Nat : ToInt](implicit ev: LTEq[D, P]): Int = {
+  protected def toIndex[D <: Nat : ToInt](implicit ev: LTEq[D, P]): Int = {
     val index = Nat.toInt[D]
 
     if (index == 0) coordinates.length - 1 else index - 1
   }
 }
 
+/** Companion object with constructor, implicits, etc. */
 object Position {
   /** Constructor for 0 dimensional position. */
   def apply(): Position[_0] = PositionImpl(List())
@@ -242,16 +240,16 @@ object Position {
   ](
     verbose: Boolean = false,
     separator: String = "|"
-  ): (Position[P]) => TraversableOnce[String] = (t: Position[P]) =>
-    List(if (verbose) t.toString else t.toShortString(separator))
+  ): (Position[P]) => TraversableOnce[String] = (p: Position[P]) =>
+    List(if (verbose) p.toString else p.toShortString(separator))
 
   /**
    * Return function that returns a JSON representation of a position.
    *
    * @param pretty Indicator if the resulting JSON string to be indented.
    */
-  def toJSON[P <: Nat ](pretty: Boolean = false): (Position[P]) => TraversableOnce[String] = (t: Position[P]) =>
-    List(t.toJSON(pretty))
+  def toJSON[P <: Nat ](pretty: Boolean = false): (Position[P]) => TraversableOnce[String] = (p: Position[P]) =>
+    List(p.toJSON(pretty))
 
   /**
    * Return a `Reads` for parsing a JSON position.
@@ -276,20 +274,20 @@ object Position {
 
   /** Implicit writes for use in Position.toJSON. */
   implicit def writes[P <: Nat]: Writes[Position[P]] = new Writes[Position[P]] {
-    def writes(o: Position[P]): JsValue = JsArray(o.coordinates.map(v => JsString(v.toShortString)))
+    def writes(p: Position[P]): JsValue = JsArray(p.coordinates.map(v => JsString(v.toShortString)))
   }
 
   /** Converts a `Value` to a `Position[P]` */
-  implicit def valueToPosition[T <% Value](t: T): Position[_1] = Position(t)
+  implicit def valueToPosition[V <% Value](v: V): Position[_1] = Position(v)
 
   /** Converts a `Value` to a `List[Position[P]]` */
-  implicit def valueToListPosition[T <% Value](t: T): List[Position[_1]] = List(Position(t))
+  implicit def valueToListPosition[V <% Value](v: V): List[Position[_1]] = List(Position(v))
 
   /** Converts a `Value` to a `List[Position[P]]` */
-  implicit def listValueToListPosition[T <% Value](t: List[T]): List[Position[_1]] = t.map(Position(_))
+  implicit def listValueToListPosition[V <% Value](l: List[V]): List[Position[_1]] = l.map(v => Position(v))
 
   /** Converts a `Position[P]` to a `List[Position[P]]` */
-  implicit def positionToListPosition[P <: Nat](t: Position[P]): List[Position[P]] = List(t)
+  implicit def positionToListPosition[P <: Nat](p: Position[P]): List[Position[P]] = List(p)
 
   /** Implicit conversion from Position[P] to PermutablePosition[P]. */
   implicit def positionToPermutable[
@@ -307,7 +305,7 @@ object Position {
   ](
     pos: Position[P]
   )(implicit
-    ev1: Diff.Aux[P, _1, L]
+    ev1: Pred.Aux[P, L]
   ): ReduciblePosition[L, P] = ReduciblePositionImpl(pos.coordinates)
 }
 
@@ -358,17 +356,17 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
    */
   def melt[
     D <: Nat : ToInt,
-    E <: Nat : ToInt
+    I <: Nat : ToInt
   ](
     dim: D,
-    into: E,
+    into: I,
     merge: (Value, Value) => Value
   )(implicit
-    ev1: D =:!= E,
-    ev2: LTEq[D, P],
-    ev3: LTEq[E, P]
+    ev1: LTEq[D, P],
+    ev2: LTEq[I, P],
+    ev3: IsDistinctConstraint[D :: I :: HNil] // shapeless.=:!= doesn't serialise
   ): Position[L] = {
-    val iidx = toIndex[E]
+    val iidx = toIndex[I]
     val didx = toIndex[D]
 
     PositionImpl(
@@ -382,7 +380,7 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
 private case class ReduciblePositionImpl[L <: Nat, P <: Nat](coordinates: List[Value]) extends ReduciblePosition[L, P]
 
 /** Trait that represents the positions of a matrix. */
-trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[Position[P], U, E, C] {
+trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
   /**
    * Returns the distinct position(s) (or names) for a given `slice`.
    *
@@ -394,13 +392,11 @@ trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Pers
   def names[
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
-    ev2: ClassTag[Position[slice.S]],
-    ev3: Diff.Aux[P, _1, L],
-    ev4: Positions.NamesTuners[U, T]
+    ev2: Positions.NamesTuner[U, T]
   ): U[Position[slice.S]]
 
   /**
@@ -419,7 +415,7 @@ trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Pers
     writer: Persist.TextWriter[Position[P]] = Position.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, T]
+    ev: Persist.SaveAsTextTuner[U, T]
   ): U[Position[P]]
 
   /**
@@ -434,13 +430,14 @@ trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Pers
    * @note The matching is done by converting the coordinate to its short string reprensentation and then applying the
    *       regular expression.
    */
-  def slice[D <: Nat : ToInt](
+  def slice[
+    D <: Nat : ToInt
+  ](
     keep: Boolean,
     dim: D,
     regex: Regex
   )(implicit
-    ev1: ClassTag[Position[P]],
-    ev2: LTEq[D, P]
+    ev: LTEq[D, P]
   ): U[Position[P]] = slice(keep, p => regex.pattern.matcher(p(dim).toShortString).matches)
 
   /**
@@ -454,13 +451,10 @@ trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Pers
    * @note The matching is done by converting each coordinate to its short string reprensentation and then applying the
    *       regular expression.
    */
-  def slice(
-    keep: Boolean,
-    regex: Regex
-  )(implicit
-    ev: ClassTag[Position[P]]
-  ): U[Position[P]] =
-    slice(keep, p => p.coordinates.map(c => regex.pattern.matcher(c.toShortString).matches).reduce(_ && _))
+  def slice(keep: Boolean, regex: Regex): U[Position[P]] = slice(
+    keep,
+    p => p.coordinates.map(c => regex.pattern.matcher(c.toShortString).matches).reduce(_ && _)
+  )
 
   /**
    * Slice the positions using one or more positions.
@@ -473,16 +467,14 @@ trait Positions[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] extends Pers
   def slice(
     keep: Boolean,
     positions: List[Position[P]]
-  )(implicit
-    ev: ClassTag[Position[P]]
   ): U[Position[P]] = slice(keep, p => positions.contains(p))
 
-  protected def slice(keep: Boolean, f: Position[P] => Boolean)(implicit ev: ClassTag[Position[P]]): U[Position[P]]
+  protected def slice(keep: Boolean, f: Position[P] => Boolean): U[Position[P]]
 }
 
 /** Companion object to `Positions` with types, implicits, etc. */
 object Positions {
   /** Trait for tuners permitted on a call to `names`. */
-  trait NamesTuners[U[_], T <: Tuner]
+  trait NamesTuner[U[_], T <: Tuner]
 }
 

@@ -14,7 +14,7 @@
 
 package commbank.grimlock.spark.distance
 
-import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.{ Cell, Locate, MultiDimensionMatrix => FwMultiDimensionMatrix }
 import commbank.grimlock.framework.distance.{ PairwiseDistance => FwPairwiseDistance }
 import commbank.grimlock.framework.environment.tuner.{ Default, InMemory, Ternary, Tuner }
 import commbank.grimlock.framework.position.{ Position, Slice }
@@ -22,34 +22,29 @@ import commbank.grimlock.framework.position.{ Position, Slice }
 import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.tuner.MapMapSideJoin
 import commbank.grimlock.spark.environment.tuner.SparkImplicits._
-import commbank.grimlock.spark.Matrix
+import commbank.grimlock.spark.Persist
 
 import com.twitter.algebird.{ Moments, Monoid }
 
-import scala.reflect.ClassTag
-
 import shapeless.Nat
-import shapeless.nat._1
-import shapeless.ops.nat.Diff
 
+/** Trait for computing pairwise distances from a matrix. */
 trait PairwiseDistance[
-  L <: Nat,
   P <: Nat
-] extends FwPairwiseDistance[L, P, Context.U, Context.E, Context] { self: Matrix[L, P] =>
+] extends FwPairwiseDistance[P, Context.U, Context.E]
+  with Persist[Cell[P]] { self: FwMultiDimensionMatrix[P, Context.U, Context.E] =>
   def correlation[
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T = Default()
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean,
-    strict: Boolean = true
+    strict: Boolean
   )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L],
-    ev3: FwPairwiseDistance.CorrelationTuners[Context.U, T]
+    ev: FwPairwiseDistance.CorrelationTuner[Context.U, T]
   ): Context.U[Cell[Q]] = {
     val msj = Option(MapMapSideJoin[Position[slice.S], (Position[slice.R], Double), Double]())
 
@@ -91,16 +86,14 @@ trait PairwiseDistance[
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T = Default()
   )(
     name: Locate.FromPairwisePositions[slice.S, Q],
     filter: Boolean,
     log: (Double) => Double
   )(implicit
-    ev1: ClassTag[Position[slice.S]],
-    ev2: Diff.Aux[P, _1, L],
-    ev3: FwPairwiseDistance.MutualInformationTuners[Context.U, T]
+    ev: FwPairwiseDistance.MutualInformationTuner[Context.U, T]
   ): Context.U[Cell[Q]] = {
     val msj = Option(MapMapSideJoin[Position[slice.S], Long, Long]())
 

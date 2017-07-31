@@ -82,8 +82,6 @@ case class Context(spark: SparkContext) extends FwContext[Context.U, Context.E] 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 
-  type C = Context
-
   val implicits = Implicits(this)
 
   def empty[T : ClassTag]: Context.U[T] = spark.parallelize(List.empty[T])

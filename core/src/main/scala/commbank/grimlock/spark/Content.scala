@@ -29,11 +29,7 @@ import commbank.grimlock.spark.Persist
 import shapeless.Nat
 
 /** Rich wrapper around a `RDD[Content]`. */
-case class Contents(
-  context: Context,
-  data: Context.U[Content]
-) extends FwContents[Context.U, Context.E, Context]
-  with Persist[Content] {
+case class Contents(context: Context, data: Context.U[Content]) extends FwContents[Context.U] with Persist[Content] {
   def saveAsText[
     T <: Tuner
   ](
@@ -41,7 +37,7 @@ case class Contents(
     writer: FwPersist.TextWriter[Content],
     tuner: T = Default()
   )(implicit
-    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+    ev: FwPersist.SaveAsTextTuner[Context.U, T]
   ): Context.U[Content] = saveText(file, writer, tuner)
 }
 
@@ -51,7 +47,7 @@ case class IndexedContents[
 ](
   context: Context,
   data: Context.U[(Position[P], Content)]
-) extends FwIndexedContents[P, Context.U, Context.E, Context]
+) extends FwIndexedContents[P, Context.U]
   with Persist[(Position[P], Content)] {
   def saveAsText[
     T <: Tuner
@@ -60,7 +56,7 @@ case class IndexedContents[
     writer: FwPersist.TextWriter[(Position[P], Content)],
     tuner: T = Default()
   )(implicit
-    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+    ev: FwPersist.SaveAsTextTuner[Context.U, T]
   ): Context.U[(Position[P], Content)] = saveText(file, writer, tuner)
 }
 

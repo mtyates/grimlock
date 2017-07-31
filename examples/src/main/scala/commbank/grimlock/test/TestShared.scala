@@ -53,9 +53,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.SetTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, InMemory[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.SetTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, InMemory[NoParameters]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
@@ -93,9 +93,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, InMemory[NoParameters]]
+    ev1: Positions.NamesTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, InMemory[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -127,8 +127,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.TypesTuners[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.TypesTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -159,9 +159,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -208,11 +208,11 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuners[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -265,12 +265,12 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuners[U, Default[NoParameters]],
-    ev6: Matrix.WhichTuners[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[U, Default[NoParameters]],
+    ev6: Matrix.WhichTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -343,8 +343,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -375,12 +375,12 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev6: Matrix.UniqueTuners[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev6: Matrix.UniqueTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.content._
     import ctx.implicits.matrix._
@@ -433,9 +433,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev3: Matrix.SquashTuners[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev3: Matrix.SquashTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.partition._
@@ -504,10 +504,10 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev2: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev3: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev4: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev2: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev3: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev4: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -565,10 +565,10 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuners[U, Default[NoParameters]]
+    ev1: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -598,11 +598,11 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.FillHomogeneousTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuners[U, Default[NoParameters]]
+    ev1: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -632,14 +632,14 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.FillHeterogeneousTuners[U, Default[NoParameters]],
-    ev2: Matrix.FillHomogeneousTuners[U, Default[NoParameters]],
-    ev3: Matrix.JoinTuners[U, Default[NoParameters]],
-    ev4: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev5: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev6: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev7: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev8: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.FillHeterogeneousTuner[U, Default[NoParameters]],
+    ev2: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
+    ev3: Matrix.JoinTuner[U, Default[NoParameters]],
+    ev4: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev5: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev6: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev7: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev8: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -688,9 +688,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.ChangeTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]]
+    ev1: Matrix.ChangeTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -713,11 +713,11 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.JoinTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.JoinTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -768,7 +768,7 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -791,11 +791,11 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -872,12 +872,12 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuners[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuners[U, Default[NoParameters]],
-    ev6: Matrix.WhichTuners[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[U, Default[NoParameters]],
+    ev6: Matrix.WhichTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
@@ -930,13 +930,13 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuners[U, Default[NoParameters]],
-    ev2: Matrix.FillHomogeneousTuners[U, Default[NoParameters]],
-    ev3: Positions.NamesTuners[U, Default[NoParameters]],
-    ev4: Matrix.SaveAsCSVTuners[U, Default[NoParameters]],
-    ev5: Matrix.SliceTuners[U, Default[NoParameters]],
-    ev6: Matrix.SquashTuners[U, Default[NoParameters]],
-    ev7: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
+    ev2: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
+    ev3: Positions.NamesTuner[U, Default[NoParameters]],
+    ev4: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
+    ev5: Matrix.SliceTuner[U, Default[NoParameters]],
+    ev6: Matrix.SquashTuner[U, Default[NoParameters]],
+    ev7: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.partition._
@@ -1021,7 +1021,7 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1043,9 +1043,9 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.ShapeTuners[U, Default[NoParameters]],
-    ev3: Matrix.SizeTuners[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.ShapeTuner[U, Default[NoParameters]],
+    ev3: Matrix.SizeTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1078,8 +1078,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.SlideTuners[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.SlideTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1127,8 +1127,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.PairwiseTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev1: Matrix.PairwiseTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1168,8 +1168,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: PairwiseDistance.CorrelationTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev1: PairwiseDistance.CorrelationTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1213,8 +1213,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: PairwiseDistance.MutualInformationTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev1: PairwiseDistance.MutualInformationTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1247,8 +1247,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.PairwiseTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev1: Matrix.PairwiseTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1259,7 +1259,7 @@ object Shared {
       .pairwiseBetween(Over(_1), Default())(
         All,
         right,
-        Times(Locate.PrependPairwiseSelectedStringToRemainder[_1, _2](Over(_1), "(%1$s*%2$s)"))
+        Times(Locate.PrependPairwiseSelectedStringToRemainder(Over(_1), "(%1$s*%2$s)"))
       )
       .saveAsText(s"./tmp.${tool}/alg.out", tuner = Default())
       .toUnit
@@ -1273,8 +1273,8 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.SlideTuners[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.SlideTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1342,9 +1342,9 @@ object Shared {
     rules: CutRules[E],
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuners[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev3: Matrix.SummariseTuners[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev3: Matrix.SummariseTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1433,8 +1433,8 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Default[NoParameters]],
-    ev2: Matrix.StreamTuners[U, Default[Reducers]]
+    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
+    ev2: Matrix.StreamTuner[U, Default[Reducers]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1471,7 +1471,7 @@ object Shared {
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -1494,7 +1494,7 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev: Matrix.SaveAsIVTuners[U, Default[NoParameters]]
+    ev: Matrix.SaveAsIVTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1578,7 +1578,7 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev: Matrix.SaveAsVWTuners[U, Default[NoParameters]]
+    ev: Matrix.SaveAsVWTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
@@ -1632,8 +1632,8 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuners[U, Redistribute],
-    ev2: Matrix.StreamTuners[U, Default[Reducers]]
+    ev1: Persist.SaveAsTextTuner[U, Redistribute],
+    ev2: Matrix.StreamTuner[U, Default[Reducers]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._

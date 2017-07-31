@@ -16,24 +16,21 @@ package commbank.grimlock.framework.distribution
 
 import commbank.grimlock.framework.{ Cell, Locate, Matrix }
 import commbank.grimlock.framework.content.Content
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.ContinuousSchema
 import commbank.grimlock.framework.position.{ Position, Slice }
-import commbank.grimlock.framework.utility.=:!=
 
 import com.tdunning.math.stats.AVLTreeDigest
 
 import scala.collection.immutable.SortedMap
 import scala.math.BigDecimal
-import scala.reflect.ClassTag
 
-import shapeless.Nat
-import shapeless.nat.{ _0, _1 }
-import shapeless.ops.nat.{ Diff, GT }
+import shapeless.{ =:!=, Nat }
+import shapeless.nat._0
+import shapeless.ops.nat.GT
 
 /** Trait for computing approximate distributions from a matrix. */
-trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]] { self: Matrix[L, P, U, E, C] =>
+trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
   /**
    * Compute histogram.
    *
@@ -48,16 +45,14 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     name: Locate.FromSelectedAndContent[slice.S, Q],
     filter: Boolean = true
   )(implicit
-    ev1: ClassTag[Position[Q]],
-    ev2: GT[Q, slice.S],
-    ev3: Diff.Aux[P, _1, L],
-    ev4: ApproximateDistribution.HistogramTuners[U, T]
+    ev1: GT[Q, slice.S],
+    ev2: ApproximateDistribution.HistogramTuner[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -79,7 +74,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     probs: List[Double],
@@ -89,10 +84,8 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
-    ev2: ClassTag[Position[slice.S]],
-    ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L],
-    ev5: ApproximateDistribution.QuantilesTuners[U, T]
+    ev2: GT[Q, slice.S],
+    ev3: ApproximateDistribution.QuantilesTuner[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -114,7 +107,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     probs: List[Double],
@@ -124,10 +117,8 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
-    ev2: ClassTag[Position[slice.S]],
-    ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L],
-    ev5: ApproximateDistribution.CountMapQuantilesTuners[U, T]
+    ev2: GT[Q, slice.S],
+    ev3: ApproximateDistribution.CountMapQuantilesTuner[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -149,7 +140,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     probs: List[Double],
@@ -159,10 +150,8 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
-    ev2: ClassTag[Position[slice.S]],
-    ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L],
-    ev5: ApproximateDistribution.TDigestQuantilesTuners[U, T]
+    ev2: GT[Q, slice.S],
+    ev3: ApproximateDistribution.TDigestQuantilesTuner[U, T]
   ): U[Cell[Q]]
 
   /**
@@ -183,7 +172,7 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     Q <: Nat,
     T <: Tuner
   ](
-    slice: Slice[L, P],
+    slice: Slice[P],
     tuner: T
   )(
     count: Long,
@@ -192,29 +181,27 @@ trait ApproximateDistribution[L <: Nat, P <: Nat, U[_], E[_], C <: Context[U, E]
     nan: Boolean = false
   )(implicit
     ev1: slice.R =:!= _0,
-    ev2: ClassTag[Position[slice.S]],
-    ev3: GT[Q, slice.S],
-    ev4: Diff.Aux[P, _1, L],
-    ev5: ApproximateDistribution.UniformQuantilesTuners[U, T]
+    ev2: GT[Q, slice.S],
+    ev3: ApproximateDistribution.UniformQuantilesTuner[U, T]
   ): U[Cell[Q]]
 }
 
 /** Companion object to `ApproximateDistribution` with implicits, types, etc. */
 object ApproximateDistribution {
   /** Trait for tuners permitted on a call to `histogram`. */
-  trait HistogramTuners[U[_], T <: Tuner]
+  trait HistogramTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `quantiles`. */
-  trait QuantilesTuners[U[_], T <: Tuner]
+  trait QuantilesTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `countMapQuantiles`. */
-  trait CountMapQuantilesTuners[U[_], T <: Tuner]
+  trait CountMapQuantilesTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `tDigestQuantiles`. */
-  trait TDigestQuantilesTuners[U[_], T <: Tuner]
+  trait TDigestQuantilesTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `uniformQuantiles`. */
-  trait UniformQuantilesTuners[U[_], T <: Tuner]
+  trait UniformQuantilesTuner[U[_], T <: Tuner]
 }
 
 /** Contains implementations for the quantisers as per R's quantile function. */

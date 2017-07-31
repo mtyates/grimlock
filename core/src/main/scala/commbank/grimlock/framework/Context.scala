@@ -64,11 +64,8 @@ trait Context[U[_], E[_]] {
     parser: Cell.ParquetParser[T, P]
   ): (U[Cell[P]], U[String])
 
-  /** Concrete type of this context. */
-  type C <: Context[U, E]
-
   /** All implicits for this context. */
-  val implicits: Implicits[U, E, C]
+  val implicits: Implicits[U, E]
 
   /** Create empty instance of `U`. */
   def empty[T : ClassTag]: U[T]

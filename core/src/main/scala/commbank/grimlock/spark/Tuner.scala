@@ -24,10 +24,13 @@ import commbank.grimlock.framework.environment.tuner.{
   SetMapSideJoin => FwSetMapSideJoin,
   Tuner
 }
+import commbank.grimlock.framework.position.Position
 
 import commbank.grimlock.spark.environment.Context
 
 import scala.reflect.ClassTag
+
+import shapeless.Nat
 
 private[spark] case class MapMapSideJoin[K, V, W]() extends FwMapMapSideJoin[K, V, W, Context.U, Context.E] {
   def compact(
@@ -50,6 +53,8 @@ private[spark] case class SetMapSideJoin[K, V]() extends FwSetMapSideJoin[K, V, 
 }
 
 private[spark] object SparkImplicits {
+  implicit def positionOrdering[N <: Nat] = Position.ordering[N]()
+
   private[spark] implicit class PairRDDTuner[K, V](rdd: Context.U[(K, V)])(implicit kt: ClassTag[K], vt: ClassTag[V]) {
     def tunedJoin[W](
       tuner: Tuner,

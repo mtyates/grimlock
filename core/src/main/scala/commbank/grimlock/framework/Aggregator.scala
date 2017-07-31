@@ -89,15 +89,6 @@ object Multiple {
   def apply[A](): Multiple[A] = Multiple[A](List())
 }
 
-private object Validate {
-  def check[A <: AggregatorWithValue[_, _, _]](aggregators: Seq[A]): A =
-    // TODO: Is there any way to check this at compile time (and not throw a runtime exception)?
-    if (aggregators.size == 1 && aggregators.head.oTag == classTag[Single[_]])
-      aggregators.head
-    else
-      throw new Exception("Only a single aggregator, returning a single value can be used when slice.S =:= Q")
-}
-
 /** Trait for aggregations. */
 trait Aggregator[P <: Nat, S <: Nat, Q <: Nat] extends AggregatorWithValue[P, S, Q] { self =>
   type V = Any
@@ -543,5 +534,14 @@ object AggregatorWithValue {
       }
     )
   }
+}
+
+private object Validate {
+  def check[A <: AggregatorWithValue[_, _, _]](aggregators: Seq[A]): A =
+    // TODO: Is there any way to check this at compile time (and not throw a runtime exception)?
+    if (aggregators.size == 1 && aggregators.head.oTag == classTag[Single[_]])
+      aggregators.head
+    else
+      throw new Exception("Only a single aggregator, returning a single value can be used when slice.S =:= Q")
 }
 

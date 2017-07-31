@@ -15,7 +15,6 @@
 package commbank.grimlock.framework.partition
 
 import commbank.grimlock.framework.{ Cell, Persist }
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 
 import scala.reflect.ClassTag
@@ -113,7 +112,7 @@ object PartitionerWithValue {
 }
 
 /** Trait that represents the partitions of matrices */
-trait Partitions[P <: Nat, I, U[_], E[_], C <: Context[U, E]] extends Persist[(I, Cell[P]), U, E, C] {
+trait Partitions[P <: Nat, I, U[_]] extends Persist[(I, Cell[P]), U] {
   /**
    * Add a partition.
    *
@@ -145,7 +144,7 @@ trait Partitions[P <: Nat, I, U[_], E[_], C <: Context[U, E]] extends Persist[(I
     tuner: T
   )(implicit
     ev1: ClassTag[I],
-    ev2: Partitions.ForAllTuners[U, T]
+    ev2: Partitions.ForAllTuner[U, T]
   ): U[(I, Cell[Q])]
 
   /**
@@ -172,7 +171,7 @@ trait Partitions[P <: Nat, I, U[_], E[_], C <: Context[U, E]] extends Persist[(I
    *
    * @param tuner The tuner for the job.
    */
-  def ids[T <: Tuner](tuner: T)(implicit ev1: ClassTag[I], ev2: Partitions.IdsTuners[U, T]): U[I]
+  def ids[T <: Tuner](tuner: T)(implicit ev1: ClassTag[I], ev2: Partitions.IdsTuner[U, T]): U[I]
 
   /**
    * Merge partitions into a single matrix.
@@ -208,17 +207,17 @@ trait Partitions[P <: Nat, I, U[_], E[_], C <: Context[U, E]] extends Persist[(I
     writer: Persist.TextWriter[(I, Cell[P])] = Partitions.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, T]
+    ev: Persist.SaveAsTextTuner[U, T]
   ): U[(I, Cell[P])]
 }
 
 /** Companion object to `Partitions` with types, implicits, etc. */
 object Partitions {
   /** Trait for tuners permitted on a call to `forAll`. */
-  trait ForAllTuners[U[_], T <: Tuner]
+  trait ForAllTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `ids`. */
-  trait IdsTuners[U[_], T <: Tuner]
+  trait IdsTuner[U[_], T <: Tuner]
 
   /**
    * Return function that returns a string representation of a partition.

@@ -16,7 +16,6 @@ package commbank.grimlock.framework.content
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{ Codec, Value }
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.Schema
 import commbank.grimlock.framework.position.Position
@@ -63,6 +62,7 @@ trait Content { self =>
    */
   def toJSON(pretty: Boolean = false, descriptive: Boolean = true): String = {
     implicit val wrt = Content.writes(descriptive)
+
     val json = Json.toJson(this)
 
     if (pretty) Json.prettyPrint(json) else Json.stringify(json)
@@ -93,10 +93,9 @@ object Content {
    *
    * @return A content parser.
    */
-  def parser[T](codec: Codec { type D = T }, schema: Schema { type D = T }): Parser = (str: String) =>
-    codec
-      .decode(str)
-      .flatMap { case v => if (schema.validate(v)) Option(Content(schema, v)) else None }
+  def parser[T](codec: Codec { type D = T }, schema: Schema { type D = T }): Parser = (str: String) => codec
+    .decode(str)
+    .flatMap { case v => if (schema.validate(v)) Option(Content(schema, v)) else None }
 
   /**
    * Return content parser from codec and schema strings.
@@ -118,8 +117,11 @@ object Content {
    *
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
-  def fromComponents(codec: String, schema: String, value: String): Option[Content] =
-    parserFromComponents(codec, schema).flatMap(parser => parser(value))
+  def fromComponents(
+    codec: String,
+    schema: String,
+    value: String
+  ): Option[Content] = parserFromComponents(codec, schema).flatMap(parser => parser(value))
 
   /**
    * Parse a content from string.
@@ -215,7 +217,7 @@ private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { 
 }
 
 /** Trait that represents the contents of a matrix. */
-trait Contents[U[_], E[_], C <: Context[U, E]] extends Persist[Content, U, E, C] {
+trait Contents[U[_]] extends Persist[Content, U] {
   /**
    * Persist to disk.
    *
@@ -232,12 +234,12 @@ trait Contents[U[_], E[_], C <: Context[U, E]] extends Persist[Content, U, E, C]
     writer: Persist.TextWriter[Content] = Content.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, T]
+    ev: Persist.SaveAsTextTuner[U, T]
   ): U[Content]
 }
 
 /** Trait that represents the output of uniqueByPosition. */
-trait IndexedContents[P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[(Position[P], Content), U, E, C] {
+trait IndexedContents[P <: Nat, U[_]] extends Persist[(Position[P], Content), U] {
   /**
    * Persist to disk.
    *
@@ -254,7 +256,7 @@ trait IndexedContents[P <: Nat, U[_], E[_], C <: Context[U, E]] extends Persist[
     writer: Persist.TextWriter[(Position[P], Content)] = IndexedContents.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuners[U, T]
+    ev: Persist.SaveAsTextTuner[U, T]
   ): U[(Position[P], Content)]
 }
 

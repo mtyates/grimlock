@@ -14,19 +14,12 @@
 
 package commbank.grimlock.framework
 
-import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 
 import org.apache.hadoop.io.Writable
 
 /** Trait for persisting data. */
-trait Persist[X, U[_], E[_], C <: Context[U, E]] extends java.io.Serializable {
-  /** Operating context for the data. */
-  val context: C
-
-  /** The underlying data. */
-  val data: U[X]
-
+trait Persist[X, U[_]] extends java.io.Serializable {
   /**
    *   Convenience function for suppressing ‘Discarded non-unit value’ compiler warnings.
    *
@@ -53,11 +46,11 @@ object Persist {
   type TextWriterByPosition[X] = (List[Option[X]]) => TraversableOnce[String]
 
   /** Trait for tuners permitted on a call to `saveAsText`. */
-  trait SaveAsTextTuners[U[_], T <: Tuner]
+  trait SaveAsTextTuner[U[_], T <: Tuner]
 }
 
 /** Trait for writing strings as text. */
-trait SaveStringsAsText[U[_], E[_], C <: Context[U, E]] extends Persist[String, U, E, C] {
+trait SaveStringsAsText[U[_]] extends Persist[String, U] {
   /**
    * Persist to disk.
    *
@@ -66,6 +59,6 @@ trait SaveStringsAsText[U[_], E[_], C <: Context[U, E]] extends Persist[String, 
    *
    * @return A `U[String]`; that is it returns `data`.
    */
-  def saveAsText[T <: Tuner](file: String, tuner: T)(implicit ev: Persist.SaveAsTextTuners[U, T]): U[String]
+  def saveAsText[T <: Tuner](file: String, tuner: T)(implicit ev: Persist.SaveAsTextTuner[U, T]): U[String]
 }
 

@@ -14,12 +14,12 @@
 
 package commbank.grimlock.framework.position
 
-import shapeless.{ Nat, Witness }
+import shapeless.Nat
 import shapeless.nat._1
-import shapeless.ops.nat.{ Diff, LTEq, ToInt }
+import shapeless.ops.nat.{ LTEq, Pred, ToInt }
 
 /** Trait that encapsulates dimension on which to operate. */
-sealed trait Slice[L <: Nat, P <: Nat] {
+sealed trait Slice[P <: Nat] {
   /**
    * Return type of the `selected` method; a position of dimension less than `P`.
    *
@@ -34,127 +34,60 @@ sealed trait Slice[L <: Nat, P <: Nat] {
    */
   type R <: Nat
 
-  /** Type of the dimension. */
-  type D <: Nat
-
   /** The dimension of this slice. */
-  val dimension: D
+  val dimension: Nat
 
   /** Returns the selected coordinate(s) for the given `pos`. */
-  def selected(pos: ReduciblePosition[L, P]): Position[S]
+  def selected(pos: Position[P]): Position[S]
 
   /** Returns the remaining coordinate(s) for the given `pos`. */
-  def remainder(pos: ReduciblePosition[L, P]): Position[R]
-
-  protected def remove(pos: ReduciblePosition[L, P])(implicit ev1: ToInt[D], ev2: LTEq[D, P]): Position[L] = pos
-    .remove(dimension)
-  protected def single(pos: Position[P])(implicit ev1: ToInt[D], ev2: LTEq[D, P]): Position[_1] =
-    Position(pos(dimension))
+  def remainder(pos: Position[P]): Position[R]
 }
 
 /**
- * Indicates that the selected coordinate is indexed by `dimension`. In other words, when a groupBy is performed, it is
- * performed using a `Position[_1]` consisting of the coordinate at index `dimension`.
+ * Indicates that the selected coordinate is indexed by `dimension`. In other words, when a groupBy is performed,
+ * it is performed using a `Position[_1]` consisting of the coordinate at index `dimension`.
+ *
+ * @param dimension Dimension of the selected coordinate.
  */
-sealed trait Over[
-  L <: Nat,
-  P <: Nat,
-  X <: Nat
-] extends Slice[L, P] {
-  type S = _1
-  type R = L
-  type D = X
-}
-
-/** Companion object to `Over` trait. */
-object Over {
-  /**
-   * Indicates that the selected coordinate is indexed by `dimension`. In other words, when a groupBy is performed,
-   * it is performed using a `Position[_1]` consisting of the coordinate at index `dimension`.
-   *
-   * @param dimension Dimension of the selected coordinate.
-   */
-  def apply[
-    L <: Nat,
-    P <: Nat
-  ](
-    dimension: Nat
-  )(implicit
-    ev1: Diff.Aux[P, L, _1],
-    ev2: LTEq[dimension.N, P],
-    ev3: Witness.Aux[dimension.N],
-    ev4: ToInt[dimension.N]
-  ): Over[L, P, dimension.N] = OverImpl(ev3.value)
-
-  /** Standard `unapply` method for pattern matching. */
-  def unapply[D <: Nat](over: Over[_, _, D]): Option[D] = Option(over.dimension)
-}
-
-private case class OverImpl[
+case class Over[
   L <: Nat,
   P <: Nat,
   D <: Nat : ToInt
 ](
   dimension: D
 )(implicit
-  ev1: Diff.Aux[P, L, _1],
+  ev1: Pred.Aux[P, L],
   ev2: LTEq[D, P]
-) extends Over[L, P, D] {
-  def selected(pos: ReduciblePosition[L, P]): Position[S] = single(pos)
-  def remainder(pos: ReduciblePosition[L, P]): Position[R] = remove(pos)
+) extends Slice[P] {
+  type S = _1
+  type R = L
+
+  def selected(pos: Position[P]): Position[S] = Position(pos(dimension))
+  def remainder(pos: Position[P]): Position[R] = pos.remove(dimension)
 }
 
 /**
  * Indicates that the selected coordinates are all except the one indexed by `dimension`. In other words, when a
  * groupBy is performed, it is performed using a `Position[L]` consisting of all coordinates except that at index
  * `dimension`.
+ *
+ * @param dimension Dimension of the coordinate to exclude.
  */
-sealed trait Along[
-  L <: Nat,
-  P <: Nat,
-  X <: Nat
-] extends Slice[L, P] {
-  type S = L
-  type R = _1
-  type D = X
-}
-
-/** Companion object to `Along` trait. */
-object Along {
-  /**
-   * Indicates that the selected coordinates are all except the one indexed by `dimension`. In other words, when a
-   * groupBy is performed, it is performed using a `Position[L]` consisting of all coordinates except that at index
-   * `dimension`.
-   *
-   * @param dimension Dimension of the coordinate to exclude.
-   */
-  def apply[
-    L <: Nat,
-    P <: Nat
-  ](
-    dimension: Nat
-  )(implicit
-    ev1: Diff.Aux[P, L, _1],
-    ev2: LTEq[dimension.N, P],
-    ev3: Witness.Aux[dimension.N],
-    ev4: ToInt[dimension.N]
-  ): Along[L, P, dimension.N] = AlongImpl(ev3.value)
-
-  /** Standard `unapply` method for pattern matching. */
-  def unapply[D <: Nat](along: Along[_, _, D]): Option[D] = Option(along.dimension)
-}
-
-private case class AlongImpl[
+case class Along[
   L <: Nat,
   P <: Nat,
   D <: Nat : ToInt
 ](
   dimension: D
 )(implicit
-  ev1: Diff.Aux[P, L, _1],
+  ev1: Pred.Aux[P, L],
   ev2: LTEq[D, P]
-) extends Along[L, P, D] {
-  def selected(pos: ReduciblePosition[L, P]): Position[S] = remove(pos)
-  def remainder(pos: ReduciblePosition[L, P]): Position[R] = single(pos)
+) extends Slice[P] {
+  type S = L
+  type R = _1
+
+  def selected(pos: Position[P]): Position[S] = pos.remove(dimension)
+  def remainder(pos: Position[P]): Position[R] = Position(pos(dimension))
 }
 

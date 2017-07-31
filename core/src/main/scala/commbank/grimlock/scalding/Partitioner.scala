@@ -33,7 +33,7 @@ case class Partitions[
 ](
   context: Context,
   data: Context.U[(I, Cell[P])]
-) extends FwPartitions[P, I, Context.U, Context.E, Context]
+) extends FwPartitions[P, I, Context.U]
   with Persist[(I, Cell[P])] {
   def add(id: I, partition: Context.U[Cell[P]]): Context.U[(I, Cell[P])] = data ++ (partition.map { case c => (id, c) })
 
@@ -46,7 +46,7 @@ case class Partitions[
     tuner: T = Default()
   )(implicit
     ev1: ClassTag[I],
-    ev2: FwPartitions.ForAllTuners[Context.U, T]
+    ev2: FwPartitions.ForAllTuner[Context.U, T]
   ): Context.U[(I, Cell[Q])] = {
     val ids = data
       .collect { case (i, _) if !exclude.contains(i) => i }
@@ -71,7 +71,7 @@ case class Partitions[
     tuner: T = Default()
   )(implicit
     ev1: ClassTag[I],
-    ev2: FwPartitions.IdsTuners[Context.U, T]
+    ev2: FwPartitions.IdsTuner[Context.U, T]
   ): Context.U[I] = data.map { case (i, _) => i }.tunedDistinct(tuner)
 
   def merge(ids: List[I]): Context.U[Cell[P]] = data.collect { case (i, c) if (ids.contains(i)) => c }
@@ -85,7 +85,7 @@ case class Partitions[
     writer: FwPersist.TextWriter[(I, Cell[P])],
     tuner: T = Default()
   )(implicit
-    ev: FwPersist.SaveAsTextTuners[Context.U, T]
+    ev: FwPersist.SaveAsTextTuner[Context.U, T]
   ): Context.U[(I, Cell[P])] = saveText(file, writer, tuner)
 }
 

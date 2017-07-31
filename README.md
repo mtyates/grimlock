@@ -86,7 +86,7 @@ Performing operations along any of the dimensions of the matrix is supported thr
   |    |  +   |  +   |   |_|/    |  +
   |    | /    | /    |           | /
   |    |/     |/     |           |/
-  +----+------+      +----+------+
+  +----+------+      +-----------+
 ```
 
 ### Data Format
