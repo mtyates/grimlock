@@ -12,101 +12,137 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import au.com.cba.omnia.uniform.assembly.UniformAssemblyPlugin.uniformAssemblySettings
-import au.com.cba.omnia.uniform.core.standard.StandardProjectPlugin.uniform
+import com.typesafe.sbt.SbtSite.SiteKeys.makeSite
 
-lazy val standardSettings = Defaults.coreDefaultSettings ++ Seq(
-  conflictManager := ConflictManager.strict,
-  test in assembly := {},
-  parallelExecution in Test := false,
-  scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-unchecked", "-Xlint", "-feature", "-language:_"),
-  scalacOptions in (Compile, console) ~= (_.filterNot(Set("-Xfatal-warnings"))),
-  scalacOptions in (Compile, doc) ~= (_.filterNot(Set("-Xfatal-warnings"))),
-  scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value
-)
+import sbtassembly.MergeStrategy
+
+import sbtunidoc.Plugin.UnidocKeys.unidoc
+
+val jvmVersion = "1.7"
 
 lazy val all = Project(
-  id = "all",
+  id = "grimlock-all",
   base = file("."),
-  settings = standardSettings ++
-    uniform.project("grimlock-all", "commbank.grimlock.all") ++
-    uniform.ghsettings ++
-    Seq(assembly := file(""), publishArtifact := false),
+  settings = Seq(assembly := file(""), publishArtifact := false) ++ standardSettings ++ websiteSettings,
   aggregate = Seq(core, examples)
 )
 
 lazy val core = Project(
-  id = "core",
+  id = "grimlock-core",
   base = file("core"),
-  settings = standardSettings ++
-    uniform.project("grimlock-core", "commbank.grimlock") ++
-    uniformAssemblySettings ++
-    uniform.docSettings("https://github.com/CommBank/grimlock") ++
-    Seq(
-      resolvers ++= Seq(
-        "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos/",                 // *-cdh jars
-        "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local",  // ebenezer jars
-        "Concurrent Maven Repo" at "http://conjars.org/repo",                                        // cascading jars
-        "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"                                  // scalaz jars
-      ),
-      libraryDependencies ++= noDerby(
-        Seq(
-          "org.apache.spark" %% "spark-core" % "2.1.1"
-            exclude("com.twitter",                "chill-java")                     // 0.8.0   -> 0.8.4   [scalding]
-            exclude("com.twitter",                "chill_2.11")                     // 0.8.0   -> 0.8.4   [scalding]
-            exclude("com.google.guava",           "guava")                          // 11.0.1  -> 14.0.1  [scalding]
-            ,
-          "com.typesafe.play" %% "play-json" % "2.6.0-M1"
-            exclude("com.fasterxml.jackson.core", "jackson-annotations") // TODO:   // 2.8.5   ->  2.6.5! [spark]
-            exclude("com.fasterxml.jackson.core", "jackson-core")        // TODO:   // 2.8.5   ->  2.6.5! [spark]
-            exclude("com.fasterxml.jackson.core", "jackson-databind")    // TODO:   // 2.8.5   ->  2.6.5! [spark]
-            ,
-          "com.tdunning" %  "t-digest" % "3.2-20160726-OMNIA"
-            ,
-          "com.chuusai" %% "shapeless" % "2.3.2"
-            ,
-          "com.twitter" %% "scalding-core" % "0.17.0"
-            exclude("org.slf4j",                  "slf4j-api")                      // 1.6.6   -> 1.7.16  [spark]
-            ,
-          "com.twitter" %% "scrooge-core" % "4.12.0"
-            ,
-          "au.com.cba.omnia" %% "ebenezer" % "0.23.13-20170710073951-5e6af7a"       // TODO: Can something else be used?
-            exclude("org.apache.commons",          "commons-lang3")                 // 3.1     -> 3.5     [spark]
-            exclude("org.apache.hadoop",           "hadoop-client")      // TODO:   // 2.5.0   -> 2.2.0!  [spark]
-            exclude("org.scala-lang.modules",      "scala-parser-combinators_2.11") // 1.0.2   -> 1.0.4   [spark]
-            exclude("org.scala-lang.modules",      "scala-xml_2.11")                // 1.0.2   -> 1.0.4   [spark]
-            exclude("com.twitter",                 "algebird-core_2.11")            // 0.12.0  -> 0.13.0  [scalding]
-            exclude("com.twitter",                 "bijection-core_2.11")           // 0.9.1   -> 0.9.5   [scalding]
-            exclude("com.twitter",                 "bijection-macros_2.11")         // 0.9.1   -> 0.95    [scalding]
-            exclude("com.twitter",                 "scalding-core_2.11")            // 0.16.0  -> 0.17.0  [scalding]
-            exclude("com.twitter",                 "scrooge-core_2.11")             // 3.20.0  -> 4.12.0  [scrooge]
-            ,
-          "org.joda" % "joda-convert" % "1.8.2"                                     // Needed by play-json
-            ,
-          "com.esotericsoftware"      %  "kryo"       % "3.0.3" % "test"            // Needed by Spark unit tests
-            ,
-          "org.scalatest"             %% "scalatest"  % "3.0.1" % "test"
-            exclude("org.scala-lang.modules", "scala-xml_2.11")          // TODO:   // 1.0.5   -> 1.0.4!  [spark]
-        )
+  settings = Seq(
+    libraryDependencies ++= noDerby(
+      Seq(
+        "org.apache.spark" %% "spark-core" % "2.1.1"
+          exclude("com.google.guava",           "guava")                        // 11.0.2  -> 14.0.1  [scalding]
+          exclude("com.twitter",                "chill_2.11")                   // 0.8.0   -> 0.8.4   [scalding]
+          exclude("com.twitter",                "chill-java")                   // 0.8.0   -> 0.8.4   [scalding]
+          ,
+        "com.typesafe.play" %% "play-json" % "2.3.10"
+          exclude("com.fasterxml.jackson.core", "jackson-annotations")          // 2.3.2   ->  2.6.5  [spark]
+          exclude("com.fasterxml.jackson.core", "jackson-core")                 // 2.3.2   ->  2.6.5  [spark]
+          exclude("com.fasterxml.jackson.core", "jackson-databind")             // 2.3.2   ->  2.6.5  [spark]
+          ,
+        "com.tdunning" %  "t-digest" % "3.2"
+          ,
+        "com.chuusai" %% "shapeless" % "2.3.2"
+          ,
+        "com.twitter" %% "scalding-core" % "0.17.2"
+          exclude("org.slf4j",                  "slf4j-api")                    // 1.6.6   -> 1.7.16  [spark]
+          ,
+        "com.twitter" %% "scalding-parquet-scrooge" % "0.17.2"
+          exclude("commons-lang",               "commons-lang")                 // 2.5     -> 2.6     [spark]
+          exclude("commons-codec",              "commons-codec")                // 1.4     -> 1.5     [spark]
+          exclude("org.codehaus.jackson",       "jackson-core-asl")             // 1.9.11  -> 1.9.13  [spark]
+          exclude("org.codehaus.jackson",       "jackson-mapper-asl")           // 1.9.11  -> 1.9.13  [spark]
+          exclude("org.slf4j",                  "slf4j-api")                    // 1.6.6   -> 1.7.16  [spark]
+          exclude("org.xerial.snappy",          "snappy-java")                  // 1.1.1.6 -> 1.1.2.6 [spark]
+          ,
+        "com.esotericsoftware" % "kryo" % "3.0.3" % "test"                      // Needed by Spark unit tests
+          ,
+        "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+          exclude("org.scala-lang.modules",     "scala-xml_2.11")               // 1.0.5   -> 1.0.4   [scala] !
       )
-    ) ++
-    overrides
+    )
+  ) ++
+  standardSettings ++
+  resolverSettings ++
+  assemblySettings ++
+  documentationSettings
 )
 
 lazy val examples = Project(
-  id = "examples",
+  id = "grimlock-examples",
   base = file("examples"),
-  settings = standardSettings ++
-    uniform.project("grimlock-examples", "commbank.grimlock.examples") ++
-    uniformAssemblySettings ++
-    overrides
+  settings = standardSettings ++ assemblySettings
 ).dependsOn(core % "test->test;compile->compile")
 
-lazy val overrides = Seq(
+lazy val assemblySettings = Seq(
+  assemblyMergeStrategy in assembly := { // TODO: Clean up this implementation
+    case "META-INF/LICENSE" => MergeStrategy.rename
+    case "META-INF/license" => MergeStrategy.rename
+    case "META-INF/NOTICE.txt" => MergeStrategy.rename
+    case "META-INF/LICENSE.txt" => MergeStrategy.rename
+    case "META-INF/MANIFEST.MF" => MergeStrategy.discard
+    case "application.conf" => MergeStrategy.concat
+    case "reference.conf"   => MergeStrategy.concat
+    case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".dsa") => MergeStrategy.discard
+    case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".rsa") => MergeStrategy.discard
+    case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".sf") => MergeStrategy.discard
+    case _ => MergeStrategy.first
+  },
+  artifact in (Compile, assembly) ~= { _.copy(`classifier` = Some("assembly")) }
+) ++
+addArtifact(artifact in (Compile, assembly), assembly)
+
+lazy val compilerSettings = Seq(
+  scalaVersion := "2.11.8",
+  scalacOptions ++= Seq("-Xfatal-warnings", "-deprecation", "-unchecked", "-Xlint", "-feature", "-language:_"),
+  scalacOptions in (Compile, console) ~= (_.filterNot(Set("-Xfatal-warnings"))),
+  scalacOptions in (Compile, doc) ~= (_.filterNot(Set("-Xfatal-warnings"))),
+  scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
+  javacOptions ++= Seq("-Xlint:unchecked", "-source", jvmVersion, "-target", jvmVersion)
+)
+
+lazy val dependencySettings = Seq(
+  conflictManager := ConflictManager.strict,
   dependencyOverrides ++= Set(
-    "com.twitter"                %% "util-core" % "6.42.0",              // TODO: Needed for interop with io.finch
-    "org.apache.thrift"          %  "libthrift" % "0.9.0-cdh5-3",        // TODO:   // 0.7.0   -> 0.9.0   [ebenezer!]
-    "com.thoughtworks.paranamer" %  "paranamer" % "2.6"                  // TODO:   // 2.3     -> 2.6     [spark!]
+    "com.thoughtworks.paranamer" %  "paranamer"     % "2.6",                    // 2.3     -> 2.6     [spark]
+    "commons-codec"              %  "commons-codec" % "1.8",                    // 1.4     -> 1.8     [spark]
+    "javax.activation"           %  "activation"    % "1.1.1",                  // 1.1     -> 1.1.1   [spark]
+    "org.apache.httpcomponents"  %  "httpclient"    % "4.3.6",                  // 4.2.5   -> 4.3.6   [spark]
+    "org.apache.httpcomponents"  %  "httpcore"      % "4.3.3"                   // 4.3.2   -> 4.3.3   [spark]
+  )
+)
+
+lazy val documentationSettings = Seq(
+  autoAPIMappings := true,
+  apiURL := Some(url("https://github.com/CommBank/grimlock"))
+)
+
+lazy val resolverSettings = Seq(
+  resolvers ++= Seq("Concurrent Maven Repo" at "http://conjars.org/repo")       // cascading jars
+)
+
+lazy val standardSettings = Defaults.coreDefaultSettings ++ Seq(
+  licenses := Seq("Apache License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+  organization := "au.com.cba.omnia"
+) ++
+dependencySettings ++
+compilerSettings ++
+testSettings
+
+lazy val testSettings = Seq(test in assembly := {}, parallelExecution in Test := false)
+
+lazy val websiteSettings = unidocSettings ++ site.settings ++ Seq(
+  site.addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), "latest/api"),
+  includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.yml",
+  apiURL := Some(url(s"https://commbank.github.io/${baseDirectory.value.getName}/latest/api")),
+  scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
+    "-sourcepath",
+    baseDirectory.value.getAbsolutePath,
+    "-doc-source-url",
+    s"https://github.com/CommBank/${baseDirectory.value.getName}/blob/master/€{FILE_PATH}.scala"
   )
 )
 

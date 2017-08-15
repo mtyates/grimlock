@@ -14,12 +14,11 @@
 
 package commbank.grimlock.scalding.environment
 
-import au.com.cba.omnia.ebenezer.scrooge.ParquetScroogeSource
-
 import cascading.flow.FlowDef
 
 import com.twitter.scalding.{ Config, Mode }
 import com.twitter.scalding.{ TextLine, WritableSequenceFile }
+import com.twitter.scalding.parquet.scrooge.FixedPathParquetScrooge
 import com.twitter.scalding.source.NullSink
 import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
 import com.twitter.scrooge.ThriftStruct
@@ -69,7 +68,7 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
     file: String,
     parser: Cell.ParquetParser[T, P]
   ): (Context.U[Cell[P]], Context.U[String]) = {
-    val pipe = TypedPipe.from(ParquetScroogeSource[T](file)).flatMap { case s => parser(s) }
+    val pipe = TypedPipe.from(new FixedPathParquetScrooge[T](file)).flatMap { case s => parser(s) }
 
     (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
   }

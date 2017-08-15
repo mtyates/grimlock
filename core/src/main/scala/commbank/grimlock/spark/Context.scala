@@ -14,8 +14,7 @@
 
 package commbank.grimlock.spark.environment
 
-import au.com.cba.omnia.ebenezer.scrooge.ScroogeReadSupport
-
+import com.twitter.scalding.parquet.scrooge.ScroogeReadSupport
 import com.twitter.scrooge.ThriftStruct
 
 import commbank.grimlock.framework.Cell
@@ -26,10 +25,10 @@ import commbank.grimlock.spark.environment.implicits.Implicits
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapreduce.Job
 
+import org.apache.parquet.hadoop.ParquetInputFormat
+
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-
-import parquet.hadoop.ParquetInputFormat
 
 import scala.reflect.{ classTag, ClassTag }
 

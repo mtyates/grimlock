@@ -12,23 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-resolvers ++= Seq(
-  Resolver.url(
-    "commbank-releases-ivy",
-     new URL("http://commbank.artifactoryonline.com/commbank/ext-releases-local-ivy")
-  )(
-    Patterns(
-      "[organization]/[module]_[scalaVersion]_[sbtVersion]/[revision]/[artifact](-[classifier])-[revision].[ext]"
-    )
-  ),
-  "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
-)
-
-val uniformVersion = "1.15.1-20170426071414-6d891a6"
-
-addSbtPlugin("au.com.cba.omnia" % "uniform-core"         % uniformVersion)
-addSbtPlugin("au.com.cba.omnia" % "uniform-assembly"     % uniformVersion)
-
-addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.0")
+addSbtPlugin("com.eed3si9n"     % "sbt-assembly"         % "0.14.5")
+addSbtPlugin("com.eed3si9n"     % "sbt-unidoc"           % "0.3.2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-site"             % "0.8.1")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
+addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.0")
 
