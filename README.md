@@ -28,12 +28,16 @@ The library contains default implementations for many of the above tasks. It als
 * Can be used in the Scalding/Spark REPL;
 * Supports basic as well as structured data types.
 
-Documentation
+Getting Started
 -------------
 
-[Scaladoc](https://commbank.github.io/grimlock/latest/api/index.html)
+Simply add the following line to your build file:
 
-[Github Pages](https://commbank.github.io/grimlock/index.html)
+```
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.4.1"
+```
+
+For information on the API, see the [scaladoc](https://commbank.github.io/grimlock/latest/api/index.html). Links to detailed examples are included at the end of the Scalding and Spark sections below.
 
 Concepts
 --------
