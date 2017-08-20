@@ -29,6 +29,12 @@ case class NoParameters() extends Parameters { }
  */
 case class Reducers(reducers: Int) extends Parameters { }
 
+/** Companion object to `Reducers`. */
+object Reducers {
+  /** Converts an integer to a `Reducers`. */
+  implicit def reducersFromInt(reducers: Int): Reducers = Reducers(reducers)
+}
+
 /** Trait that indicates size/shape of the data for tuning. */
 sealed trait Tuner extends java.io.Serializable {
   /** The parameters used for tuning. */

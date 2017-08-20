@@ -121,7 +121,7 @@ lazy val documentationSettings = Seq(
 )
 
 lazy val resolverSettings = Seq(
-  resolvers ++= Seq("Concurrent Maven Repo" at "http://conjars.org/repo")       // cascading jars
+  resolvers += "Concurrent Maven Repo" at "http://conjars.org/repo"             // cascading jars
 )
 
 lazy val standardSettings = Defaults.coreDefaultSettings ++ Seq(

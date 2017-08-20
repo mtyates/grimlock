@@ -19,7 +19,7 @@ import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.distance.PairwiseDistance
 import commbank.grimlock.framework.distribution.ApproximateDistribution
 import commbank.grimlock.framework.encoding.Value
-import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.environment.tuner.{ Reducers, Tuner }
 import commbank.grimlock.framework.pairwise.{ Comparer, Operator, OperatorWithValue }
 import commbank.grimlock.framework.partition.{ Partitioner, PartitionerWithValue }
 import commbank.grimlock.framework.position.{ Position, Positions, Slice }
@@ -109,13 +109,11 @@ trait Matrix[P <: Nat, U[_], E[_]] extends Persist[Cell[P], U]
   /**
    * Returns the matrix as in in-memory list of cells.
    *
-   * @param tuner The tuner for the job.
-   *
    * @return A `List[Cell[P]]` of the cells.
    *
    * @note Avoid using this for very large matrices.
    */
-  def materialise[T <: Tuner](tuner: T)(implicit ev: Matrix.MaterialiseTuner[U, T]): List[Cell[P]]
+  def materialise(): List[Cell[P]]
 
   /**
    * Returns the distinct position(s) (or names) for a given `slice`.
@@ -436,38 +434,35 @@ trait Matrix[P <: Nat, U[_], E[_]] extends Persist[Cell[P], U]
    *                  located in the same directory as which the job is started.
    * @param writer    Function that converts a cell to a string (prior to streaming it through `command`).
    * @param parser    Function that parses the resulting string back to a cell.
+   * @param reducers  The number of reducers to use.
    * @param hash      Function maps each cell's position to an integer. Use this function to tag cells
    *                  that should be sent to the same reducer.
-   * @param tuner     The tuner for the job.
    *
    * @return A `U[Cell[Q]]` with the new data as well as a `U[String]` with any parse errors.
    *
    * @note The `command` must be installed on each node of the cluster.
    */
   def stream[
-    Q <: Nat,
-    T <: Tuner
+    Q <: Nat
   ](
     command: String,
     files: List[String],
     writer: Persist.TextWriter[Cell[P]],
     parser: Cell.TextParser[Q],
-    hash: (Position[P]) => Int = _ => 0,
-    tuner: T
-  )(implicit
-    ev: Matrix.StreamTuner[U, T]
+    reducers: Reducers = Reducers(1),
+    hash: (Position[P]) => Int = _ => 0
   ): (U[Cell[Q]], U[String])
 
   /**
    * Stream this matrix through `command` and apply `script`, after grouping all data by `slice`.
    *
    * @param slice     Encapsulates the dimension(s) along which to stream.
-   * @param tuner     The tuner for the job.
    * @param command   The command to stream (pipe) the data through.
    * @param files     A list of text files that will be available to `command`. Note that all files must be
    *                  located in the same directory as which the job is started.
    * @param writer    Function that converts a group of cells to a string (prior to streaming it through `command`).
    * @param parser    Function that parses the resulting string back to a cell.
+   * @param reducers  The number of reducers to use.
    *
    * @return A `U[Cell[Q]]` with the new data as well as a `U[String]` with any parse errors.
    *
@@ -475,19 +470,17 @@ trait Matrix[P <: Nat, U[_], E[_]] extends Persist[Cell[P], U]
    *       values for a given slice fit into memory.
    */
   def streamByPosition[
-    Q <: Nat,
-    T <: Tuner
+    Q <: Nat
   ](
-    slice: Slice[P],
-    tuner: T
+    slice: Slice[P]
   )(
     command: String,
     files: List[String],
     writer: Persist.TextWriterByPosition[Cell[P]],
-    parser: Cell.TextParser[Q]
+    parser: Cell.TextParser[Q],
+    reducers: Reducers = Reducers(1)
   )(implicit
-    ev1: GTEq[Q, slice.S],
-    ev2: Matrix.StreamTuner[U, T]
+    ev: GTEq[Q, slice.S]
   ): (U[Cell[Q]], U[String])
 
   /**
@@ -723,9 +716,6 @@ object Matrix {
   /** Trait for tuners permitted on a call to `join`. */
   trait JoinTuner[U[_], T <: Tuner]
 
-  /** Trait for tuners permitted on a call to `materialise`. */
-  trait MaterialiseTuner[U[_], T <: Tuner]
-
   /** Trait for tuners permitted on a call to `pairwise` functions. */
   trait PairwiseTuner[U[_], T <: Tuner]
 
@@ -758,9 +748,6 @@ object Matrix {
 
   /** Trait for tuners permitted on a call to `squash` functions. */
   trait SquashTuner[U[_], T <: Tuner]
-
-  /** Trait for tuners permitted on a call to `stream` functions. */
-  trait StreamTuner[U[_], T <: Tuner]
 
   /** Trait for tuners permitted on a call to `summarise` functions. */
   trait SummariseTuner[U[_], T <: Tuner]

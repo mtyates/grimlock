@@ -1433,8 +1433,7 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.StreamTuner[U, Default[Reducers]]
+    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1456,7 +1455,7 @@ object Shared {
         List("double.R"),
         Cell.toString(false, "|", true),
         Cell.parse2D("#", StringCodec, LongCodec),
-        tuner = Default(Reducers(1))
+        Reducers(1)
       )
       .data
       .saveAsText(s"./tmp.${tool}/strm.out", tuner = Default())
@@ -1632,8 +1631,7 @@ object Shared {
     ctx: Context[U, E],
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Redistribute],
-    ev2: Matrix.StreamTuner[U, Default[Reducers]]
+    ev: Persist.SaveAsTextTuner[U, Redistribute]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -1653,7 +1651,7 @@ object Shared {
     )
 
     val (result, errors) = data
-      .streamByPosition(Over(_1), Default(Reducers(5)))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D())
+      .streamByPosition(Over(_1))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D(), 5)
 
     errors
       .saveAsText(s"./tmp.${tool}/sbp.out", Redistribute(1))

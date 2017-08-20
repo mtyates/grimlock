@@ -31,10 +31,11 @@ The library contains default implementations for many of the above tasks. It als
 Getting Started
 -------------
 
-Simply add the following line to your build file:
+Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.4.1"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.4.2"
+resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
 For information on the API, see the [scaladoc](https://commbank.github.io/grimlock/latest/api/index.html). Links to detailed examples are included at the end of the Scalding and Spark sections below.

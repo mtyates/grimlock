@@ -162,13 +162,7 @@ case class Matrix[
       .map { case (_, (c, _)) => c }
   }
 
-  def materialise[
-    T <: Tuner
-  ](
-    tuner: T = Default()
-  )(implicit
-    ev: FwMatrix.MaterialiseTuner[Context.U, T]
-  ): List[Cell[P]] = data
+  def materialise(): List[Cell[P]] = data
     .toIterableExecution
     .waitFor(context.config, context.mode)
     .getOrElse(Iterable.empty)
@@ -454,22 +448,19 @@ case class Matrix[
   }
 
   def stream[
-    Q <: Nat,
-    T <: Tuner
+    Q <: Nat
   ](
     command: String,
     files: List[String],
     writer: FwPersist.TextWriter[Cell[P]],
     parser: Cell.TextParser[Q],
-    hash: (Position[P]) => Int,
-    tuner: T = Default(Reducers(1))
-  )(implicit
-    ev: FwMatrix.StreamTuner[Context.U, T]
+    reducers: Reducers,
+    hash: (Position[P]) => Int
   ): (Context.U[Cell[Q]], Context.U[String]) = {
-    val reducers = tuner.parameters match { case Reducers(r) => r }
+    val tuner = Default(reducers)
 
     val result = data
-      .flatMap { case c => writer(c).map { case s => (hash(c.position) % reducers, s) } }
+      .flatMap { case c => writer(c).map { case s => (hash(c.position) % reducers.reducers, s) } }
       .tuneReducers(tuner)
       .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })
 
@@ -477,27 +468,25 @@ case class Matrix[
   }
 
   def streamByPosition[
-    Q <: Nat,
-    T <: Tuner
+    Q <: Nat
   ](
-    slice: Slice[P],
-    tuner: T
+    slice: Slice[P]
   )(
     command: String,
     files: List[String],
     writer: FwPersist.TextWriterByPosition[Cell[P]],
-    parser: Cell.TextParser[Q]
+    parser: Cell.TextParser[Q],
+    reducers: Reducers
   )(implicit
-    ev1: GTEq[Q, slice.S],
-    ev2: FwMatrix.StreamTuner[Context.U, T]
+    ev: GTEq[Q, slice.S]
   ): (Context.U[Cell[Q]], Context.U[String]) = {
-    val reducers = tuner.parameters match { case Reducers(r) => r }
+    val tuner = Default(reducers)
     val murmur = new scala.util.hashing.MurmurHash3.ArrayHashing[Value]()
     val (rows, _) = Util.pivot(data, slice, tuner)
 
     val result = rows
-      .flatMap { case (key, list) =>
-        writer(list.map { case (_, v) => v }).map { case s => (murmur.hash(key.coordinates.toArray) % reducers, s) }
+      .flatMap { case (key, list) => writer(list.map { case (_, v) => v })
+        .map { case s => (murmur.hash(key.coordinates.toArray) % reducers.reducers, s) }
       }
       .tuneReducers(tuner)
       .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })

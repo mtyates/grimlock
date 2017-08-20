@@ -42,7 +42,6 @@ import commbank.grimlock.framework.Matrix.{
   FillHomogeneousTuner,
   GetTuner,
   JoinTuner,
-  MaterialiseTuner,
   PairwiseTuner,
   ReshapeTuner,
   SaveAsCSVTuner,
@@ -54,7 +53,6 @@ import commbank.grimlock.framework.Matrix.{
   SliceTuner,
   SlideTuner,
   SquashTuner,
-  StreamTuner,
   SummariseTuner,
   TypesTuner,
   UniqueTuner,
@@ -332,9 +330,6 @@ package object environment {
   implicit def rddJoinTunerDnDr = new JoinTuner[Context.U, Binary[Default[NoParameters], Default[Reducers]]] { }
   implicit def rddJoinTunerDrDr = new JoinTuner[Context.U, Binary[Default[Reducers], Default[Reducers]]] { }
 
-  /** Implicit for checking tuners on a call to `materialise`. */
-  implicit def rddMaterialiseTunerDn = new MaterialiseTuner[Context.U, Default[NoParameters]] { }
-
   /** Implicit for checking tuners on a call to `pairwise*`. */
   implicit def rddPairwiseTunerIn = new PairwiseTuner[Context.U, InMemory[NoParameters]] { }
   implicit def rddPairwiseTunerDnDnDn = new PairwiseTuner[Context.U, Default[NoParameters]] { }
@@ -378,9 +373,6 @@ package object environment {
   /** Implicit for checking tuners on a call to `slide`. */
   implicit def rddSlideTunerDn = new SlideTuner[Context.U, Default[NoParameters]] { }
   implicit def rddSlideTunerDr = new SlideTuner[Context.U, Default[Reducers]] { }
-
-  /** Implicit for checking tuners on a call to `stream`. */
-  implicit def rddStreamTunerDr = new StreamTuner[Context.U, Default[Reducers]] { }
 
   /** Implicit for checking tuners on a call to `summmarise`. */
   implicit def rddSummariseTunerDn = new SummariseTuner[Context.U, Default[NoParameters]] { }

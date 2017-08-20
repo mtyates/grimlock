@@ -296,7 +296,7 @@ object Position {
     pos: Position[P]
   )(implicit
     ev: GT[P, _1]
-  ): PermutablePosition[P] = PermutablePositionImpl(pos.coordinates)
+  ): PermutablePosition[P] = PermutablePosition(pos.coordinates)
 
   /** Implicit conversion from Position[P] to ReduciblePosition[L, P]. */
   implicit def positionToReducible[
@@ -305,14 +305,18 @@ object Position {
   ](
     pos: Position[P]
   )(implicit
-    ev1: Pred.Aux[P, L]
-  ): ReduciblePosition[L, P] = ReduciblePositionImpl(pos.coordinates)
+    ev: Pred.Aux[P, L]
+  ): ReduciblePosition[L, P] = ReduciblePosition(pos.coordinates)
 }
 
 private case class PositionImpl[P <: Nat](coordinates: List[Value]) extends Position[P]
 
-/** Trait for operations that modify a position (but keep the number of dimensions the same). */
-trait PermutablePosition[P <: Nat] extends Position[P] {
+/**
+ * Case class for operations that modify a position (but keep the number of dimensions the same).
+ *
+ * @param coordinates List of coordinates of the position.
+ */
+case class PermutablePosition[P <: Nat](coordinates: List[Value])(implicit ev: GT[P, _1]) extends Position[P] {
   /**
    * Permute the order of coordinates.
    *
@@ -325,10 +329,19 @@ trait PermutablePosition[P <: Nat] extends Position[P] {
   )
 }
 
-private case class PermutablePositionImpl[P <: Nat](coordinates: List[Value]) extends PermutablePosition[P]
-
-/** Trait for operations that reduce a position by one dimension. */
-trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
+/**
+ * Case class for operations that reduce a position by one dimension.
+ *
+ * @param coordinates List of coordinates of the position.
+ */
+case class ReduciblePosition[
+  L <: Nat,
+  P <: Nat
+](
+  coordinates: List[Value]
+)(implicit
+  ev: Pred.Aux[P, L]
+) extends Position[P] {
   /**
    * Remove the coordinate at dimension `dim`.
    *
@@ -376,8 +389,6 @@ trait ReduciblePosition[L <: Nat, P <: Nat] extends Position[P] {
     )
   }
 }
-
-private case class ReduciblePositionImpl[L <: Nat, P <: Nat](coordinates: List[Value]) extends ReduciblePosition[L, P]
 
 /** Trait that represents the positions of a matrix. */
 trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
