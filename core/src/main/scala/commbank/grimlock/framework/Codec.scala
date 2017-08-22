@@ -16,6 +16,7 @@ package commbank.grimlock.framework.encoding
 
 import commbank.grimlock.framework.metadata.Type
 
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -216,7 +217,9 @@ case object LongCodec extends Codec {
   /** Pattern for parsing `LongCodec` from string. */
   val Pattern = "long|int|short".r
 
-  def decode(str: String): Option[V] = Try(LongValue(str.toLong, this)).toOption
+  def decode(str: String): Option[V] = Try(
+    LongValue(new BigDecimal(str.trim).stripTrailingZeros.toPlainString.toLong, this)
+  ).toOption
   def encode(value: D): String = value.toString
 
   def compare(x: Value, y: Value): Option[Int] = (x.asLong, y.asLong) match {
