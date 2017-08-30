@@ -84,7 +84,7 @@ class DerivedData(args: Args) extends Job(args) {
     .data
     .slide(Along(_3))(true, Gradient(_3))
     .melt(_3, _2, Value.concatenate(".from."))
-    .saveAsText(s"./demo.${output}/gradient.out")
+    .saveAsText(ctx, s"./demo.${output}/gradient.out")
     .toUnit
 }
 

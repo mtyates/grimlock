@@ -31,7 +31,7 @@ import com.twitter.scalding.TDsl.sourceToTypedPipe
 import shapeless.nat._3
 
 object TestScaldingReader {
-  def load4TupleDataAddDate(ctx: Context, file: String): Context.U[Cell[_3]] = {
+  def load4TupleDataAddDate(ctx: Context, file: String): ctx.U[Cell[_3]] = {
     def hashDate(v: String) = {
       val cal = java.util.Calendar.getInstance()
 
@@ -190,7 +190,9 @@ class TestScalding19(args : Args) extends Job(args) {
 }
 
 class TestScalding20(args : Args) extends Job(args) {
-  Shared.test20(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test20(ctx, args("path"), "scalding")
 }
 
 class TestScalding21(args : Args) extends Job(args) {
@@ -201,50 +203,74 @@ class TestScalding21(args : Args) extends Job(args) {
 }
 
 class TestScalding22(args : Args) extends Job(args) {
-  Shared.test22(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test22(ctx, args("path"), "scalding")
 }
 
 class TestScalding23(args : Args) extends Job(args) {
-  Shared.test23(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test23(ctx, args("path"), "scalding")
 }
 
 class TestScalding24(args: Args) extends Job(args) {
-  Shared.test24(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test24(ctx, args("path"), "scalding")
 }
 
 class TestScalding25(args: Args) extends Job(args) {
-  Shared.test25(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test25(ctx, args("path"), "scalding")
 }
 
 class TestScalding26(args: Args) extends Job(args) {
-  Shared.test26(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test26(ctx, args("path"), "scalding")
 }
 
 class TestScalding27(args: Args) extends Job(args) {
-  Shared.test27(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test27(ctx, args("path"), "scalding")
 }
 
 class TestScalding28(args: Args) extends Job(args) {
-  Shared.test28(Context(), CutRules, "scalding")
+  val ctx = Context()
+
+  Shared.test28[Context](ctx, CutRules, "scalding")
 }
 
 class TestScalding29(args: Args) extends Job(args) {
-  Shared.test29(Context(), "scalding")
+  val ctx = Context()
+
+  Shared.test29(ctx, "scalding")
 }
 
 class TestScalding30(args: Args) extends Job(args) {
-  Shared.test30(Context(), args("path"), "scalding")
+  val ctx = Context()
+
+  Shared.test30(ctx, args("path"), "scalding")
 }
 
 class TestScalding31(args: Args) extends Job(args) {
-  Shared.test31(Context(), "scalding")
+  val ctx = Context()
+
+  Shared.test31(ctx, "scalding")
 }
 
 class TestScalding32(args: Args) extends Job(args) {
-  Shared.test32(Context(), "scalding")
+  val ctx = Context()
+
+  Shared.test32(ctx, "scalding")
 }
 
 class TestScalding33(args: Args) extends Job(args) {
-  Shared.test33(Context(), "scalding")
+  val ctx = Context()
+
+  Shared.test33(ctx, "scalding")
 }
 

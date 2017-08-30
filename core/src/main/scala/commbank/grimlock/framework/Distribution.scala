@@ -16,6 +16,7 @@ package commbank.grimlock.framework.distribution
 
 import commbank.grimlock.framework.{ Cell, Locate, Matrix }
 import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.ContinuousSchema
 import commbank.grimlock.framework.position.{ Position, Slice }
@@ -30,7 +31,7 @@ import shapeless.nat._0
 import shapeless.ops.nat.GT
 
 /** Trait for computing approximate distributions from a matrix. */
-trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
+trait ApproximateDistribution[P <: Nat, C <: Context[C]] { self: Matrix[P, C] =>
   /**
    * Compute histogram.
    *
@@ -39,7 +40,7 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
    * @param name   Function for extracting the position of the histogram value.
    * @param filter Indicator if numerical values shoud be filtered or not.
    *
-   * @return A `U[Cell[Q]]` with the histogram.
+   * @return A `C#U[Cell[Q]]` with the histogram.
    */
   def histogram[
     Q <: Nat,
@@ -52,8 +53,8 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
     filter: Boolean = true
   )(implicit
     ev1: GT[Q, slice.S],
-    ev2: ApproximateDistribution.HistogramTuner[U, T]
-  ): U[Cell[Q]]
+    ev2: ApproximateDistribution.HistogramTuner[C#U, T]
+  ): C#U[Cell[Q]]
 
   /**
    * Compute sample quantiles.
@@ -66,7 +67,7 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
    * @param filter    Indicator if categorical values should be filtered or not.
    * @param nan       Indicator if NaN quantiles should be output or not.
    *
-   * @return A `U[Cell[Q]]` with the quantiles.
+   * @return A `C#U[Cell[Q]]` with the quantiles.
    *
    * @note Non numeric values result in `NaN` quantiles, while missing counts result in no quantiles.
    */
@@ -85,8 +86,8 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
-    ev3: ApproximateDistribution.QuantilesTuner[U, T]
-  ): U[Cell[Q]]
+    ev3: ApproximateDistribution.QuantilesTuner[C#U, T]
+  ): C#U[Cell[Q]]
 
   /**
    * Compute quantiles using a count map.
@@ -99,7 +100,7 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
    * @param filter    Indicator if categorical values should be filtered or not.
    * @param nan       Indicator if NaN quantiles should be output or not.
    *
-   * @return A `U[Cell[Q]]` with the quantiles.
+   * @return A `C#U[Cell[Q]]` with the quantiles.
    *
    * @note Only use this if all distinct values and their counts fit in memory.
    */
@@ -118,8 +119,8 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
-    ev3: ApproximateDistribution.CountMapQuantilesTuner[U, T]
-  ): U[Cell[Q]]
+    ev3: ApproximateDistribution.CountMapQuantilesTuner[C#U, T]
+  ): C#U[Cell[Q]]
 
   /**
    * Compute approximate quantiles using a t-digest.
@@ -132,7 +133,7 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
    * @param filter      Indicator if categorical values should be filtered or not.
    * @param nan         Indicator if NaN quantiles should be output or not.
    *
-   * @return A `U[Cell[Q]]` with the approximate quantiles.
+   * @return A `C#U[Cell[Q]]` with the approximate quantiles.
    *
    * @see https://github.com/tdunning/t-digest
    */
@@ -151,8 +152,8 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
-    ev3: ApproximateDistribution.TDigestQuantilesTuner[U, T]
-  ): U[Cell[Q]]
+    ev3: ApproximateDistribution.TDigestQuantilesTuner[C#U, T]
+  ): C#U[Cell[Q]]
 
   /**
    * Compute `count` uniformly spaced approximate quantiles using an online streaming parallel histogram.
@@ -164,7 +165,7 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
    * @param filter      Indicator if categorical values should be filtered or not.
    * @param nan         Not used.
    *
-   * @return A `U[Cell[Q]]` with the approximate quantiles.
+   * @return A `C#U[Cell[Q]]` with the approximate quantiles.
    *
    * @see http://www.jmlr.org/papers/volume11/ben-haim10a/ben-haim10a.pdf
    */
@@ -182,26 +183,26 @@ trait ApproximateDistribution[P <: Nat, U[_], E[_]] { self: Matrix[P, U, E] =>
   )(implicit
     ev1: slice.R =:!= _0,
     ev2: GT[Q, slice.S],
-    ev3: ApproximateDistribution.UniformQuantilesTuner[U, T]
-  ): U[Cell[Q]]
+    ev3: ApproximateDistribution.UniformQuantilesTuner[C#U, T]
+  ): C#U[Cell[Q]]
 }
 
 /** Companion object to `ApproximateDistribution` with implicits, types, etc. */
 object ApproximateDistribution {
   /** Trait for tuners permitted on a call to `histogram`. */
-  trait HistogramTuner[U[_], T <: Tuner]
+  trait HistogramTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `quantiles`. */
-  trait QuantilesTuner[U[_], T <: Tuner]
+  trait QuantilesTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `countMapQuantiles`. */
-  trait CountMapQuantilesTuner[U[_], T <: Tuner]
+  trait CountMapQuantilesTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `tDigestQuantiles`. */
-  trait TDigestQuantilesTuner[U[_], T <: Tuner]
+  trait TDigestQuantilesTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `uniformQuantiles`. */
-  trait UniformQuantilesTuner[U[_], T <: Tuner]
+  trait UniformQuantilesTuner[U[_], T <: Tuner] extends java.io.Serializable
 }
 
 /** Contains implementations for the quantisers as per R's quantile function. */

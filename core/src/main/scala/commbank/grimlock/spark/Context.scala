@@ -39,7 +39,11 @@ import shapeless.Nat
  *
  * @param spark The Spark context.
  */
-case class Context(spark: SparkContext) extends FwContext[Context.U, Context.E] {
+case class Context(spark: SparkContext) extends FwContext[Context] {
+  type E[A] = Context.E[A]
+
+  type U[A] = Context.U[A]
+
   def loadText[P <: Nat](file: String, parser: Cell.TextParser[P]): (Context.U[Cell[P]], Context.U[String]) = {
     val rdd = spark.textFile(file).flatMap { case s => parser(s) }
 
@@ -81,7 +85,7 @@ case class Context(spark: SparkContext) extends FwContext[Context.U, Context.E] 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 
-  val implicits = Implicits(this)
+  val implicits = Implicits()
 
   def empty[T : ClassTag]: Context.U[T] = spark.parallelize(List.empty[T])
 

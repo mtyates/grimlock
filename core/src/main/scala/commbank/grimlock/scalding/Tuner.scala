@@ -226,11 +226,9 @@ private[scalding] object ScaldingImplicits {
       case _ => pipe
     }
 
-    def tunedSaveAsText(ctx: Context, tuner: Tuner, file: String) = {
-      import ctx.implicits.environment._
-
-      pipe.tunedRedistribute(tuner).write(TypedSink(TextLine(file)))
-    }
+    def tunedSaveAsText(context: Context, tuner: Tuner, file: String) = pipe
+      .tunedRedistribute(tuner)
+      .write(TypedSink(TextLine(file)))(context.flow, context.mode)
 
     def tunedSelfCross(
       tuner: Tuner,

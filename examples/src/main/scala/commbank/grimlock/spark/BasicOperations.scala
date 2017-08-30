@@ -38,31 +38,31 @@ object BasicOperations {
     // Get the number of rows.
     data
       .size(_1)
-      .saveAsText(s"./demo.${output}/row_size.out")
+      .saveAsText(ctx, s"./demo.${output}/row_size.out")
       .toUnit
 
     // Get all dimensions of the matrix.
     data
       .shape()
-      .saveAsText(s"./demo.${output}/matrix_shape.out")
+      .saveAsText(ctx, s"./demo.${output}/matrix_shape.out")
       .toUnit
 
     // Get the column names.
     data
       .names(Over(_2))
-      .saveAsText(s"./demo.${output}/column_names.out")
+      .saveAsText(ctx, s"./demo.${output}/column_names.out")
       .toUnit
 
     // Get the type of variables of each column.
     data
       .types(Over(_2))(true)
-      .saveAsText(s"./demo.${output}/column_types.txt")
+      .saveAsText(ctx, s"./demo.${output}/column_types.txt")
       .toUnit
 
     // Transpose the matrix.
     data
       .permute(_2, _1)
-      .saveAsText(s"./demo.${output}/transposed.out")
+      .saveAsText(ctx, s"./demo.${output}/transposed.out")
       .toUnit
 
     // Construct a simple query
@@ -71,19 +71,19 @@ object BasicOperations {
     // Find all co-ordinates that match the above simple query.
     val coords = data
       .which(simpleQuery)
-      .saveAsText(s"./demo.${output}/query.txt")
+      .saveAsText(ctx, s"./demo.${output}/query.txt")
 
     // Get the data for the above coordinates.
     data
       .get(coords)
-      .saveAsText(s"./demo.${output}/values.txt")
+      .saveAsText(ctx, s"./demo.${output}/values.txt")
       .toUnit
 
     // Keep columns A and B, and remove row 0221707
     data
       .slice(Over(_2))(true, List("fid:A", "fid:B"))
       .slice(Over(_1))(false, "iid:0221707")
-      .saveAsText(s"./demo.${output}/sliced.txt")
+      .saveAsText(ctx, s"./demo.${output}/sliced.txt")
       .toUnit
   }
 }

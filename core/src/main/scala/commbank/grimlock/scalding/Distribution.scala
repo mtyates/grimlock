@@ -40,8 +40,8 @@ import shapeless.ops.nat.GT
 /** Trait for computing approximate distributions from a matrix. */
 trait ApproximateDistribution[
   P <: Nat
-] extends FwApproximateDistribution[P, Context.U, Context.E]
-  with Persist[Cell[P]] { self: FwMatrix[P, Context.U, Context.E] =>
+] extends FwApproximateDistribution[P, Context]
+  with Persist[Cell[P]] { self: FwMatrix[P, Context] =>
   def histogram[
     Q <: Nat,
     T <: Tuner

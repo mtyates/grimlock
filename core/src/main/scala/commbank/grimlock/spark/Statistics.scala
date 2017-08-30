@@ -30,10 +30,7 @@ import com.twitter.algebird.{ Aggregator, Moments, Monoid }
 import shapeless.Nat
 
 /** Trait for computing common statistics from a matrix. */
-trait Statistics[
-  P <: Nat
-] extends FwStatistics[P, Context.U, Context.E]
-  with Persist[Cell[P]] { self: FwMatrix[P, Context.U, Context.E] =>
+trait Statistics[P <: Nat] extends FwStatistics[P, Context] with Persist[Cell[P]] { self: FwMatrix[P, Context] =>
   def counts[
     T <: Tuner
   ](

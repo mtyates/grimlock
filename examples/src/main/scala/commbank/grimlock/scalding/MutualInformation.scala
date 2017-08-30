@@ -120,7 +120,7 @@ class MutualInformation(args: Args) extends Job(args) {
   // 2/ Persist mutual information.
   (marginal ++ joint)
     .summarise(Over(_1))(Sums())
-    .saveAsText(s"./demo.${output}/mi.out")
+    .saveAsText(ctx, s"./demo.${output}/mi.out")
     .toUnit
 }
 

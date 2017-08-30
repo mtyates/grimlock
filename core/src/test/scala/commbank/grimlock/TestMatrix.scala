@@ -10485,14 +10485,14 @@ trait TestMatrixMaterialise extends TestMatrix {
 class TestScaldingMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tuple2ToPipeMatrix(data).materialise().sortBy(_.position) shouldBe result.sortBy(_.position)
+    tuple2ToPipeMatrix(data).materialise(scaldingCtx).sortBy(_.position) shouldBe result.sortBy(_.position)
   }
 }
 
 class TestSparkMatrixMaterialise extends TestMatrixMaterialise {
 
   "A Matrix.materialise" should "return its list" in {
-    tuple2ToRDDMatrix(data).materialise().sortBy(_.position) shouldBe result.sortBy(_.position)
+    tuple2ToRDDMatrix(data).materialise(sparkCtx).sortBy(_.position) shouldBe result.sortBy(_.position)
   }
 }
 

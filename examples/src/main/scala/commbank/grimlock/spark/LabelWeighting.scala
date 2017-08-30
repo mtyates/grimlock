@@ -94,7 +94,7 @@ object LabelWeighting {
       )
       .data // Keep only the data (ignoring errors).
       .transformWithValue(weights, AddWeight())
-      .saveAsText(s"./demo.${output}/weighted.out")
+      .saveAsText(ctx, s"./demo.${output}/weighted.out")
       .toUnit
   }
 }

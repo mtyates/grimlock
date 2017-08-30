@@ -26,7 +26,13 @@ import scala.reflect.ClassTag
 import shapeless.Nat
 
 /** Trait for capturing all operating context related state. */
-trait Context[U[_], E[_]] {
+trait Context[C <: Context[C]] {
+  /** Type for user defined data. */
+  type E[X]
+
+  /** Type for distributed data. */
+  type U[X]
+
   /**
    * Read column oriented, pipe separated matrix text data into a `U[Cell[P]]`.
    *
@@ -65,7 +71,7 @@ trait Context[U[_], E[_]] {
   ): (U[Cell[P]], U[String])
 
   /** All implicits for this context. */
-  val implicits: Implicits[U, E]
+  val implicits: Implicits[C]
 
   /** Create empty instance of `U`. */
   def empty[T : ClassTag]: U[T]

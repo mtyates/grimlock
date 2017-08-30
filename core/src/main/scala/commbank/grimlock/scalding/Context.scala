@@ -41,7 +41,11 @@ import shapeless.Nat
  * @param mode   The job `Mode`.
  * @param config The job `Config`.
  */
-case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[Context.U, Context.E] {
+case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[Context] {
+  type E[A] = Context.E[A]
+
+  type U[A] = Context.U[A]
+
   def loadText[P <: Nat](file: String, parser: Cell.TextParser[P]): (Context.U[Cell[P]], Context.U[String]) = {
     val pipe = TypedPipe.from(TextLine(file)).flatMap { parser(_) }
 
@@ -73,16 +77,14 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
     (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
   }
 
-  val implicits = Implicits(this)
+  val implicits = Implicits()
 
   def empty[T : ClassTag]: Context.U[T] = TypedPipe.empty
 
   def from[T : ClassTag](seq: Seq[T]): Context.U[T] = TypedPipe.from(seq)
 
   def nop(): Unit = {
-    import implicits.environment._
-
-    val _ = TypedPipe.empty.write(NullSink)
+    val _ = TypedPipe.empty.write(NullSink)(flow, mode)
 
     ()
   }

@@ -29,34 +29,35 @@ import commbank.grimlock.scalding.Persist
 import shapeless.Nat
 
 /** Rich wrapper around a `TypedPipe[Content]`. */
-case class Contents(context: Context, data: Context.U[Content]) extends FwContents[Context.U] with Persist[Content] {
+case class Contents(data: Context.U[Content]) extends FwContents[Context] with Persist[Content] {
   def saveAsText[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     writer: FwPersist.TextWriter[Content],
     tuner: T = Default()
   )(implicit
     ev: FwPersist.SaveAsTextTuner[Context.U, T]
-  ): Context.U[Content] = saveText(file, writer, tuner)
+  ): Context.U[Content] = saveText(context, file, writer, tuner)
 }
 
 /** Rich wrapper around a `TypedPipe[(Position[P], Content]`. */
 case class IndexedContents[
   P <: Nat
 ](
-  context: Context,
   data: Context.U[(Position[P], Content)]
-) extends FwIndexedContents[P, Context.U]
+) extends FwIndexedContents[P, Context]
   with Persist[(Position[P], Content)] {
   def saveAsText[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     writer: FwPersist.TextWriter[(Position[P], Content)],
     tuner: T = Default()
   )(implicit
     ev: FwPersist.SaveAsTextTuner[Context.U, T]
-  ): Context.U[(Position[P], Content)] = saveText(file, writer, tuner)
+  ): Context.U[(Position[P], Content)] = saveText(context, file, writer, tuner)
 }
 

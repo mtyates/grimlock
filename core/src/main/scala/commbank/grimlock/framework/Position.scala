@@ -16,6 +16,7 @@ package commbank.grimlock.framework.position
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 
 import play.api.libs.json.{ JsArray, JsError, Json, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
@@ -391,14 +392,14 @@ case class ReduciblePosition[
 }
 
 /** Trait that represents the positions of a matrix. */
-trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
+trait Positions[P <: Nat, C <: Context[C]] extends Persist[Position[P], C] {
   /**
    * Returns the distinct position(s) (or names) for a given `slice`.
    *
    * @param slice Encapsulates the dimension(s) for which the names are to be returned.
    * @param tuner The tuner for the job.
    *
-   * @return A `U[Position[slice.S]]` of the distinct position(s).
+   * @return A `C#U[Position[slice.S]]` of the distinct position(s).
    */
   def names[
     T <: Tuner
@@ -407,27 +408,29 @@ trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
     tuner: T
   )(implicit
     ev1: slice.S =:!= _0,
-    ev2: Positions.NamesTuner[U, T]
-  ): U[Position[slice.S]]
+    ev2: Positions.NamesTuner[C#U, T]
+  ): C#U[Position[slice.S]]
 
   /**
    * Persist to disk.
    *
-   * @param file   Name of the output file.
-   * @param writer Writer that converts `Position[N]` to string.
-   * @param tuner  The tuner for the job.
+   * @param context The operating context.
+   * @param file    Name of the output file.
+   * @param writer  Writer that converts `Position[N]` to string.
+   * @param tuner   The tuner for the job.
    *
-   * @return A `U[Position[P]]` which is this object's data.
+   * @return A `C#U[Position[P]]` which is this object's data.
    */
   def saveAsText[
     T <: Tuner
   ](
+    context: C,
     file: String,
     writer: Persist.TextWriter[Position[P]] = Position.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, T]
-  ): U[Position[P]]
+    ev: Persist.SaveAsTextTuner[C#U, T]
+  ): C#U[Position[P]]
 
   /**
    * Slice the positions using a regular expression applied to a dimension.
@@ -436,7 +439,7 @@ trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
    * @param dim   Dimension to slice on.
    * @param regex The regular expression to match on.
    *
-   * @return A `U[Position[P]]` with only the positions of interest.
+   * @return A `C#U[Position[P]]` with only the positions of interest.
    *
    * @note The matching is done by converting the coordinate to its short string reprensentation and then applying the
    *       regular expression.
@@ -449,7 +452,7 @@ trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
     regex: Regex
   )(implicit
     ev: LTEq[D, P]
-  ): U[Position[P]] = slice(keep, p => regex.pattern.matcher(p(dim).toShortString).matches)
+  ): C#U[Position[P]] = slice(keep, p => regex.pattern.matcher(p(dim).toShortString).matches)
 
   /**
    * Slice the positions using a regular expression.
@@ -457,12 +460,12 @@ trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
    * @param keep  Indicator if the matched positions should be kept or removed.
    * @param regex The regular expression to match on.
    *
-   * @return A `U[Position[P]]` with only the positions of interest.
+   * @return A `C#U[Position[P]]` with only the positions of interest.
    *
    * @note The matching is done by converting each coordinate to its short string reprensentation and then applying the
    *       regular expression.
    */
-  def slice(keep: Boolean, regex: Regex): U[Position[P]] = slice(
+  def slice(keep: Boolean, regex: Regex): C#U[Position[P]] = slice(
     keep,
     p => p.coordinates.map(c => regex.pattern.matcher(c.toShortString).matches).reduce(_ && _)
   )
@@ -473,19 +476,19 @@ trait Positions[P <: Nat, U[_]] extends Persist[Position[P], U] {
    * @param keep      Indicator if the matched positions should be kept or removed.
    * @param positions The positions to slice on.
    *
-   * @return A `U[Position[P]]` with only the positions of interest.
+   * @return A `C#U[Position[P]]` with only the positions of interest.
    */
   def slice(
     keep: Boolean,
     positions: List[Position[P]]
-  ): U[Position[P]] = slice(keep, p => positions.contains(p))
+  ): C#U[Position[P]] = slice(keep, p => positions.contains(p))
 
-  protected def slice(keep: Boolean, f: Position[P] => Boolean): U[Position[P]]
+  protected def slice(keep: Boolean, f: Position[P] => Boolean): C#U[Position[P]]
 }
 
 /** Companion object to `Positions` with types, implicits, etc. */
 object Positions {
   /** Trait for tuners permitted on a call to `names`. */
-  trait NamesTuner[U[_], T <: Tuner]
+  trait NamesTuner[U[_], T <: Tuner] extends java.io.Serializable
 }
 

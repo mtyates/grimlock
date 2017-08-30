@@ -108,7 +108,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
   // Combine all statistics and write result to file
   val stats = (descriptive ++ histogram ++ summary)
-    .saveAsText(s"./demo.${output}/stats.out")
+    .saveAsText(ctx, s"./demo.${output}/stats.out")
 
   // Determine which features to filter based on statistics. In this case remove all features that occur for 2 or
   // fewer instances. These are removed first to prevent indicator features from being created.
@@ -162,7 +162,7 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
     (ind ++ csb)
       //.fillHomogeneous(Content(ContinuousSchema[Double](), 0.0))
-      .saveAsCSV(Over(_1))(s"./demo.${output}/${key}.csv")
+      .saveAsCSV(Over(_1))(ctx, s"./demo.${output}/${key}.csv")
   }
 
   // Prepare each partition.
