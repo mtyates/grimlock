@@ -217,9 +217,7 @@ case object LongCodec extends Codec {
   /** Pattern for parsing `LongCodec` from string. */
   val Pattern = "long|int|short".r
 
-  def decode(str: String): Option[V] = Try(
-    LongValue(new BigDecimal(str.trim).stripTrailingZeros.toPlainString.toLong, this)
-  ).toOption
+  def decode(str: String): Option[V] = Try(LongValue(new BigDecimal(str.trim).longValueExact, this)).toOption
   def encode(value: D): String = value.toString
 
   def compare(x: Value, y: Value): Option[Int] = (x.asLong, y.asLong) match {
