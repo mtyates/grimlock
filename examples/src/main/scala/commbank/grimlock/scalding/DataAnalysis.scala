@@ -44,7 +44,7 @@ class DataAnalysis(args: Args) extends Job(args) {
   //  4/ Save the moments.
   data
     .summarise(Over(_1))(Counts())
-    .saveAsText(s"./demo.${output}/feature_count.out")
+    .saveAsText(ctx, s"./demo.${output}/feature_count.out")
     .summarise(Along(_1))(
       Moments(
         _.append("mean").toOption,
@@ -53,7 +53,7 @@ class DataAnalysis(args: Args) extends Job(args) {
         _.append("kurtosis").toOption
       )
     )
-    .saveAsText(s"./demo.${output}/feature_density.out")
+    .saveAsText(ctx, s"./demo.${output}/feature_density.out")
     .toUnit
 
   // For the features:
@@ -63,7 +63,7 @@ class DataAnalysis(args: Args) extends Job(args) {
   //  4/ Save the moments.
   data
     .summarise(Over(_2))(Counts())
-    .saveAsText(s"./demo.${output}/instance_count.out")
+    .saveAsText(ctx, s"./demo.${output}/instance_count.out")
     .summarise(Along(_1))(
       Moments(
         _.append("mean").toOption,
@@ -72,7 +72,7 @@ class DataAnalysis(args: Args) extends Job(args) {
         _.append("kurtosis").toOption
       )
     )
-    .saveAsText(s"./demo.${output}/instance_density.out")
+    .saveAsText(ctx, s"./demo.${output}/instance_density.out")
     .toUnit
 }
 

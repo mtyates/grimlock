@@ -16,6 +16,7 @@ package commbank.grimlock.framework.distance
 
 import commbank.grimlock.framework.{ Cell, Locate, MultiDimensionMatrix }
 import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.{ CategoricalType, ContinuousSchema, NumericType }
 import commbank.grimlock.framework.position.{ Position, Slice }
@@ -23,7 +24,7 @@ import commbank.grimlock.framework.position.{ Position, Slice }
 import shapeless.Nat
 
 /** Trait for computing pairwise distances from a matrix. */
-trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, E] =>
+trait PairwiseDistance[P <: Nat, C <: Context[C]] { self: MultiDimensionMatrix[P, C] =>
   /**
    * Compute correlations.
    *
@@ -34,7 +35,7 @@ trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, 
    * @param strict Indicates if strict data handling is required. If so then any non-numeric value fails the
    *               computation. If not then non-numeric values are silently ignored.
    *
-   * @return A `U[Cell[Q]]` with all pairwise correlations.
+   * @return A `C#U[Cell[Q]]` with all pairwise correlations.
    */
   def correlation[
     Q <: Nat,
@@ -47,8 +48,8 @@ trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, 
     filter: Boolean = true,
     strict: Boolean = true
   )(implicit
-    ev: PairwiseDistance.CorrelationTuner[U, T]
-  ): U[Cell[Q]]
+    ev: PairwiseDistance.CorrelationTuner[C#U, T]
+  ): C#U[Cell[Q]]
 
   /**
    * Compute mutual information.
@@ -59,7 +60,7 @@ trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, 
    * @param filter Indicator if numerical values shoud be filtered or not.
    * @param log    The log function to use.
    *
-   * @return A `U[Cell[Q]]` with all pairwise mutual information values.
+   * @return A `C#U[Cell[Q]]` with all pairwise mutual information values.
    */
   def mutualInformation[
     Q <: Nat,
@@ -72,17 +73,17 @@ trait PairwiseDistance[P <: Nat, U[_], E[_]] { self: MultiDimensionMatrix[P, U, 
     filter: Boolean = true,
     log: (Double) => Double = (x: Double) => math.log(x) / math.log(2)
   )(implicit
-    ev: PairwiseDistance.MutualInformationTuner[U, T]
-  ): U[Cell[Q]]
+    ev: PairwiseDistance.MutualInformationTuner[C#U, T]
+  ): C#U[Cell[Q]]
 }
 
 /** Companion object to `PairwiseDistance` with types, implicits, etc. */
 object PairwiseDistance {
   /** Trait for tuners permitted on a call to `correlation`. */
-  trait CorrelationTuner[U[_], T <: Tuner]
+  trait CorrelationTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `mutualInformation`. */
-  trait MutualInformationTuner[U[_], T <: Tuner]
+  trait MutualInformationTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   private[grimlock] def prepareCorrelation[
     P <: Nat

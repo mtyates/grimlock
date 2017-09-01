@@ -32,6 +32,7 @@ import commbank.grimlock.framework.{
 }
 import commbank.grimlock.framework.content.{ Content, Contents, IndexedContents }
 import commbank.grimlock.framework.encoding.Value
+import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.partition.Partitions
 import commbank.grimlock.framework.position.{ Position, Positions }
 
@@ -66,102 +67,102 @@ trait ValueOperations[X, E[_]] {
 }
 
 /** Defines convenience implicits for dealing with distributed cells. */
-trait CellImplicits[U[_]] {
-  /** Converts a `Cell[P]` into a `U[Cell[P]]`. */
-  implicit def cellToU[P <: Nat](c: Cell[P]): U[Cell[P]]
+trait CellImplicits[C <: Context[C]] {
+  /** Converts a `Cell[P]` into a `C#U[Cell[P]]`. */
+  implicit def cellToU[P <: Nat](c: Cell[P])(implicit ctx: C): C#U[Cell[P]]
 
-  /** Converts a `List[Cell[P]]` into a `U[Cell[P]]`. */
-  implicit def listCellToU[P <: Nat](l: List[Cell[P]]): U[Cell[P]]
+  /** Converts a `List[Cell[P]]` into a `C#U[Cell[P]]`. */
+  implicit def listCellToU[P <: Nat](l: List[Cell[P]])(implicit ctx: C): C#U[Cell[P]]
 }
 
 /** Defines convenience implicits for dealing with distributed contents. */
-trait ContentImplicits[U[_]] {
-  /** Converts a `U[Content]` to a `Contents`. */
-  implicit def toContents(data: U[Content]): Contents[U]
+trait ContentImplicits[C <: Context[C]] {
+  /** Converts a `C#U[Content]` to a `Contents`. */
+  implicit def toContents(data: C#U[Content]): Contents[C]
 
-  /** Converts a `U[(Position[P], Content)]` to a `IndexedContents`. */
-  implicit def toIndexed[P <: Nat](data: U[(Position[P], Content)]): IndexedContents[P, U]
+  /** Converts a `C#U[(Position[P], Content)]` to a `IndexedContents`. */
+  implicit def toIndexed[P <: Nat](data: C#U[(Position[P], Content)]): IndexedContents[P, C]
 }
 
 /** Defines convenience implicits for dealing with distributed strings. */
-trait EnvironmentImplicits[U[_], E[_]] {
-  /** Converts a `U[String]` to a `SaveStringsAsText`. */
-  implicit def saveStringsAsText(data: U[String]): SaveStringsAsText[U]
+trait EnvironmentImplicits[C <: Context[C]] {
+  /** Converts a `C#U[String]` to a `SaveStringsAsText`. */
+  implicit def saveStringsAsText(data: C#U[String]): SaveStringsAsText[C]
 
-  /** Make available native functions of `U`. */
-  implicit def nativeFunctions[X](data: U[X]): NativeOperations[X, U]
+  /** Make available native functions of `C#U`. */
+  implicit def nativeFunctions[X](data: C#U[X]): NativeOperations[X, C#U]
 
-  /** Make available functions of `E`. */
-  implicit def valueFunctions[X](value: E[X]): ValueOperations[X, E]
+  /** Make available functions of `C#E`. */
+  implicit def valueFunctions[X](value: C#E[X]): ValueOperations[X, C#E]
 
-  /** Convert an `E` to a `U`. */
-  implicit def eToU[X : ClassTag](value: E[X]): U[X]
+  /** Convert an `C#E` to a `C#U`. */
+  implicit def eToU[X : ClassTag](value: C#E[X])(implicit ctx: C): C#U[X]
 }
 
 /** Defines convenience implicits for dealing with matrices. */
-trait MatrixImplicits[U[_], E[_]] {
-  /** Converts a `U[Cell[P]]` to a `Matrix`. */
-  implicit def toMatrix[P <: Nat](data: U[Cell[P]]): Matrix[P, U, E]
+trait MatrixImplicits[C <: Context[C]] {
+  /** Converts a `C#U[Cell[P]]` to a `Matrix`. */
+  implicit def toMatrix[P <: Nat](data: C#U[Cell[P]]): Matrix[P, C]
 
-  /** Conversion from `U[Cell[_1]]` to a `Matrix1D`. */
-  implicit def toMatrix1D(data: U[Cell[_1]]): Matrix1D[U, E]
+  /** Conversion from `C#U[Cell[_1]]` to a `Matrix1D`. */
+  implicit def toMatrix1D(data: C#U[Cell[_1]]): Matrix1D[C]
 
-  /** Conversion from `U[Cell[_2]]` to a `Matrix2D`. */
-  implicit def toMatrix2D(data: U[Cell[_2]]): Matrix2D[U, E]
+  /** Conversion from `C#U[Cell[_2]]` to a `Matrix2D`. */
+  implicit def toMatrix2D(data: C#U[Cell[_2]]): Matrix2D[C]
 
-  /** Conversion from `U[Cell[_3]]` to a `Matrix3D`. */
-  implicit def toMatrix3D(data: U[Cell[_3]]): Matrix3D[U, E]
+  /** Conversion from `C#U[Cell[_3]]` to a `Matrix3D`. */
+  implicit def toMatrix3D(data: C#U[Cell[_3]]): Matrix3D[C]
 
-  /** Conversion from `U[Cell[_4]]` to a `Matrix4D`. */
-  implicit def toMatrix4D(data: U[Cell[_4]]): Matrix4D[U, E]
+  /** Conversion from `C#U[Cell[_4]]` to a `Matrix4D`. */
+  implicit def toMatrix4D(data: C#U[Cell[_4]]): Matrix4D[C]
 
-  /** Conversion from `U[Cell[_5]]` to a `Matrix5D`. */
-  implicit def toMatrix5D(data: U[Cell[_5]]): Matrix5D[U, E]
+  /** Conversion from `C#U[Cell[_5]]` to a `Matrix5D`. */
+  implicit def toMatrix5D(data: C#U[Cell[_5]]): Matrix5D[C]
 
-  /** Conversion from `U[Cell[_6]]` to a `Matrix6D`. */
-  implicit def toMatrix6D(data: U[Cell[_6]]): Matrix6D[U, E]
+  /** Conversion from `C#U[Cell[_6]]` to a `Matrix6D`. */
+  implicit def toMatrix6D(data: C#U[Cell[_6]]): Matrix6D[C]
 
-  /** Conversion from `U[Cell[_7]]` to a `Matrix7D`. */
-  implicit def toMatrix7D(data: U[Cell[_7]]): Matrix7D[U, E]
+  /** Conversion from `C#U[Cell[_7]]` to a `Matrix7D`. */
+  implicit def toMatrix7D(data: C#U[Cell[_7]]): Matrix7D[C]
 
-  /** Conversion from `U[Cell[_8]]` to a `Matrix8D`. */
-  implicit def toMatrix8D(data: U[Cell[_8]]): Matrix8D[U, E]
+  /** Conversion from `C#U[Cell[_8]]` to a `Matrix8D`. */
+  implicit def toMatrix8D(data: C#U[Cell[_8]]): Matrix8D[C]
 
-  /** Conversion from `U[Cell[_9]]` to a `Matrix9D`. */
-  implicit def toMatrix9D(data: U[Cell[_9]]): Matrix9D[U, E]
+  /** Conversion from `C#U[Cell[_9]]` to a `Matrix9D`. */
+  implicit def toMatrix9D(data: C#U[Cell[_9]]): Matrix9D[C]
 
-  /** Converts a `U[Cell[P]]` to a `MultiDimensionMatrix`. */
-  implicit def toMultiDimensionMatrix[P <: Nat](data: U[Cell[P]])(implicit ev: GT[P, _1]): MultiDimensionMatrix[P, U, E]
+  /** Converts a `C#U[Cell[P]]` to a `MultiDimensionMatrix`. */
+  implicit def toMultiDimensionMatrix[P <: Nat](data: C#U[Cell[P]])(implicit ev: GT[P, _1]): MultiDimensionMatrix[P, C]
 
   /** Converts a `List[Cell[P]]` to a `Matrix`. */
-  implicit def listToMatrix[P <: Nat](data: List[Cell[P]]): Matrix[P, U, E]
+  implicit def listToMatrix[P <: Nat](data: List[Cell[P]])(implicit ctx: C): Matrix[P, C]
 
   /** Conversion from `List[Cell[_1]]` to a `Matrix1D`. */
-  implicit def listToMatrix1D(data: List[Cell[_1]]): Matrix1D[U, E]
+  implicit def listToMatrix1D(data: List[Cell[_1]])(implicit ctx: C): Matrix1D[C]
 
   /** Conversion from `List[Cell[_2]]` to a `Matrix2D`. */
-  implicit def listToMatrix2D(data: List[Cell[_2]]): Matrix2D[U, E]
+  implicit def listToMatrix2D(data: List[Cell[_2]])(implicit ctx: C): Matrix2D[C]
 
   /** Conversion from `List[Cell[_3]]` to a `Matrix3D`. */
-  implicit def listToMatrix3D(data: List[Cell[_3]]): Matrix3D[U, E]
+  implicit def listToMatrix3D(data: List[Cell[_3]])(implicit ctx: C): Matrix3D[C]
 
   /** Conversion from `List[Cell[_4]]` to a `Matrix4D`. */
-  implicit def listToMatrix4D(data: List[Cell[_4]]): Matrix4D[U, E]
+  implicit def listToMatrix4D(data: List[Cell[_4]])(implicit ctx: C): Matrix4D[C]
 
   /** Conversion from `List[Cell[_5]]` to a `Matrix5D`. */
-  implicit def listToMatrix5D(data: List[Cell[_5]]): Matrix5D[U, E]
+  implicit def listToMatrix5D(data: List[Cell[_5]])(implicit ctx: C): Matrix5D[C]
 
   /** Conversion from `List[Cell[_6]]` to a `Matrix6D`. */
-  implicit def listToMatrix6D(data: List[Cell[_6]]): Matrix6D[U, E]
+  implicit def listToMatrix6D(data: List[Cell[_6]])(implicit ctx: C): Matrix6D[C]
 
   /** Conversion from `List[Cell[_7]]` to a `Matrix7D`. */
-  implicit def listToMatrix7D(data: List[Cell[_7]]): Matrix7D[U, E]
+  implicit def listToMatrix7D(data: List[Cell[_7]])(implicit ctx: C): Matrix7D[C]
 
   /** Conversion from `List[Cell[_8]]` to a `Matrix8D`. */
-  implicit def listToMatrix8D(data: List[Cell[_8]]): Matrix8D[U, E]
+  implicit def listToMatrix8D(data: List[Cell[_8]])(implicit ctx: C): Matrix8D[C]
 
   /** Conversion from `List[Cell[_9]]` to a `Matrix9D`. */
-  implicit def listToMatrix9D(data: List[Cell[_9]]): Matrix9D[U, E]
+  implicit def listToMatrix9D(data: List[Cell[_9]])(implicit ctx: C): Matrix9D[C]
 
   /** Converts a `List[Cell[P]]` to a `MultiDimensionMatrix`. */
   implicit def listToMultiDimensionMatrix[
@@ -169,20 +170,35 @@ trait MatrixImplicits[U[_], E[_]] {
   ](
     data: List[Cell[P]]
   )(implicit
+    ctx: C,
     ev: GT[P, _1]
-  ): MultiDimensionMatrix[P, U, E]
+  ): MultiDimensionMatrix[P, C]
 
   /** Conversion from `List[(Value, Content)]` to a `Matrix`. */
-  implicit def tuple1ToMatrix[V <% Value](list: List[(V, Content)]): Matrix[_1, U, E]
+  implicit def tuple1ToMatrix[V <% Value](list: List[(V, Content)])(implicit ctx: C): Matrix[_1, C]
 
   /** Conversion from `List[(Value, Content)]` to a `Matrix1D`. */
-  implicit def tuple1ToMatrix1D[V <% Value](list: List[(V, Content)]): Matrix1D[U, E]
+  implicit def tuple1ToMatrix1D[V <% Value](list: List[(V, Content)])(implicit ctx: C): Matrix1D[C]
 
   /** Conversion from `List[(Value, Value, Content)]` to a `Matrix`. */
-  implicit def tuple2ToMatrix[V1 <% Value, V2 <% Value](list: List[(V1, V2, Content)]): Matrix[_2, U, E]
+  implicit def tuple2ToMatrix[
+    V1 <% Value,
+    V2 <% Value
+  ](
+    list: List[(V1, V2, Content)]
+  )(implicit
+    ctx: C
+  ): Matrix[_2, C]
 
   /** Conversion from `List[(Value, Value, Content)]` to a `Matrix2D`. */
-  implicit def tuple2ToMatrix2D[V1 <% Value, V2 <% Value](list: List[(V1, V2, Content)]): Matrix2D[U, E]
+  implicit def tuple2ToMatrix2D[
+    V1 <% Value,
+    V2 <% Value
+  ](
+    list: List[(V1, V2, Content)]
+  )(implicit
+    ctx: C
+  ): Matrix2D[C]
 
   /** Conversion from `List[(Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple2ToMultiDimensionMatrix[
@@ -190,7 +206,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V2 <% Value
   ](
     list: List[(V1, V2, Content)]
-  ): MultiDimensionMatrix[_2, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_2, C]
 
   /** Conversion from `List[(Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple3ToMatrix[
@@ -199,7 +217,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V3 <% Value
   ](
     list: List[(V1, V2, V3, Content)]
-  ): Matrix[_3, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_3, C]
 
   /** Conversion from `List[(Value, Value, Value, Content)]` to a `Matrix3D`. */
   implicit def tuple3ToMatrix3D[
@@ -208,7 +228,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V3 <% Value
   ](
     list: List[(V1, V2, V3, Content)]
-  ): Matrix3D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix3D[C]
 
   /** Conversion from `List[(Value, Value, Value, Content)]` to a `MultiDimensionMatrix`. */
   implicit def tuple3ToMultiDimensionMatrix[
@@ -217,7 +239,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V3 <% Value
   ](
     list: List[(V1, V2, V3, Content)]
-  ): MultiDimensionMatrix[_3, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_3, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple4ToMatrix[
@@ -227,7 +251,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V4 <% Value
   ](
     list: List[(V1, V2, V3, V4, Content)]
-  ): Matrix[_4, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_4, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Content)]` to a `Matrix4D`. */
   implicit def tuple4ToMatrix4D[
@@ -237,7 +263,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V4 <% Value
   ](
     list: List[(V1, V2, V3, V4, Content)]
-  ): Matrix4D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix4D[C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Content)]` to a `MultiDimensionMatrix`. */
   implicit def tuple4ToMultiDimensionMatrix[
@@ -247,7 +275,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V4 <% Value
   ](
     list: List[(V1, V2, V3, V4, Content)]
-  ): MultiDimensionMatrix[_4, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_4, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple5ToMatrix[
@@ -258,7 +288,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V5 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, Content)]
-  ): Matrix[_5, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_5, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Content)]` to a `Matrix5D`. */
   implicit def tuple5ToMatrix5D[
@@ -269,7 +301,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V5 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, Content)]
-  ): Matrix5D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix5D[C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Content)]` to a `MultiDimensionMatrix`. */
   implicit def tuple5ToMultiDimensionMatrix[
@@ -280,7 +314,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V5 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, Content)]
-  ): MultiDimensionMatrix[_5, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_5, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple6ToMatrix[
@@ -292,7 +328,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V6 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, Content)]
-  ): Matrix[_6, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_6, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix6D`. */
   implicit def tuple6ToMatrix6D[
@@ -304,7 +342,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V6 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, Content)]
-  ): Matrix6D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix6D[C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Content)]` to a `MultiDimensionMatrix`. */
   implicit def tuple6ToMultiDimensionMatrix[
@@ -316,7 +356,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V6 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, Content)]
-  ): MultiDimensionMatrix[_6, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_6, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple7ToMatrix[
@@ -329,7 +371,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V7 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
-  ): Matrix[_7, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_7, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix7D`. */
   implicit def tuple7ToMatrix7D[
@@ -342,7 +386,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V7 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
-  ): Matrix7D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix7D[C]
 
   /**
    * Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Content)]` to a `MultiDimensionMatrix`.
@@ -357,7 +403,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V7 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, Content)]
-  ): MultiDimensionMatrix[_7, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_7, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix`. */
   implicit def tuple8ToMatrix[
@@ -371,7 +419,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V8 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
-  ): Matrix[_8, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_8, C]
 
   /** Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix8D`. */
   implicit def tuple8ToMatrix8D[
@@ -385,7 +435,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V8 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
-  ): Matrix8D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix8D[C]
 
   /**
    * Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a
@@ -402,7 +454,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V8 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, Content)]
-  ): MultiDimensionMatrix[_8, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_8, C]
 
   /**
    * Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix`.
@@ -419,7 +473,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V9 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
-  ): Matrix[_9, U, E]
+  )(implicit
+    ctx: C
+  ): Matrix[_9, C]
 
   /**
    * Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a `Matrix9D`.
@@ -436,7 +492,9 @@ trait MatrixImplicits[U[_], E[_]] {
     V9 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
-  ): Matrix9D[U, E]
+  )(implicit
+    ctx: C
+  ): Matrix9D[C]
 
   /**
    * Conversion from `List[(Value, Value, Value, Value, Value, Value, Value, Value, Value, Content)]` to a
@@ -454,85 +512,91 @@ trait MatrixImplicits[U[_], E[_]] {
     V9 <% Value
   ](
     list: List[(V1, V2, V3, V4, V5, V6, V7, V8, V9, Content)]
-  ): MultiDimensionMatrix[_9, U, E]
+  )(implicit
+    ctx: C
+  ): MultiDimensionMatrix[_9, C]
 
   /** Conversion from matrix with errors tuple to `MatrixWithParseErrors`. */
   implicit def tupleToParseErrors[
     P <: Nat
   ](
-    t: (U[Cell[P]], U[String])
-  ): MatrixWithParseErrors[P, U] = MatrixWithParseErrors(t._1, t._2)
+    t: (C#U[Cell[P]], C#U[String])
+  ): MatrixWithParseErrors[P, C#U] = MatrixWithParseErrors(t._1, t._2)
 }
 
 /** Defines convenience implicits for dealing with distributed partitions. */
-trait PartitionImplicits[U[_]] {
-  /** Conversion from `U[(I, Cell[P])]` to a `Partitions`. */
-  implicit def toPartitions[P <: Nat, I : Ordering](data: U[(I, Cell[P])]): Partitions[P, I, U]
+trait PartitionImplicits[C <: Context[C]] {
+  /** Conversion from `C#U[(I, Cell[P])]` to a `Partitions`. */
+  implicit def toPartitions[P <: Nat, I : Ordering](data: C#U[(I, Cell[P])]): Partitions[P, I, C]
 }
 
 /** Defines convenience implicits for dealing with distributed positions. */
-trait PositionImplicits[U[_]] {
-  /** Converts a `Value` to a `U[Position[_1]]`. */
-  implicit def valueToU[V <% Value](v: V): U[Position[_1]]
+trait PositionImplicits[C <: Context[C]] {
+  /** Converts a `Value` to a `C#U[Position[_1]]`. */
+  implicit def valueToU[V <% Value](v: V)(implicit ctx: C): C#U[Position[_1]]
 
-  /** Converts a `List[Value]` to a `U[Position[_1]]`. */
-  implicit def listValueToU[V <% Value](l: List[V]): U[Position[_1]]
+  /** Converts a `List[Value]` to a `C#U[Position[_1]]`. */
+  implicit def listValueToU[V <% Value](l: List[V])(implicit ctx: C): C#U[Position[_1]]
 
-  /** Converts a `Position[P]` to a `U[Position[P]]`. */
-  implicit def positionToU[P <: Nat](p: Position[P]): U[Position[P]]
+  /** Converts a `Position[P]` to a `C#U[Position[P]]`. */
+  implicit def positionToU[P <: Nat](p: Position[P])(implicit ctx: C): C#U[Position[P]]
 
-  /** Converts a `List[Position[P]]` to a `U[Position[P]]`. */
-  implicit def listPositionToU[P <: Nat](l: List[Position[P]]): U[Position[P]]
+  /** Converts a `List[Position[P]]` to a `C#U[Position[P]]`. */
+  implicit def listPositionToU[P <: Nat](l: List[Position[P]])(implicit ctx: C): C#U[Position[P]]
 
-  /** Converts a `U[Position[P]]` to a `Positions`. */
-  implicit def toPositions[P <: Nat](data: U[Position[P]]): Positions[P, U]
+  /** Converts a `C#U[Position[P]]` to a `Positions`. */
+  implicit def toPositions[P <: Nat](data: C#U[Position[P]]): Positions[P, C]
 
-  /** Converts a `(T, Cell.Predicate[P])` to a `List[(U[Position[S]], Cell.Predicate[P])]`. */
+  /** Converts a `(T, Cell.Predicate[P])` to a `List[(C#U[Position[S]], Cell.Predicate[P])]`. */
   implicit def predicateToU[
     P <: Nat,
     S <: Nat,
-    T <% U[Position[S]]
+    T <% C#U[Position[S]]
   ](
     t: (T, Cell.Predicate[P])
-  ): List[(U[Position[S]], Cell.Predicate[P])] = {
-    val u: U[Position[S]] = t._1
+  )(implicit
+    ctx: C
+  ): List[(C#U[Position[S]], Cell.Predicate[P])] = {
+    val u: C#U[Position[S]] = t._1
 
     List((u, t._2))
   }
 
-  /** Converts a `List[(T, Cell.Predicate[P])]` to a `List[(U[Position[S]], Cell.Predicate[P])]`. */
+  /** Converts a `List[(T, Cell.Predicate[P])]` to a `List[(C#U[Position[S]], Cell.Predicate[P])]`. */
   implicit def listPredicateToU[
     P <: Nat,
     S <: Nat,
-    T <% U[Position[S]]
+    T <% C#U[Position[S]]
   ](
     l: List[(T, Cell.Predicate[P])]
-  ): List[(U[Position[S]], Cell.Predicate[P])] = l
+  )(implicit
+    ctx: C
+  ): List[(C#U[Position[S]], Cell.Predicate[P])] = l
     .map { case (i, p) =>
-      val u: U[Position[S]] = i
+      val u: C#U[Position[S]] = i
 
       (u, p)
     }
 }
 
 /** Capture all implicits together. */
-trait Implicits[U[_], E[_]] {
+trait Implicits[C <: Context[C]] {
   /** Cell related implicits. */
-  val cell: CellImplicits[U]
+  val cell: CellImplicits[C]
 
   /** Content related implicits. */
-  val content: ContentImplicits[U]
+  val content: ContentImplicits[C]
 
   /** Environment related implicits. */
-  val environment: EnvironmentImplicits[U, E]
+  val environment: EnvironmentImplicits[C]
 
   /** Matrix related implicits. */
-  val matrix: MatrixImplicits[U, E]
+  val matrix: MatrixImplicits[C]
 
   /** Partition related implicits. */
-  val partition: PartitionImplicits[U]
+  val partition: PartitionImplicits[C]
 
   /** Position related implicits. */
-  val position: PositionImplicits[U]
+  val position: PositionImplicits[C]
 }
 

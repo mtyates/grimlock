@@ -45,24 +45,25 @@ import shapeless.ops.nat.{ LTEq, ToInt }
 
 object Shared {
   def test1[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.SetTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, InMemory[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SetTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, InMemory[NoParameters]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
-      .saveAsText(s"./tmp.${tool}/dat1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/dat1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
@@ -74,71 +75,73 @@ object Shared {
         Default()
       )
       .slice(Over(_1), InMemory())(true, "iid:1548763")
-      .saveAsText(s"./tmp.${tool}/dat2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/dat2.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     ctx
       .loadText(path + "/smallInputfile.txt", Cell.parse3D(third = DateCodec()))
       .data
-      .saveAsText(s"./tmp.${tool}/dat3.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/dat3.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test2[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, InMemory[NoParameters]]
+    ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, InMemory[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     (data.names(Over(_1), Default()) ++ data.names(Over(_2), Default()) ++ data.names(Over(_3), Default()))
-      .saveAsText(s"./tmp.${tool}/nm0.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/nm0.out", Position.toString(verbose = true), Default())
       .toUnit
 
     data
       .names(Over(_2), Default())
       .slice(false, "fid:M")
-      .saveAsText(s"./tmp.${tool}/nm2.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/nm2.out", Position.toString(verbose = true), Default())
       .toUnit
 
     data
       .names(Over(_2), Default())
       .slice(true, """.*[BCD]$""".r)
-      .saveAsText(s"./tmp.${tool}/nm5.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/nm5.out", Position.toString(verbose = true), Default())
       .toUnit
   }
 
   def test3[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.TypesTuner[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.TypesTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     (
       data.types(Over(_1), Default())(false) ++
       data.types(Over(_2), Default())(false) ++
       data.types(Over(_3), Default())(false)
     )
-      .saveAsText(s"./tmp.${tool}/typ1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/typ1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     (
@@ -146,35 +149,36 @@ object Shared {
       data.types(Over(_2), Default())(true) ++
       data.types(Over(_3), Default())(true)
     )
-      .saveAsText(s"./tmp.${tool}/typ2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/typ2.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test4[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
       .slice(Over(_2), Default())(true, "fid:B")
-      .saveAsText(s"./tmp.${tool}/scl0.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/scl0.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B"))
       .slice(Over(_1), Default())(true, "iid:0221707")
-      .saveAsText(s"./tmp.${tool}/scl1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/scl1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     val rem = List(
@@ -195,38 +199,39 @@ object Shared {
 
     data
       .slice(Over(_2), Default())(false, data.names(Over(_2), Default()).slice(false, rem))
-      .saveAsText(s"./tmp.${tool}/scl2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/scl2.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test5[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuner[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B"))
       .slice(Over(_1), Default())(true, "iid:0221707")
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsText(s"./tmp.${tool}/sqs1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/sqs1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsText(s"./tmp.${tool}/sqs2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/sqs2.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     val ids = List(
@@ -245,44 +250,45 @@ object Shared {
     data
       .slice(Over(_1), Default())(true, ids)
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsCSV(Over(_2), Default())(s"./tmp.${tool}/sqs3.out")
+      .saveAsCSV(Over(_2), Default())(ctx, s"./tmp.${tool}/sqs3.out")
       .toUnit
 
     data
       .slice(Over(_1), Default())(true, ids)
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsCSV(Over(_2), Default())(s"./tmp.${tool}/sqs4.out")
+      .saveAsCSV(Over(_2), Default())(ctx, s"./tmp.${tool}/sqs4.out")
       .toUnit
   }
 
   def test6[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuner[U, Default[NoParameters]],
-    ev6: Matrix.WhichTuner[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[C#U, Default[NoParameters]],
+    ev6: Matrix.WhichTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
       .which(c => c.content.schema.classification.isOfType(NumericType))
-      .saveAsText(s"./tmp.${tool}/whc1.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/whc1.out", Position.toString(verbose = true), Default())
       .toUnit
 
     data
       .which(c => !c.content.value.isInstanceOf[StringValue])
-      .saveAsText(s"./tmp.${tool}/whc2.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/whc2.out", Position.toString(verbose = true), Default())
       .toUnit
 
     data
@@ -290,12 +296,12 @@ object Shared {
         data.which(c => (c.content.value equ 666) || (c.content.value leq 11.0) || (c.content.value equ "KQUPKFEH")),
         Default()
       )
-      .saveAsText(s"./tmp.${tool}/whc3.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/whc3.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
       .which(c => c.content.value.isInstanceOf[LongValue])
-      .saveAsText(s"./tmp.${tool}/whc4.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/whc4.out", Position.toString(verbose = true), Default())
       .toUnit
 
     val aggregators: List[Aggregator[_2, _1, _2]] = List(
@@ -330,28 +336,29 @@ object Shared {
       )(
         List(("count", c => c.content.value leq 2), ("min", c => c.content.value equ 107))
       )
-      .saveAsText(s"./tmp.${tool}/whc5.out", Position.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/whc5.out", Position.toString(verbose = true), Default())
       .toUnit
   }
 
   def test7[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
       .get(Position("iid:1548763", "fid:Y", DateCodec().decode("2014-04-26").get), Default())
-      .saveAsText(s"./tmp.${tool}/get1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/get1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
@@ -362,50 +369,51 @@ object Shared {
         ),
         Default()
       )
-      .saveAsText(s"./tmp.${tool}/get2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/get2.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test8[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.GetTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev6: Matrix.UniqueTuner[U, Default[NoParameters]]
+    ev1: Matrix.GetTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev6: Matrix.UniqueTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.content._
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
       .slice(Over(_2), Default())(true, "fid:B")
       .squash(_3, PreservingMaximumPosition(), Default())
       .unique(Default())
-      .saveAsText(s"./tmp.${tool}/uniq.out", Content.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/uniq.out", Content.toString(verbose = true), Default())
       .toUnit
 
     ctx
       .loadText(path + "/mutualInputfile.txt", Cell.parse2D())
       .data
       .uniqueByPosition(Over(_2), Default())
-      .saveAsText(s"./tmp.${tool}/uni2.out", IndexedContents.toString(descriptive = false), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/uni2.out", IndexedContents.toString(descriptive = false), Default())
       .toUnit
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/test.csv")
-      .saveAsCSV(Over(_2), Default())(s"./tmp.${tool}/tset.csv", writeHeader = false, separator = ",")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/test.csv")
+      .saveAsCSV(Over(_2), Default())(ctx, s"./tmp.${tool}/tset.csv", writeHeader = false, separator = ",")
       .toUnit
 
     data
@@ -413,33 +421,34 @@ object Shared {
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .squash(_3, PreservingMaximumPosition(), Default())
       .permute(_2, _1)
-      .saveAsText(s"./tmp.${tool}/trs1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/trs1.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .squash(_3, PreservingMaximumPosition(), Default())
-      .saveAsText(s"./tmp.${tool}/data.txt", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/data.txt", tuner = Default())
       .toUnit
   }
 
   def test9[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev3: Matrix.SquashTuner[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SquashTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.partition._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     case class StringPartitioner[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, _2]) extends Partitioner[_2, String] {
       def assign(cell: Cell[_2]): TraversableOnce[String] = List(cell.position(dim) match {
@@ -455,7 +464,7 @@ object Shared {
       .split(StringPartitioner(_2))
 
     prt1
-      .saveAsText(s"./tmp.${tool}/prt1.out", Partitions.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/prt1.out", Partitions.toString(verbose = true), Default())
       .toUnit
 
     case class IntTuplePartitioner[
@@ -476,45 +485,46 @@ object Shared {
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .squash(_3, PreservingMaximumPosition(), Default())
       .split(IntTuplePartitioner(_2))
-      .saveAsText(s"./tmp.${tool}/prt2.out", Partitions.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/prt2.out", Partitions.toString(verbose = true), Default())
       .toUnit
 
     prt1
       .get("training")
-      .saveAsText(s"./tmp.${tool}/train.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/train.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     prt1
       .get("testing")
-      .saveAsText(s"./tmp.${tool}/test.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/test.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     prt1
       .get("scoring")
-      .saveAsText(s"./tmp.${tool}/score.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/score.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test10[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev2: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev3: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev4: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
 
+    implicit val c = ctx
+
     data
       .summarise(Over(_2), Default())(Mean(false, true, true).andThenRelocate(_.position.append("mean").toOption))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/agg1.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/agg1.csv")
       .toUnit
 
     val ids = List(
@@ -534,7 +544,7 @@ object Shared {
       .slice(Over(_1), Default())(true, ids)
       .squash(_3, PreservingMaximumPosition(), Default())
       .summarise(Along(_2), Default())(Counts().andThenRelocate(_.position.append("count").toOption))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/agg2.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/agg2.csv")
       .toUnit
 
     val aggregators: List[Aggregator[_2, _1, _2]] = List(
@@ -552,32 +562,33 @@ object Shared {
       .slice(Over(_1), Default())(true, ids)
       .squash(_3, PreservingMaximumPosition(), Default())
       .summarise(Along(_1), Default())(aggregators)
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/agg3.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/agg3.csv")
       .toUnit
   }
 
   def test11[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuner[U, Default[NoParameters]]
+    ev1: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .transform(Indicator().andThenRelocate(Locate.RenameDimension(_2, "%1$s.ind")))
-      .saveAsText(s"./tmp.${tool}/trn2.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/trn2.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     data
@@ -585,27 +596,28 @@ object Shared {
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .squash(_3, PreservingMaximumPosition(), Default())
       .transform(Binarise(Locate.RenameDimensionWithContent(_2)))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/trn3.out")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/trn3.out")
       .toUnit
   }
 
   def test12[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev4: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev5: Matrix.SquashTuner[U, Default[NoParameters]]
+    ev1: Matrix.FillHomogeneousTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SquashTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     val sliced = data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
@@ -614,35 +626,36 @@ object Shared {
     sliced
       .squash(_3, PreservingMaximumPosition(), Default())
       .fillHomogeneous(Content(ContinuousSchema[Long](), 0), Default())
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/fll1.out")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/fll1.out")
       .toUnit
 
     sliced
       .fillHomogeneous(Content(ContinuousSchema[Long](), 0), Default())
-      .saveAsText(s"./tmp.${tool}/fll3.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/fll3.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test13[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.FillHeterogeneousTuner[U, Default[NoParameters]],
-    ev2: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
-    ev3: Matrix.JoinTuner[U, Default[NoParameters]],
-    ev4: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev5: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev6: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev7: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev8: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.FillHeterogeneousTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.FillHomogeneousTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.JoinTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev5: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev6: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev7: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev8: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     val ids = List(
       "iid:0064402",
@@ -669,65 +682,67 @@ object Shared {
     sliced
       .join(Over(_1), Default())(inds)
       .fillHomogeneous(Content(ContinuousSchema[Long](), 0), Default())
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/fll2.out")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/fll2.out")
       .toUnit
 
     sliced
       .fillHeterogeneous(Over(_2), Default())(data.summarise(Over(_2), Default())(Mean(false, true, true)))
       .join(Over(_1), Default())(inds)
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/fll4.out")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/fll4.out")
       .toUnit
   }
 
   def test14[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.ChangeTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]]
+    ev1: Matrix.ChangeTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:Y", "fid:Z"))
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .change(Over(_2), Default())("fid:A", Content.parser(LongCodec, NominalSchema[Long]()))
       .data
-      .saveAsText(s"./tmp.${tool}/chg1.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/chg1.out", Cell.toString(verbose = true), Default())
       .toUnit
   }
 
   def test15[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.JoinTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.JoinTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     data
       .slice(Over(_2), Default())(true, List("fid:A", "fid:C", "fid:E", "fid:G"))
       .slice(Over(_1), Default())(true, List("iid:0221707", "iid:0364354"))
       .summarise(Along(_3), Default())(Sums().andThenRelocate(_.position.append("sum").toOption))
       .melt(_3, _2, Value.concatenate("."))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/rsh1.out")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/rsh1.out")
       .toUnit
 
     val ids = List(
@@ -748,29 +763,30 @@ object Shared {
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
       .squash(_3, PreservingMaximumPosition(), Default())
       .transform(Indicator().andThenRelocate(Locate.RenameDimension(_2, "%1$s.ind")))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/trn1.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/trn1.csv")
 
     data
       .slice(Over(_1), Default())(true, ids)
       .slice(Over(_2), Default())(true, List("fid:A", "fid:B", "fid:C", "fid:D", "fid:E", "fid:F", "fid:G"))
       .squash(_3, PreservingMaximumPosition(), Default())
       .join(Over(_1), Default())(inds)
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/jn1.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/jn1.csv")
       .toUnit
   }
 
   def test16[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     case class HashSample() extends Sampler[_3] {
       def select(cell: Cell[_3]): Boolean = (cell.position(_1).toString.hashCode % 25) == 0
@@ -778,27 +794,28 @@ object Shared {
 
     data
       .subset(HashSample())
-      .saveAsText(s"./tmp.${tool}/smp1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/smp1.out", tuner = Default())
       .toUnit
   }
 
   def test17[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     val ids = List(
       "iid:0064402",
@@ -835,7 +852,7 @@ object Shared {
         stats,
         Normalise(ExtractWithDimensionAndKey[_2, Content](_2, "max.abs").andThenPresent(_.value.asDouble))
       )
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/trn6.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/trn6.csv")
       .toUnit
 
     case class Sample500() extends Sampler[_2] {
@@ -844,7 +861,7 @@ object Shared {
 
     sliced
       .subset(Sample500())
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/flt1.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/flt1.csv")
       .toUnit
 
     case class RemoveGreaterThanMean[D <: Nat : ToInt](dim: D)(implicit ev: LTEq[D, _2]) extends SamplerWithValue[_2] {
@@ -859,28 +876,29 @@ object Shared {
 
     sliced
       .subsetWithValue(stats, RemoveGreaterThanMean(_2))
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/flt2.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/flt2.csv")
       .toUnit
   }
 
   def test18[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Positions.NamesTuner[U, Default[NoParameters]],
-    ev2: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev3: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev4: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev5: Matrix.SummariseTuner[U, Default[NoParameters]],
-    ev6: Matrix.WhichTuner[U, Default[NoParameters]]
+    ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SummariseTuner[C#U, Default[NoParameters]],
+    ev6: Matrix.WhichTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     val ids = List(
       "iid:0064402",
@@ -917,30 +935,31 @@ object Shared {
 
     sliced
       .slice(Over(_2), Default())(false, rem)
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/flt3.csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/flt3.csv")
       .toUnit
   }
 
   def test19[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
-    ev2: Matrix.FillHomogeneousTuner[U, Default[NoParameters]],
-    ev3: Positions.NamesTuner[U, Default[NoParameters]],
-    ev4: Matrix.SaveAsCSVTuner[U, Default[NoParameters]],
-    ev5: Matrix.SliceTuner[U, Default[NoParameters]],
-    ev6: Matrix.SquashTuner[U, Default[NoParameters]],
-    ev7: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.FillHomogeneousTuner[C#U, Default[NoParameters]],
+    ev3: Positions.NamesTuner[C#U, Default[NoParameters]],
+    ev4: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
+    ev5: Matrix.SliceTuner[C#U, Default[NoParameters]],
+    ev6: Matrix.SquashTuner[C#U, Default[NoParameters]],
+    ev7: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
     import ctx.implicits.partition._
     import ctx.implicits.position._
+
+    implicit val c = ctx
 
     val ids = List(
       "iid:0064402",
@@ -1002,11 +1021,11 @@ object Shared {
       Normalise(ExtractWithDimensionAndKey[_2, Content](_2, "max.abs").andThenPresent(_.value.asDouble))
     )
 
-    def cb(key: String, pipe: U[Cell[_2]]): U[Cell[_2]] = pipe
+    def cb(key: String, pipe: C#U[Cell[_2]]): C#U[Cell[_2]] = pipe
       .slice(Over(_2), Default())(false, rem)
       .transformWithValue(stats.compact(Over(_1), Default()), transforms)
       .fillHomogeneous(Content(ContinuousSchema[Long](), 0), Default())
-      .saveAsCSV(Over(_1), Default())(s"./tmp.${tool}/pln_" + key + ".csv")
+      .saveAsCSV(Over(_1), Default())(ctx, s"./tmp.${tool}/pln_" + key + ".csv")
 
     parts
       .forEach(List("train", "test"), cb)
@@ -1014,74 +1033,77 @@ object Shared {
   }
 
   def test20[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val (dictionary, _) = Dictionary.load(Source.fromFile(path + "/dict.txt"))
 
     ctx
       .loadText(path + "/ivoryInputfile1.txt", Cell.parse3DWithDictionary(dictionary, _2, third = DateCodec()))
       .data
-      .saveAsText(s"./tmp.${tool}/ivr1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/ivr1.out", tuner = Default())
       .toUnit
   }
 
   def test21[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    data: U[Cell[_3]],
+    ctx: C,
+    data: C#U[Cell[_3]],
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.ShapeTuner[U, Default[NoParameters]],
-    ev3: Matrix.SizeTuner[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.ShapeTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SizeTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
+    implicit val c = ctx
+
     data
       .shape(Default())
-      .saveAsText(s"./tmp.${tool}/siz0.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/siz0.out", tuner = Default())
       .toUnit
 
     data
       .size(_1, tuner = Default())
-      .saveAsText(s"./tmp.${tool}/siz1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/siz1.out", tuner = Default())
       .toUnit
 
     data
       .size(_2, tuner = Default())
-      .saveAsText(s"./tmp.${tool}/siz2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/siz2.out", tuner = Default())
       .toUnit
 
     data
       .size(_3, tuner = Default())
-      .saveAsText(s"./tmp.${tool}/siz3.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/siz3.out", tuner = Default())
       .toUnit
   }
 
   def test22[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.SlideTuner[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val (data, _) = ctx.loadText(path + "/numericInputfile.txt", Cell.parse2D())
 
@@ -1109,28 +1131,29 @@ object Shared {
 
     data
       .slide(Over(_1), Default())(true, Diff())
-      .saveAsText(s"./tmp.${tool}/dif1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/dif1.out", tuner = Default())
       .toUnit
 
     data
       .slide(Over(_2), Default())(true, Diff())
       .permute(_2, _1)
-      .saveAsText(s"./tmp.${tool}/dif2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/dif2.out", tuner = Default())
       .toUnit
   }
 
   def test23[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.PairwiseTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev1: Matrix.PairwiseTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val (data, _) = ctx.loadText(path + "/somePairwise.txt", Cell.parse2D())
 
@@ -1156,22 +1179,23 @@ object Shared {
 
     data
       .pairwise(Over(_2), Default())(Upper, DiffSquared())
-      .saveAsText(s"./tmp.${tool}/pws1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/pws1.out", tuner = Default())
       .toUnit
   }
 
   def test24[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: PairwiseDistance.CorrelationTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev1: PairwiseDistance.CorrelationTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     // see http://www.mathsisfun.com/data/correlation.html for data
 
@@ -1188,7 +1212,7 @@ object Shared {
 
     data
       .correlation(Over(_2), Default())(locate, true)
-      .saveAsText(s"./tmp.${tool}/pws2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/pws2.out", tuner = Default())
       .toUnit
 
     val schema2 = List(
@@ -1201,22 +1225,23 @@ object Shared {
 
     data2
       .correlation(Over(_2), Default())(locate, true)
-      .saveAsText(s"./tmp.${tool}/pws3.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/pws3.out", tuner = Default())
       .toUnit
   }
 
   def test25[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: PairwiseDistance.MutualInformationTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev1: PairwiseDistance.MutualInformationTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     // see http://www.eecs.harvard.edu/cs286r/courses/fall10/papers/Chapter2.pdf example 2.2.1 for data
 
@@ -1228,29 +1253,30 @@ object Shared {
       .loadText(path + "/mutualInputfile.txt", Cell.parse2D())
       .data
       .mutualInformation(Over(_2), Default())(locate, true)
-      .saveAsText(s"./tmp.${tool}/mi.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/mi.out", tuner = Default())
       .toUnit
 
     ctx
       .loadText(path + "/mutualInputfile.txt", Cell.parse2D())
       .data
       .mutualInformation(Along(_1), Default())(locate, true)
-      .saveAsText(s"./tmp.${tool}/im.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/im.out", tuner = Default())
       .toUnit
   }
 
   def test26[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: Matrix.PairwiseTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev1: Matrix.PairwiseTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val (left, _) = ctx.loadText(path + "/algebraInputfile1.txt", Cell.parse2D())
     val (right, _) = ctx.loadText(path + "/algebraInputfile2.txt", Cell.parse2D())
@@ -1261,22 +1287,23 @@ object Shared {
         right,
         Times(Locate.PrependPairwiseSelectedStringToRemainder(Over(_1), "(%1$s*%2$s)"))
       )
-      .saveAsText(s"./tmp.${tool}/alg.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/alg.out", tuner = Default())
       .toUnit
   }
 
   def test27[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev1: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev2: Matrix.SlideTuner[U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     // http://www.statisticshowto.com/moving-average/
 
@@ -1284,35 +1311,35 @@ object Shared {
       .loadText(path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
       .slide(Over(_2), Default())(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1)))
-      .saveAsText(s"./tmp.${tool}/sma1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/sma1.out", tuner = Default())
       .toUnit
 
     ctx
       .loadText(path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
       .slide(Over(_2), Default())(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
-      .saveAsText(s"./tmp.${tool}/sma2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/sma2.out", tuner = Default())
       .toUnit
 
     ctx
       .loadText(path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
       .slide(Over(_2), Default())(true, CenteredMovingAverage(2, Locate.AppendRemainderDimension(_1)))
-      .saveAsText(s"./tmp.${tool}/tma.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/tma.out", tuner = Default())
       .toUnit
 
     ctx
       .loadText(path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
       .slide(Over(_2), Default())(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1)))
-      .saveAsText(s"./tmp.${tool}/wma1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/wma1.out", tuner = Default())
       .toUnit
 
     ctx
       .loadText(path + "/simMovAvgInputfile.txt", Cell.parse2D(first = LongCodec))
       .data
       .slide(Over(_2), Default())(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_1), all = true))
-      .saveAsText(s"./tmp.${tool}/wma2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/wma2.out", tuner = Default())
       .toUnit
 
     // http://stackoverflow.com/questions/11074665/how-to-calculate-the-cumulative-average-for-some-numbers
@@ -1321,7 +1348,7 @@ object Shared {
       .loadText(path + "/cumMovAvgInputfile.txt", Cell.parse1D())
       .data
       .slide(Along(_1), Default())(true, CumulativeMovingAverage(Locate.AppendRemainderDimension(_1)))
-      .saveAsText(s"./tmp.${tool}/cma.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cma.out", tuner = Default())
       .toUnit
 
     // http://www.incrediblecharts.com/indicators/exponential_moving_average.php
@@ -1330,23 +1357,24 @@ object Shared {
       .loadText(path + "/expMovAvgInputfile.txt", Cell.parse1D())
       .data
       .slide(Along(_1), Default())(true, ExponentialMovingAverage(0.33, Locate.AppendRemainderDimension(_1)))
-      .saveAsText(s"./tmp.${tool}/ema.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/ema.out", tuner = Default())
       .toUnit
   }
 
   def test28[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
-    rules: CutRules[E],
+    ctx: C,
+    rules: CutRules[C#E],
     tool: String
   )(implicit
-    ev1: Matrix.CompactTuner[U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[U, Default[NoParameters]],
-    ev3: Matrix.SummariseTuner[U, Default[NoParameters]]
+    ev1: Matrix.CompactTuner[C#U, Default[NoParameters]],
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.SummariseTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val data = List
       .range(0, 16)
@@ -1374,7 +1402,7 @@ object Shared {
 
     data
       .transformWithValue(rules.fixed(stats, "min", "max", 4), Cut(extractor))
-      .saveAsText(s"./tmp.${tool}/cut1.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut1.out", tuner = Default())
       .toUnit
 
     data
@@ -1382,7 +1410,7 @@ object Shared {
         rules.squareRootChoice(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.square"))
       )
-      .saveAsText(s"./tmp.${tool}/cut2.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut2.out", tuner = Default())
       .toUnit
 
     data
@@ -1390,7 +1418,7 @@ object Shared {
         rules.sturgesFormula(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.sturges"))
       )
-      .saveAsText(s"./tmp.${tool}/cut3.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut3.out", tuner = Default())
       .toUnit
 
     data
@@ -1398,7 +1426,7 @@ object Shared {
         rules.riceRule(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.rice"))
       )
-      .saveAsText(s"./tmp.${tool}/cut4.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut4.out", tuner = Default())
       .toUnit
 
     data
@@ -1406,7 +1434,7 @@ object Shared {
         rules.doanesFormula(stats, "count", "min", "max", "skewness"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.doane"))
       )
-      .saveAsText(s"./tmp.${tool}/cut5.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut5.out", tuner = Default())
       .toUnit
 
     data
@@ -1414,7 +1442,7 @@ object Shared {
         rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.scott"))
       )
-      .saveAsText(s"./tmp.${tool}/cut6.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut6.out", tuner = Default())
       .toUnit
 
     data
@@ -1422,20 +1450,21 @@ object Shared {
         rules.breaks(Map("fid:A" -> List(-1, 4, 8, 12, 16))),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_2, "%s.break"))
       )
-      .saveAsText(s"./tmp.${tool}/cut7.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/cut7.out", tuner = Default())
       .toUnit
   }
 
   def test29[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val schema = DiscreteSchema[Long]()
     val data = List(
@@ -1458,51 +1487,53 @@ object Shared {
         Reducers(1)
       )
       .data
-      .saveAsText(s"./tmp.${tool}/strm.out", tuner = Default())
+      .saveAsText(ctx, s"./tmp.${tool}/strm.out", tuner = Default())
       .toUnit
   }
 
   def test30[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     path: String,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, Default[NoParameters]]
+    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
 
+    implicit val c = ctx
+
     val (data, errors) = ctx.loadText(path + "/badInputfile.txt", Cell.parse3D(third = DateCodec()))
 
     data
-      .saveAsText(s"./tmp.${tool}/yok.out", Cell.toString(verbose = true), Default())
+      .saveAsText(ctx, s"./tmp.${tool}/yok.out", Cell.toString(verbose = true), Default())
       .toUnit
 
     errors
-      .saveAsText(s"./tmp.${tool}/nok.out", Default())
+      .saveAsText(ctx, s"./tmp.${tool}/nok.out", Default())
       .toUnit
   }
 
   def test31[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     tool: String
   )(implicit
-    ev: Matrix.SaveAsIVTuner[U, Default[NoParameters]]
+    ev: Matrix.SaveAsIVTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     List(
       ("a", Content(ContinuousSchema[Double](), 3.14)),
       ("b", Content(DiscreteSchema[Long](), 42)),
       ("c", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv1.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv1.out", tuner = Default())
       .toUnit
 
     List(
@@ -1510,7 +1541,7 @@ object Shared {
       ("b", "c", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv2.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv2.out", tuner = Default())
       .toUnit
 
     List(
@@ -1518,7 +1549,7 @@ object Shared {
       ("b", "c", "d", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv3.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv3.out", tuner = Default())
       .toUnit
 
     List(
@@ -1526,7 +1557,7 @@ object Shared {
       ("b", "c", "d", "e", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv4.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv4.out", tuner = Default())
       .toUnit
 
     List(
@@ -1534,7 +1565,7 @@ object Shared {
       ("b", "c", "d", "e", "f", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", "g", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv5.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv5.out", tuner = Default())
       .toUnit
 
     List(
@@ -1542,7 +1573,7 @@ object Shared {
       ("b", "c", "d", "e", "f", "g", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", "g", "h", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv6.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv6.out", tuner = Default())
       .toUnit
 
     List(
@@ -1550,7 +1581,7 @@ object Shared {
       ("b", "c", "d", "e", "f", "g", "h", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", "g", "h", "i", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv7.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv7.out", tuner = Default())
       .toUnit
 
     List(
@@ -1558,7 +1589,7 @@ object Shared {
       ("b", "c", "d", "e", "f", "g", "h", "i", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", "g", "h", "i", "j", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv8.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv8.out", tuner = Default())
       .toUnit
 
     List(
@@ -1566,21 +1597,22 @@ object Shared {
       ("b", "c", "d", "e", "f", "g", "h", "i", "j", Content(DiscreteSchema[Long](), 42)),
       ("c", "b", "e", "f", "g", "h", "i", "j", "k", Content(NominalSchema[String](), "foo"))
     )
-      .saveAsIV(s"./tmp.${tool}/iv9.out", tuner = Default())
+      .saveAsIV(ctx, s"./tmp.${tool}/iv9.out", tuner = Default())
       .toUnit
   }
 
   def test32[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     tool: String
   )(implicit
-    ev: Matrix.SaveAsVWTuner[U, Default[NoParameters]]
+    ev: Matrix.SaveAsVWTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val data = List(
       ("a", "one", Content(ContinuousSchema[Double](), 3.14)),
@@ -1604,37 +1636,47 @@ object Shared {
     )
 
     data
-      .saveAsVW(Over(_1), Default())(s"./tmp.${tool}/vw0.out", tag = false)
+      .saveAsVW(Over(_1), Default())(ctx, s"./tmp.${tool}/vw0.out", tag = false)
       .toUnit
 
     data
-      .saveAsVW(Over(_1), Default())(s"./tmp.${tool}/vw1.out", tag = true)
+      .saveAsVW(Over(_1), Default())(ctx, s"./tmp.${tool}/vw1.out", tag = true)
       .toUnit
 
     data
-      .saveAsVWWithLabels(Over(_1), Default())(s"./tmp.${tool}/vw2.out", labels, tag = false)
+      .saveAsVWWithLabels(Over(_1), Default())(ctx, s"./tmp.${tool}/vw2.out", labels, tag = false)
       .toUnit
 
     data
-      .saveAsVWWithImportance(Over(_1), Default())(s"./tmp.${tool}/vw3.out", importance, tag = true)
+      .saveAsVWWithImportance(Over(_1), Default())(ctx, s"./tmp.${tool}/vw3.out", importance, tag = true)
       .toUnit
 
     data
-      .saveAsVWWithLabelsAndImportance(Over(_1), Default())(s"./tmp.${tool}/vw4.out", labels, importance, tag = false)
+      .saveAsVWWithLabelsAndImportance(
+        Over(_1),
+        Default()
+      )(
+        ctx,
+        s"./tmp.${tool}/vw4.out",
+        labels,
+        importance,
+        tag = false
+      )
       .toUnit
   }
 
   def test33[
-    U[_],
-    E[_]
+    C <: Context[C]
   ](
-    ctx: Context[U, E],
+    ctx: C,
     tool: String
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, Redistribute]
+    ev: Persist.SaveAsTextTuner[C#U, Redistribute]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
+
+    implicit val c = ctx
 
     val data = List(
       ("a", "one", Content(ContinuousSchema[Double](), 3.14)),
@@ -1654,7 +1696,7 @@ object Shared {
       .streamByPosition(Over(_1))("sh ./parrot.sh", List("parrot.sh"), writer, Cell.parse1D(), 5)
 
     errors
-      .saveAsText(s"./tmp.${tool}/sbp.out", Redistribute(1))
+      .saveAsText(ctx, s"./tmp.${tool}/sbp.out", Redistribute(1))
       .toUnit
   }
 }

@@ -16,6 +16,7 @@ package commbank.grimlock.framework.content
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.metadata.Schema
 import commbank.grimlock.framework.position.Position
@@ -217,47 +218,51 @@ private case class ContentImpl[T](schema: Schema { type D = T }, value: Value { 
 }
 
 /** Trait that represents the contents of a matrix. */
-trait Contents[U[_]] extends Persist[Content, U] {
+trait Contents[C <: Context[C]] extends Persist[Content, C] {
   /**
    * Persist to disk.
    *
-   * @param file   Name of the output file.
-   * @param writer Writer that converts `Content` to string.
-   * @param tuner  The tuner for the job.
+   * @param context The operating context.
+   * @param file    Name of the output file.
+   * @param writer  Writer that converts `Content` to string.
+   * @param tuner   The tuner for the job.
    *
-   * @return A `U[Content]` which is this object's data.
+   * @return A `C#U[Content]` which is this object's data.
    */
   def saveAsText[
     T <: Tuner
   ](
+    context: C,
     file: String,
     writer: Persist.TextWriter[Content] = Content.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, T]
-  ): U[Content]
+    ev: Persist.SaveAsTextTuner[C#U, T]
+  ): C#U[Content]
 }
 
 /** Trait that represents the output of uniqueByPosition. */
-trait IndexedContents[P <: Nat, U[_]] extends Persist[(Position[P], Content), U] {
+trait IndexedContents[P <: Nat, C <: Context[C]] extends Persist[(Position[P], Content), C] {
   /**
    * Persist to disk.
    *
-   * @param file   Name of the output file.
-   * @param writer Writer that converts `IndexedContent` to string.
-   * @param tuner  The tuner for the job.
+   * @param context The operating context.
+   * @param file    Name of the output file.
+   * @param writer  Writer that converts `IndexedContent` to string.
+   * @param tuner   The tuner for the job.
    *
-   * @return A `U[(Position[P], Content)]` which is this object's data.
+   * @return A `C#U[(Position[P], Content)]` which is this object's data.
    */
   def saveAsText[
     T <: Tuner
   ](
+    context: C,
     file: String,
     writer: Persist.TextWriter[(Position[P], Content)] = IndexedContents.toString(),
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuner[U, T]
-  ): U[(Position[P], Content)]
+    ev: Persist.SaveAsTextTuner[C#U, T]
+  ): C#U[(Position[P], Content)]
 }
 
 /** Object for `IndexedContents` functions. */

@@ -30,7 +30,7 @@ import org.apache.spark.{ SparkContext, SparkConf }
 import shapeless.nat._3
 
 object TestSparkReader {
-  def load4TupleDataAddDate(ctx: Context, file: String): Context.U[Cell[_3]] = {
+  def load4TupleDataAddDate(ctx: Context, file: String): ctx.U[Cell[_3]] = {
     def hashDate(v: String) = {
       val cal = java.util.Calendar.getInstance()
 
@@ -232,7 +232,9 @@ object TestSpark19 {
 
 object TestSpark20 {
   def main(args: Array[String]) {
-    Shared.test20(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test20(ctx, args(1), "spark")
   }
 }
 
@@ -247,73 +249,97 @@ object TestSpark21 {
 
 object TestSpark22 {
   def main(args: Array[String]) {
-    Shared.test22(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test22(ctx, args(1), "spark")
   }
 }
 
 object TestSpark23 {
   def main(args: Array[String]) {
-    Shared.test23(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test23(ctx, args(1), "spark")
   }
 }
 
 object TestSpark24 {
   def main(args: Array[String]) {
-    Shared.test24(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test24(ctx, args(1), "spark")
   }
 }
 
 object TestSpark25 {
   def main(args: Array[String]) {
-    Shared.test25(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test25(ctx, args(1), "spark")
   }
 }
 
 object TestSpark26 {
   def main(args: Array[String]) {
-    Shared.test26(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test26(ctx, args(1), "spark")
   }
 }
 
 object TestSpark27 {
   def main(args: Array[String]) {
-    Shared.test27(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test27(ctx, args(1), "spark")
   }
 }
 
 object TestSpark28 {
   def main(args: Array[String]) {
-    Shared.test28(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), CutRules, "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test28[Context](ctx, CutRules, "spark")
   }
 }
 
 object TestSpark29 {
   def main(args: Array[String]) {
-    Shared.test29(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test29(ctx, "spark")
   }
 }
 
 object TestSpark30 {
   def main(args: Array[String]) {
-    Shared.test30(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), args(1), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test30(ctx, args(1), "spark")
   }
 }
 
 object TestSpark31 {
   def main(args: Array[String]) {
-    Shared.test31(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test31(ctx, "spark")
   }
 }
 
 object TestSpark32 {
   def main(args: Array[String]) {
-    Shared.test32(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test32(ctx, "spark")
   }
 }
 
 object TestSpark33 {
   def main(args: Array[String]) {
-    Shared.test33(Context(new SparkContext(args(0), "Test Spark", new SparkConf())), "spark")
+    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+
+    Shared.test33(ctx, "spark")
   }
 }
 

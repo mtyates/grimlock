@@ -63,7 +63,7 @@ object Scoring {
           .andThenWithValue(Standardise(extractStat("mean"), extractStat("sd")))
       )
       .summariseWithValue(Over(_1))(weights, WeightedSums(extractWeight))
-      .saveAsText(s"./demo.${output}/scores.out")
+      .saveAsText(ctx, s"./demo.${output}/scores.out")
       .toUnit
   }
 }

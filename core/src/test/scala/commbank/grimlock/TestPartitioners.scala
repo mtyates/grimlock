@@ -379,13 +379,13 @@ class TestScaldingPartitions extends TestPartitions {
 
   it should "forall should apply to selected partitions" in {
     toPipe(data)
-      .forAll(TestPartitions.doubleT, List("train", "not.there"), Default())
+      .forAll(scaldingCtx, TestPartitions.doubleT, List("train", "not.there"), Default())
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions with reducers" in {
     toPipe(data)
-      .forAll(TestPartitions.doubleT, List("train", "not.there"), Default(10))
+      .forAll(scaldingCtx, TestPartitions.doubleT, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }
@@ -424,13 +424,13 @@ class TestSparkPartitions extends TestPartitions {
 
   it should "forall should apply to selected partitions" in {
     toRDD(data)
-      .forAll(TestPartitions.doubleR, List("train", "not.there"), Default())
+      .forAll(sparkCtx, TestPartitions.doubleR, List("train", "not.there"), Default())
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions with reducers" in {
     toRDD(data)
-      .forAll(TestPartitions.doubleR, List("train", "not.there"), Default(10))
+      .forAll(sparkCtx, TestPartitions.doubleR, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }

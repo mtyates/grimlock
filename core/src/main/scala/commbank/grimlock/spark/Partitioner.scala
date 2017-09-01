@@ -31,9 +31,8 @@ case class Partitions[
   P <: Nat,
   I : Ordering
 ](
-  context: Context,
   data: Context.U[(I, Cell[P])]
-) extends FwPartitions[P, I, Context.U]
+) extends FwPartitions[P, I, Context]
   with Persist[(I, Cell[P])] {
   def add(id: I, partition: Context.U[Cell[P]]): Context.U[(I, Cell[P])] = data ++ (partition.map { case c => (id, c) })
 
@@ -41,6 +40,7 @@ case class Partitions[
     Q <: Nat,
     T <: Tuner
   ](
+    context: Context,
     fn: (I, Context.U[Cell[P]]) => Context.U[Cell[Q]],
     exclude: List[I],
     tuner: T = Default()
@@ -79,11 +79,12 @@ case class Partitions[
   def saveAsText[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     writer: FwPersist.TextWriter[(I, Cell[P])],
     tuner: T = Default()
   )(implicit
     ev: FwPersist.SaveAsTextTuner[Context.U, T]
-  ): Context.U[(I, Cell[P])] = saveText(file, writer, tuner)
+  ): Context.U[(I, Cell[P])] = saveText(context, file, writer, tuner)
 }
 

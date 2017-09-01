@@ -79,7 +79,7 @@ object Conditional {
     heg
       .summarise(Along(_1))(Sums())
       .transformWithValue(gcount, Fraction(extractor))
-      .saveAsText(s"./demo.${output}/eye.out")
+      .saveAsText(ctx, s"./demo.${output}/eye.out")
       .toUnit
 
     // Get hair color conditional on gender.
@@ -88,7 +88,7 @@ object Conditional {
     heg
       .summarise(Along(_2))(Sums())
       .transformWithValue(gcount, Fraction(extractor))
-      .saveAsText(s"./demo.${output}/hair.out")
+      .saveAsText(ctx, s"./demo.${output}/hair.out")
       .toUnit
   }
 }

@@ -109,7 +109,7 @@ object Ensemble {
       .forEach(scripts, trainAndScore)
       .merge(scripts)
       .summariseWithValue(Over(_1))(weights, WeightedSums(extractWeight))
-      .saveAsText(s"./demo.${output}/ensemble.scores.out")
+      .saveAsText(ctx, s"./demo.${output}/ensemble.scores.out")
       .toUnit
   }
 }

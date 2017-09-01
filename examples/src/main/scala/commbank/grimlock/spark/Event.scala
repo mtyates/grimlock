@@ -200,7 +200,7 @@ object InstanceCentricTfIdf {
       //  AugmentedTf(ExtractWithDimension[_2, Content](_1).andThenPresent(_.value.asDouble))
       //)
       .transformWithValue(idf, TfIdf(extractIdf))
-      .saveAsText(s"./demo.${output}/tfidf_entity.out")
+      .saveAsText(ctx, s"./demo.${output}/tfidf_entity.out")
   }
 }
 

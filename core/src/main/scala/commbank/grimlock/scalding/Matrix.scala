@@ -77,9 +77,8 @@ import shapeless.syntax.sized._
 case class Matrix[
   P <: Nat
 ](
-  context: Context,
   data: Context.U[Cell[P]]
-) extends FwMatrix[P, Context.U, Context.E]
+) extends FwMatrix[P, Context]
   with Persist[Cell[P]]
   with ApproximateDistribution[P]
   with Statistics[P] {
@@ -162,7 +161,7 @@ case class Matrix[
       .map { case (_, (c, _)) => c }
   }
 
-  def materialise(): List[Cell[P]] = data
+  def materialise(context: Context): List[Cell[P]] = data
     .toIterableExecution
     .waitFor(context.config, context.mode)
     .getOrElse(Iterable.empty)
@@ -288,12 +287,13 @@ case class Matrix[
   def saveAsText[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     writer: FwPersist.TextWriter[Cell[P]],
     tuner: T = Default()
   )(implicit
     ev: FwPersist.SaveAsTextTuner[Context.U, T]
-  ): Context.U[Cell[P]] = saveText(file, writer, tuner)
+  ): Context.U[Cell[P]] = saveText(context, file, writer, tuner)
 
   def set[
     T <: Tuner
@@ -704,14 +704,11 @@ case class Matrix[
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_1]]`. */
-case class Matrix1D(
-  context: Context,
-  data: Context.U[Cell[_1]]
-) extends FwMatrix1D[Context.U, Context.E]
-  with MatrixXD[_1] {
+case class Matrix1D(data: Context.U[Cell[_1]]) extends FwMatrix1D[Context] with MatrixXD[_1] {
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -725,7 +722,7 @@ case class Matrix1D(
 
     data
       .map { case c => (c.position, c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => i + separator + c.content.value.toShortString }
       .tunedSaveAsText(context, rt, file)
 
@@ -737,11 +734,7 @@ case class Matrix1D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_2]]`. */
-case class Matrix2D(
-  context: Context,
-  data: Context.U[Cell[_2]]
-) extends FwMatrix2D[Context.U, Context.E]
-  with MatrixXD[_2] {
+case class Matrix2D(data: Context.U[Cell[_2]]) extends FwMatrix2D[Context] with MatrixXD[_2] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt
@@ -764,6 +757,7 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T = Default()
   )(
+    context: Context,
     file: String,
     separator: String,
     escapee: Escape,
@@ -807,6 +801,7 @@ case class Matrix2D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -820,9 +815,9 @@ case class Matrix2D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => i + separator + j + separator + c.content.value.toShortString }
       .tunedSaveAsText(context, rt, file)
 
@@ -835,13 +830,14 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T = Default()
   )(
+    context: Context,
     file: String,
     dictionary: String,
     tag: Boolean,
     separator: String
   )(implicit
     ev: FwMatrix.SaveAsVWTuner[Context.U, T]
-  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(file, None, None, tag, dictionary, separator)
+  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(context, file, None, None, tag, dictionary, separator)
 
   def saveAsVWWithLabels[
     T <: Tuner
@@ -849,6 +845,7 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T = Default()
   )(
+    context: Context,
     file: String,
     labels: Context.U[Cell[slice.S]],
     dictionary: String,
@@ -856,7 +853,7 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: FwMatrix.SaveAsVWTuner[Context.U, T]
-  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(file, Option(labels), None, tag, dictionary, separator)
+  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(context, file, Option(labels), None, tag, dictionary, separator)
 
   def saveAsVWWithImportance[
     T <: Tuner
@@ -864,6 +861,7 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T = Default()
   )(
+    context: Context,
     file: String,
     importance: Context.U[Cell[slice.S]],
     dictionary: String,
@@ -871,7 +869,7 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: FwMatrix.SaveAsVWTuner[Context.U, T]
-  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(file, None, Option(importance), tag, dictionary, separator)
+  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(context, file, None, Option(importance), tag, dictionary, separator)
 
   def saveAsVWWithLabelsAndImportance[
     T <: Tuner
@@ -879,6 +877,7 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T = Default()
   )(
+    context: Context,
     file: String,
     labels: Context.U[Cell[slice.S]],
     importance: Context.U[Cell[slice.S]],
@@ -887,7 +886,18 @@ case class Matrix2D(
     separator: String
   )(implicit
     ev: FwMatrix.SaveAsVWTuner[Context.U, T]
-  ): Context.U[Cell[_2]] = saveVW(slice, tuner)(file, Option(labels), Option(importance), tag, dictionary, separator)
+  ): Context.U[Cell[_2]] = saveVW(
+    slice,
+    tuner
+  )(
+    context,
+    file,
+    Option(labels),
+    Option(importance),
+    tag,
+    dictionary,
+    separator
+  )
 
   private def saveVW[
     T <: Tuner
@@ -895,6 +905,7 @@ case class Matrix2D(
     slice: Slice[_2],
     tuner: T
   )(
+    context: Context,
     file: String,
     labels: Option[Context.U[Cell[slice.S]]],
     importance: Option[Context.U[Cell[slice.S]]],
@@ -960,11 +971,7 @@ case class Matrix2D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_3]]`. */
-case class Matrix3D(
-  context: Context,
-  data: Context.U[Cell[_3]]
-) extends FwMatrix3D[Context.U, Context.E]
-  with MatrixXD[_3] {
+case class Matrix3D(data: Context.U[Cell[_3]]) extends FwMatrix3D[Context] with MatrixXD[_3] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -990,6 +997,7 @@ case class Matrix3D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1003,11 +1011,11 @@ case class Matrix3D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => i + separator + j + separator + k + separator + c.content.value.toShortString }
       .tunedSaveAsText(context, rt, file)
 
@@ -1021,11 +1029,7 @@ case class Matrix3D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_4]]`. */
-case class Matrix4D(
-  context: Context,
-  data: Context.U[Cell[_4]]
-) extends FwMatrix4D[Context.U, Context.E]
-  with MatrixXD[_4] {
+case class Matrix4D(data: Context.U[Cell[_4]]) extends FwMatrix4D[Context] with MatrixXD[_4] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1054,6 +1058,7 @@ case class Matrix4D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1067,13 +1072,13 @@ case class Matrix4D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) =>
         i + separator + j + separator + k + separator + l + separator + c.content.value.toShortString
       }
@@ -1090,11 +1095,7 @@ case class Matrix4D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_5]]`. */
-case class Matrix5D(
-  context: Context,
-  data: Context.U[Cell[_5]]
-) extends FwMatrix5D[Context.U, Context.E]
-  with MatrixXD[_5] {
+case class Matrix5D(data: Context.U[Cell[_5]]) extends FwMatrix5D[Context] with MatrixXD[_5] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1126,6 +1127,7 @@ case class Matrix5D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1139,15 +1141,15 @@ case class Matrix5D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
-      .tunedJoin(jt, saveDictionary(_5, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_5, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) =>
         i + separator + j + separator + k + separator + l + separator + m + separator + c.content.value.toShortString
       }
@@ -1165,11 +1167,7 @@ case class Matrix5D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_6]]`. */
-case class Matrix6D(
-  context: Context,
-  data: Context.U[Cell[_6]]
-) extends FwMatrix6D[Context.U, Context.E]
-  with MatrixXD[_6] {
+case class Matrix6D(data: Context.U[Cell[_6]]) extends FwMatrix6D[Context] with MatrixXD[_6] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1204,6 +1202,7 @@ case class Matrix6D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1217,17 +1216,17 @@ case class Matrix6D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
-      .tunedJoin(jt, saveDictionary(_5, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_5, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
-      .tunedJoin(jt, saveDictionary(_6, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_6, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m), n)) =>
         i + separator +
         j + separator +
@@ -1252,11 +1251,7 @@ case class Matrix6D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_7]]`. */
-case class Matrix7D(
-  context: Context,
-  data: Context.U[Cell[_7]]
-) extends FwMatrix7D[Context.U, Context.E]
-  with MatrixXD[_7] {
+case class Matrix7D(data: Context.U[Cell[_7]]) extends FwMatrix7D[Context] with MatrixXD[_7] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1302,6 +1297,7 @@ case class Matrix7D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1315,19 +1311,19 @@ case class Matrix7D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
-      .tunedJoin(jt, saveDictionary(_5, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_5, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
-      .tunedJoin(jt, saveDictionary(_6, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_6, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
-      .tunedJoin(jt, saveDictionary(_7, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_7, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n), o)) =>
         i + separator +
         j + separator +
@@ -1354,11 +1350,7 @@ case class Matrix7D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_8]]`. */
-case class Matrix8D(
-  context: Context,
-  data: Context.U[Cell[_8]]
-) extends FwMatrix8D[Context.U, Context.E]
-  with MatrixXD[_8] {
+case class Matrix8D(data: Context.U[Cell[_8]]) extends FwMatrix8D[Context] with MatrixXD[_8] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1408,6 +1400,7 @@ case class Matrix8D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1421,21 +1414,21 @@ case class Matrix8D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
-      .tunedJoin(jt, saveDictionary(_5, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_5, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
-      .tunedJoin(jt, saveDictionary(_6, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_6, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
-      .tunedJoin(jt, saveDictionary(_7, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_7, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n), o)) => (Position(c.position(_8)), (c, i, j, k, l, m, n, o)) }
-      .tunedJoin(jt, saveDictionary(_8, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_8, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n, o), p)) =>
         i + separator +
         j + separator +
@@ -1464,11 +1457,7 @@ case class Matrix8D(
 }
 
 /** Rich wrapper around a `TypedPipe[Cell[_9]]`. */
-case class Matrix9D(
-  context: Context,
-  data: Context.U[Cell[_9]]
-) extends FwMatrix9D[Context.U, Context.E]
-  with MatrixXD[_9] {
+case class Matrix9D(data: Context.U[Cell[_9]]) extends FwMatrix9D[Context] with MatrixXD[_9] {
   def permute[
     D1 <: Nat : ToInt,
     D2 <: Nat : ToInt,
@@ -1522,6 +1511,7 @@ case class Matrix9D(
   def saveAsIV[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1535,23 +1525,23 @@ case class Matrix9D(
 
     data
       .map { case c => (Position(c.position(_1)), c) }
-      .tunedJoin(jt, saveDictionary(_1, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_1, context, file, dictionary, separator, jt), msj)
       .map { case (_, (c, i)) => (Position(c.position(_2)), (c, i)) }
-      .tunedJoin(jt, saveDictionary(_2, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_2, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i), j)) => (Position(c.position(_3)), (c, i, j)) }
-      .tunedJoin(jt, saveDictionary(_3, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_3, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j), k)) => (Position(c.position(_4)), (c, i, j, k)) }
-      .tunedJoin(jt, saveDictionary(_4, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_4, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k), l)) => (Position(c.position(_5)), (c, i, j, k, l)) }
-      .tunedJoin(jt, saveDictionary(_5, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_5, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l), m)) => (Position(c.position(_6)), (c, i, j, k, l, m)) }
-      .tunedJoin(jt, saveDictionary(_6, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_6, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m), n)) => (Position(c.position(_7)), (c, i, j, k, l, m, n)) }
-      .tunedJoin(jt, saveDictionary(_7, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_7, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n), o)) => (Position(c.position(_8)), (c, i, j, k, l, m, n, o)) }
-      .tunedJoin(jt, saveDictionary(_8, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_8, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n, o), p)) => (Position(c.position(_9)), (c, i, j, k, l, m, n, o, p)) }
-      .tunedJoin(jt, saveDictionary(_9, file, dictionary, separator, jt), msj)
+      .tunedJoin(jt, saveDictionary(_9, context, file, dictionary, separator, jt), msj)
       .map { case (_, ((c, i, j, k, l, m, n, o, p), q)) =>
         i + separator +
         j + separator +
@@ -1655,6 +1645,7 @@ trait MatrixXD[P <: Nat] extends Persist[Cell[P]] {
     D <: Nat : ToInt
   ](
     dim: D,
+    context: Context,
     file: String,
     dictionary: String,
     separator: String,
@@ -1679,9 +1670,8 @@ trait MatrixXD[P <: Nat] extends Persist[Cell[P]] {
 case class MultiDimensionMatrix[
   P <: Nat
 ](
-  context: Context,
   data: Context.U[Cell[P]]
-) extends FwMultiDimensionMatrix[P, Context.U, Context.E]
+) extends FwMultiDimensionMatrix[P, Context]
   with PairwiseDistance[P] {
   def join[
     T <: Tuner

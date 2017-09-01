@@ -26,13 +26,7 @@ import shapeless.{ =:!=, Nat }
 import shapeless.nat._0
 
 /** Rich wrapper around a `RDD[Position]`. */
-case class Positions[
-  P <: Nat
-](
-  context: Context,
-  data: Context.U[Position[P]]
-) extends FwPositions[P, Context.U]
-  with Persist[Position[P]] {
+case class Positions[P <: Nat](data: Context.U[Position[P]]) extends FwPositions[P, Context] with Persist[Position[P]] {
   def names[
     T <: Tuner
   ](
@@ -46,12 +40,13 @@ case class Positions[
   def saveAsText[
     T <: Tuner
   ](
+    context: Context,
     file: String,
     writer: FwPersist.TextWriter[Position[P]],
     tuner: T = Default()
   )(implicit
     ev: FwPersist.SaveAsTextTuner[Context.U, T]
-  ): Context.U[Position[P]] = saveText(file, writer, tuner)
+  ): Context.U[Position[P]] = saveText(context, file, writer, tuner)
 
   protected def slice(keep: Boolean, f: Position[P] => Boolean): Context.U[Position[P]] = data
     .filter { case p => !keep ^ f(p) }

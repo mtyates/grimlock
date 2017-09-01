@@ -31,8 +31,8 @@ import shapeless.Nat
 /** Trait for computing pairwise distances from a matrix. */
 trait PairwiseDistance[
   P <: Nat
-] extends FwPairwiseDistance[P, Context.U, Context.E]
-  with Persist[Cell[P]] { self: FwMultiDimensionMatrix[P, Context.U, Context.E] =>
+] extends FwPairwiseDistance[P, Context]
+  with Persist[Cell[P]] { self: FwMultiDimensionMatrix[P, Context] =>
   def correlation[
     Q <: Nat,
     T <: Tuner
