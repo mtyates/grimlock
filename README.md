@@ -2,7 +2,7 @@ grimlock
 ========
 
 [![Build Status](https://travis-ci.org/CommBank/grimlock.svg?branch=master)](https://travis-ci.org/CommBank/grimlock)
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/CommBank/grimlock?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter](https://badges.gitter.im/CommBank/grimlock.png)](https://gitter.im/CommBank/grimlock)
 
 Overview
 --------
@@ -23,7 +23,7 @@ The library contains default implementations for many of the above tasks. It als
 
 * Supports wide variety of variable types;
 * Is easily extensible;
-* Can operate in multiple dimensions (currently up to 9);
+* Can operate in multiple dimensions;
 * Supports heterogeneous data;
 * Can be used in the Scalding/Spark REPL;
 * Supports basic as well as structured data types.
@@ -34,7 +34,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.4.5"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.5.0"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
@@ -45,7 +45,7 @@ Concepts
 
 ### Data Structures
 
-The basic data structure in grimlock is a N-dimensional sparse __Matrix__ (N=1..9). Each __Cell__ in a Matrix consists of a __Position__ and __Content__.
+The basic data structure in grimlock is a N-dimensional sparse __Matrix__. Each __Cell__ in a Matrix consists of a __Position__ and __Content__.
 
 ```
           Matrix
@@ -55,7 +55,7 @@ The basic data structure in grimlock is a N-dimensional sparse __Matrix__ (N=1..
   Cell(Position, Content)
 ```
 
-The Position is, essentially, a list of N coordinates (where each coordinate is stored in a __Value__). The Content consists of a __Schema__ together with a Value. The Value contains the data (Double, Sting, Date, etc.) of the cell, while the Schema defines the variable type of the data, and (optionally) what it's legal values are.
+The Position is, essentially, a list of N coordinates (where each coordinate is stored in a __Value__). The Content consists of a __Type__ together with a Value. The Value contains the data (Double, Sting, Date, etc.) of the cell, while the Type defines the variable type of the data. Note, the Type is obtained from a __Schema__ which (optionally) defines the value's legal values.
 
 ```
    Position              Content
@@ -63,10 +63,10 @@ The Position is, essentially, a list of N coordinates (where each coordinate is 
        |                    |
        | N           +------+------+
      Value           | 1           | 1
-                  Schema         Value
+                    Type         Value
 ```
 
-Lastly, a __Codec__ can be used to parse and write the basic data types used in the values.
+Lastly, a __Codec__ can be used to parse, write and compare the data types used in the values.
 
 ```
   Value
@@ -78,10 +78,10 @@ Lastly, a __Codec__ can be used to parse and write the basic data types used in 
 
 ### Working with dimensions
 
-Performing operations along any of the dimensions of the matrix is supported through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with a single dimension (__shapeless.Nat__), but differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is grouped by all dimensions *except* the dimension used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
+Performing operations along any of the dimensions of the matrix is supported through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with a single dimension (__shapeless.Nat__, where \_0 indexes the first dimension), but differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is grouped by all dimensions *except* the dimension used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
 
 ```
-        Over(_2)          Along(_3)
+        Over(_1)          Along(_2)
 
      +----+------+      +-----------+
     /    /|     /|     /     _     /|
@@ -96,7 +96,7 @@ Performing operations along any of the dimensions of the matrix is supported thr
 
 ### Data Format
 
-The basic data format used by grimlock (though others are supported) is a column-oriented pipe separated file (each row is a single cell). The first N fields are the coordinates, optionally followed by the variable type and codec (again pipe separated). If the variable type and codec are omitted from the data then they have to be provided by a __Dictionary__. The last field of each row is the value.
+The basic data format used by grimlock (though others are supported) is a column-oriented data file (each row is a single cell, separated by a delimiter). The first N fields are the coordinates, optionally followed by the variable type and codec. If the variable type and codec are omitted from the data then they have to be provided by a __Dictionary__. The last field of each row is the value.
 
 In the example below the first field is a coordinate identifying an instance, the second field is a coordinate identifying a feature. The third and fourth columns are the codec and variable type respectively. The last column has the actual value.
 
@@ -187,11 +187,17 @@ When at the Scalding REPL console, the first step is to import grimlock's functi
 // Entering paste mode (ctrl-D to finish)
 
 import commbank.grimlock.framework._
+import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.environment.implicits._
 import commbank.grimlock.framework.position._
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.scalding.environment._
 
-import shapeless.nat.{ _1, _2 }
+import commbank.grimlock.library.aggregate._
+
+import commbank.grimlock.scalding.environment._
+import commbank.grimlock.scalding.environment.implicits._
+
+import shapeless.HNil
+import shapeless.nat.{ _0, _1 }
 
 ```
 
@@ -205,8 +211,8 @@ The next step is to read in data (be sure to change <path to> to the correct pat
 
 ```
 scala> val (data, _) = context.loadText(
-  "<path to>/grimlock/examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
-  Cell.parse2D()
+  "<path to>/grimlock/grimlock-examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
+  Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
 )
 ```
 
@@ -214,73 +220,73 @@ The returned `data` is a 2 dimensional matrix. To investigate it's content Scald
 
 ```
 scala> data.dump
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:B,StringCodec)),Content(NominalSchema[String](),StringValue(H,StringCodec)))
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:E,StringCodec)),Content(ContinuousSchema[Long](),LongValue(219,LongCodec)))
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:H,StringCodec)),Content(NominalSchema[String](),StringValue(C,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:A,StringCodec)),Content(ContinuousSchema[Long](),LongValue(371,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:B,StringCodec)),Content(NominalSchema[String](),StringValue(H,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:C,StringCodec)),Content(ContinuousSchema[Long](),LongValue(259,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:D,StringCodec)),Content(NominalSchema[String](),StringValue(F,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:E,StringCodec)),Content(ContinuousSchema[Long](),LongValue(830,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:F,StringCodec)),Content(NominalSchema[String](),StringValue(G,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:H,StringCodec)),Content(NominalSchema[String](),StringValue(B,StringCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,StringValue(H,StringCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil),Content(ContinuousType,LongValue(219,LongCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,StringValue(C,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:A,StringCodec) :: HNil),Content(ContinuousType,LongValue(371,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,StringValue(H,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:C,StringCodec) :: HNil),Content(ContinuousType,LongValue(259,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil),Content(NominalType,StringValue(F,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil),Content(ContinuousType,LongValue(830,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:F,StringCodec) :: HNil),Content(NominalType,StringValue(G,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,StringValue(B,StringCodec)))
 ...
 ```
 
 The following shows a number of basic operations (get number of rows, get type of features, perform simple query):
 
 ```
-scala> data.size(_1).dump
-Cell(Position(LongValue(1,LongCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
+scala> data.size(_0).dump
+Cell(Position(LongValue(0,LongCodec) :: HNil),Content(DiscreteType,LongValue(9,LongCodec)))
 
-scala> data.types(Over(_2))(false).dump
-Cell(Position(StringValue(fid:A,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:B,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:C,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:D,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:E,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:F,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:G,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:H,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
+scala> data.types(Over(_1))(false).dump
+Cell(Position(StringValue(fid:A,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:C,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:D,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:E,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:F,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:G,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
 
-scala> data.which((cell: Cell[_2]) => (cell.content.value gtr 995) || (cell.content.value equ "F")).dump
-Position(StringValue(iid:0066848,StringCodec),StringValue(fid:D,StringCodec))
-Position(StringValue(iid:0216406,StringCodec),StringValue(fid:E,StringCodec))
-Position(StringValue(iid:0444510,StringCodec),StringValue(fid:D,StringCodec))
+scala> data.which(cell => (cell.content.value gtr 995) || (cell.content.value equ "F")).dump
+Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil)
+Position(StringValue(iid:0216406,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil)
+Position(StringValue(iid:0444510,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil)
 ```
 
 Now for something a little more interesting. Let's compute the number of features for each instance and then compute the moments of the distribution of counts:
 
 ```
-scala> val counts = data.summarise(Over(_1))(Counts())
+scala> val counts = data.summarise(Over(_0))(Counts())
 
 scala> counts.dump
-Cell(Position(StringValue(iid:0064402,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec)),Content(DiscreteSchema[Long](),LongValue(7,LongCodec)))
-Cell(Position(StringValue(iid:0216406,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:0221707,StringCodec)),Content(DiscreteSchema[Long](),LongValue(4,LongCodec)))
-Cell(Position(StringValue(iid:0262443,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
-Cell(Position(StringValue(iid:0364354,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:0375226,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
-Cell(Position(StringValue(iid:0444510,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:1004305,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: HNil),Content(DiscreteType,LongValue(3,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: HNil),Content(DiscreteType,LongValue(7,LongCodec)))
+Cell(Position(StringValue(iid:0216406,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
+Cell(Position(StringValue(iid:0221707,StringCodec) :: HNil),Content(DiscreteType,LongValue(4,LongCodec)))
+Cell(Position(StringValue(iid:0262443,StringCodec) :: HNil),Content(DiscreteType,LongValue(2,LongCodec)))
+Cell(Position(StringValue(iid:0364354,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
+Cell(Position(StringValue(iid:0375226,StringCodec) :: HNil),Content(DiscreteType,LongValue(3,LongCodec)))
+Cell(Position(StringValue(iid:0444510,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
+Cell(Position(StringValue(iid:1004305,StringCodec) :: HNil),Content(DiscreteType,LongValue(2,LongCodec)))
 
-scala> counts.summarise(Along(_1))(
+scala> counts.summarise(Along(_0))(
   Mean().andThenRelocate(_.position.append("mean").toOption),
   StandardDeviation().andThenRelocate(_.position.append("sd").toOption),
   Skewness().andThenRelocate(_.position.append("skewness").toOption),
   Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption)
 ).dump
-Cell(Position(StringValue(mean,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(4.0,DoubleCodec)))
-Cell(Position(StringValue(sd,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(1.6583123951777,DoubleCodec)))
-Cell(Position(StringValue(skewness,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(0.348873899490999,DoubleCodec)))
-Cell(Position(StringValue(kurtosis,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(2.194214876033058,DoubleCodec)))
+Cell(Position(StringValue(skewness,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(0.34887389949099906,DoubleCodec)))
+Cell(Position(StringValue(sd,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(1.6583123951777,DoubleCodec)))
+Cell(Position(StringValue(kurtosis,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(2.1942148760330573,DoubleCodec)))
+Cell(Position(StringValue(mean,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(4.0,DoubleCodec)))
 ```
 
 Computing the moments can also be achieved more concisely as follows:
 
 ```
-scala> counts.summarise(Along(_1))(
+scala> counts.summarise(Along(_0))(
   Moments(
     _.append("mean").toOption,
     _.append("sd").toOption,
@@ -337,11 +343,17 @@ When at the Spark REPL console, the first step is to import grimlock's functiona
 // Entering paste mode (ctrl-D to finish)
 
 import commbank.grimlock.framework._
+import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.environment.implicits._
 import commbank.grimlock.framework.position._
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.spark.environment._
 
-import shapeless.nat.{ _1, _2 }
+import commbank.grimlock.library.aggregate._
+
+import commbank.grimlock.spark.environment._
+import commbank.grimlock.spark.environment.implicits._
+
+import shapeless.HNil
+import shapeless.nat.{ _0, _1 }
 
 ```
 
@@ -355,8 +367,8 @@ The next step is to read in data (be sure to change <path to> to the correct pat
 
 ```
 scala> val (data, _) = context.loadText(
-  "<path to>/grimlock/examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
-  Cell.parse2D()
+  "<path to>/grimlock/grimlock-examples/src/main/scala/commbank/grimlock/data/exampleInput.txt",
+  Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
 )
 ```
 
@@ -364,73 +376,73 @@ The returned `data` is a 2 dimensional matrix. To investigate it's content Spark
 
 ```
 scala> data.foreach(println)
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:B,StringCodec)),Content(NominalSchema[String](),StringValue(H,StringCodec)))
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:E,StringCodec)),Content(ContinuousSchema[Long](),LongValue(219,LongCodec)))
-Cell(Position(StringValue(iid:0064402,StringCodec),StringValue(fid:H,StringCodec)),Content(NominalSchema[String](),StringValue(C,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:A,StringCodec)),Content(ContinuousSchema[Long](),LongValue(371,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:B,StringCodec)),Content(NominalSchema[String](),StringValue(H,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:C,StringCodec)),Content(ContinuousSchema[Long](),LongValue(259,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:D,StringCodec)),Content(NominalSchema[String](),StringValue(F,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:E,StringCodec)),Content(ContinuousSchema[Long](),LongValue(830,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:F,StringCodec)),Content(NominalSchema[String](),StringValue(G,StringCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec),StringValue(fid:H,StringCodec)),Content(NominalSchema[String](),StringValue(B,StringCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,StringValue(H,StringCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil),Content(ContinuousType,LongValue(219,LongCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,StringValue(C,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:A,StringCodec) :: HNil),Content(ContinuousType,LongValue(371,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,StringValue(H,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:C,StringCodec) :: HNil),Content(ContinuousType,LongValue(259,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil),Content(NominalType,StringValue(F,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil),Content(ContinuousType,LongValue(830,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:F,StringCodec) :: HNil),Content(NominalType,StringValue(G,StringCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,StringValue(B,StringCodec)))
 ...
 ```
 
 The following shows a number of basic operations (get number of rows, get type of features, perform simple query):
 
 ```
-scala> data.size(_1).foreach(println)
-Cell(Position(LongValue(1,LongCodec)),Content(DiscreteSchema[Long](),LongValue(9,LongCodec)))
+scala> data.size(_0).foreach(println)
+Cell(Position(LongValue(0,LongCodec) :: HNil),Content(DiscreteType,LongValue(9,LongCodec)))
 
-scala> data.types(Over(_2))(false).foreach(println)
-Cell(Position(StringValue(fid:A,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:B,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:C,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:D,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:E,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:F,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
-Cell(Position(StringValue(fid:G,StringCodec)),Content(NominalSchema[Type](),TypeValue(Numeric,TypeCodec)))
-Cell(Position(StringValue(fid:H,StringCodec)),Content(NominalSchema[Type](),TypeValue(Categorical,TypeCodec)))
+scala> data.types(Over(_1))(false).foreach(println)
+Cell(Position(StringValue(fid:G,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:D,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:E,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:A,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:B,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:C,StringCodec) :: HNil),Content(NominalType,TypeValue(NumericType,TypeCodec)))
+Cell(Position(StringValue(fid:H,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
+Cell(Position(StringValue(fid:F,StringCodec) :: HNil),Content(NominalType,TypeValue(CategoricalType,TypeCodec)))
 
-scala> data.which((cell: Cell[_2]) => (cell.content.value gtr 995) || (cell.content.value equ "F")).foreach(println)
-Position(StringValue(iid:0066848,StringCodec),StringValue(fid:D,StringCodec))
-Position(StringValue(iid:0216406,StringCodec),StringValue(fid:E,StringCodec))
-Position(StringValue(iid:0444510,StringCodec),StringValue(fid:D,StringCodec))
+scala> data.which(cell => (cell.content.value gtr 995) || (cell.content.value equ "F")).foreach(println)
+Position(StringValue(iid:0066848,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil)
+Position(StringValue(iid:0216406,StringCodec) :: StringValue(fid:E,StringCodec) :: HNil)
+Position(StringValue(iid:0444510,StringCodec) :: StringValue(fid:D,StringCodec) :: HNil)
 ```
 
 Now for something a little more interesting. Let's compute the number of features for each instance and then compute the moments of the distribution of counts:
 
 ```
-scala> val counts = data.summarise(Over(_1))(Counts())
+scala> val counts = data.summarise(Over(_0))(Counts())
 
 scala> counts.foreach(println)
-Cell(Position(StringValue(iid:0064402,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
-Cell(Position(StringValue(iid:0066848,StringCodec)),Content(DiscreteSchema[Long](),LongValue(7,LongCodec)))
-Cell(Position(StringValue(iid:0216406,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:0221707,StringCodec)),Content(DiscreteSchema[Long](),LongValue(4,LongCodec)))
-Cell(Position(StringValue(iid:0262443,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
-Cell(Position(StringValue(iid:0364354,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:0375226,StringCodec)),Content(DiscreteSchema[Long](),LongValue(3,LongCodec)))
-Cell(Position(StringValue(iid:0444510,StringCodec)),Content(DiscreteSchema[Long](),LongValue(5,LongCodec)))
-Cell(Position(StringValue(iid:1004305,StringCodec)),Content(DiscreteSchema[Long](),LongValue(2,LongCodec)))
+Cell(Position(StringValue(iid:0221707,StringCodec) :: HNil),Content(DiscreteType,LongValue(4,LongCodec)))
+Cell(Position(StringValue(iid:0444510,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
+Cell(Position(StringValue(iid:0064402,StringCodec) :: HNil),Content(DiscreteType,LongValue(3,LongCodec)))
+Cell(Position(StringValue(iid:0375226,StringCodec) :: HNil),Content(DiscreteType,LongValue(3,LongCodec)))
+Cell(Position(StringValue(iid:0262443,StringCodec) :: HNil),Content(DiscreteType,LongValue(2,LongCodec)))
+Cell(Position(StringValue(iid:0216406,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
+Cell(Position(StringValue(iid:0066848,StringCodec) :: HNil),Content(DiscreteType,LongValue(7,LongCodec)))
+Cell(Position(StringValue(iid:1004305,StringCodec) :: HNil),Content(DiscreteType,LongValue(2,LongCodec)))
+Cell(Position(StringValue(iid:0364354,StringCodec) :: HNil),Content(DiscreteType,LongValue(5,LongCodec)))
 
-scala> counts.summarise(Along(_1))(
+scala> counts.summarise(Along(_0))(
   Mean().andThenRelocate(_.position.append("mean").toOption),
   StandardDeviation().andThenRelocate(_.position.append("sd").toOption),
   Skewness().andThenRelocate(_.position.append("skewness").toOption),
   Kurtosis().andThenRelocate(_.position.append("kurtosis").toOption)
 ).foreach(println)
-Cell(Position(StringValue(mean,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(4.0,DoubleCodec)))
-Cell(Position(StringValue(sd,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(1.6583123951777,DoubleCodec)))
-Cell(Position(StringValue(skewness,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(0.348873899490999,DoubleCodec)))
-Cell(Position(StringValue(kurtosis,StringCodec)),Content(ContinuousSchema[Double](),DoubleValue(2.194214876033058,DoubleCodec)))
+Cell(Position(StringValue(skewness,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(0.34887389949099906,DoubleCodec)))
+Cell(Position(StringValue(sd,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(1.6583123951777,DoubleCodec)))
+Cell(Position(StringValue(kurtosis,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(2.194214876033058,DoubleCodec)))
+Cell(Position(StringValue(mean,StringCodec) :: HNil),Content(ContinuousType,DoubleValue(4.0,DoubleCodec)))
 ```
 
 Computing the moments can also be achieved more concisely as follows:
 
 ```
-scala> counts.summarise(Along(_1))(
+scala> counts.summarise(Along(_0))(
   Moments(
     _.append("mean").toOption,
     _.append("sd").toOption,
