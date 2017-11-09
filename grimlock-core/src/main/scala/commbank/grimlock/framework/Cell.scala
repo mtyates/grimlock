@@ -725,15 +725,15 @@ object ColumnDecoder {
   )(implicit
     ev: ToInt[index.N]
   ): ColumnDecoder[V] = ColumnDecoderImpl(Nat.toInt[index.N], coordinate, decoder)
-
-  private case class ColumnDecoderImpl[
-    V
-  ](
-    index: Int,
-    coordinate: Value[V],
-    decoder: Content.Decoder
-  ) extends ColumnDecoder[V]
 }
+
+private case class ColumnDecoderImpl[
+  V
+](
+  index: Int,
+  coordinate: Value[V],
+  decoder: Content.Decoder
+) extends ColumnDecoder[V]
 
 /** Decode primary key data. */
 trait KeyDecoder[K] extends TableDecoder {
@@ -771,9 +771,9 @@ object KeyDecoder {
   )(implicit
     ev: ToInt[index.N]
   ): KeyDecoder[K] = KeyDecoderImpl(Nat.toInt[index.N], (str) => Value.fromShortString(str, codec))
-
-  private case class KeyDecoderImpl[K](index: Int, decoder: (String) => Option[Value[K]]) extends KeyDecoder[K]
 }
+
+private case class KeyDecoderImpl[K](index: Int, decoder: (String) => Option[Value[K]]) extends KeyDecoder[K]
 
 private trait ParseConfig[Q <: HList] {
   def idx(str: String, sep: String): Int

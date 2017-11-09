@@ -399,9 +399,9 @@ object Content {
         JsError("Incorrect number of fields")
     }
   }
-
-  private case class ContentImpl(classification: Type, value: Value[_]) extends Content
 }
+
+private case class ContentImpl(classification: Type, value: Value[_]) extends Content
 
 /** Trait that represents the contents of a matrix. */
 trait Contents[C <: Context[C]] extends Persist[Content, C] {
