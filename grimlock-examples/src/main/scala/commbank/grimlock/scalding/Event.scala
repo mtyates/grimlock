@@ -79,11 +79,14 @@ case class ExampleEventValue(value: ExampleEvent) extends Value[ExampleEvent] {
 
 // Define a codec for dealing with the example event. Note that comparison, for this example, is simply comparison
 // on the event id.
-case object ExampleEventCodec extends Codec[ExampleEvent] {
+case object ExampleEventCodec extends Codec[ExampleEvent] { self =>
   val converters = Set.empty[Codec.Convert[ExampleEvent]]
   val date = None
   val numeric = None
   val integral = None
+  def ordering: Ordering[ExampleEvent] = new Ordering[ExampleEvent] {
+    def compare(x: ExampleEvent, y: ExampleEvent): Int = self.compare(x, y)
+  }
 
   def box(value: ExampleEvent): Value[ExampleEvent] = ExampleEventValue(value)
 
