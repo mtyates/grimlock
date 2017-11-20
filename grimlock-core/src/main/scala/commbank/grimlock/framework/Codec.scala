@@ -26,21 +26,21 @@ import shapeless.{ :+:, CNil, Coproduct }
 import shapeless.ops.coproduct.Inject
 
 /** Trait for encoding/decoding (basic) data types. */
-trait Codec[T] { self =>
+trait Codec[T] {
   /** Custom convertors (i.e. other than identity) for converting `T` to another type. */
-  val converters: Set[Codec.Convert[T]]
+  def converters: Set[Codec.Convert[T]]
 
   /** An optional date type class for this data type. */
-  val date: Option[T => Date]
+  def date: Option[T => Date]
 
   /** An optional numeric type class for this data type. */
-  val numeric: Option[Numeric[T]]
+  def numeric: Option[Numeric[T]]
 
   /** An optional intergal type class for this data type. */
-  val integral: Option[Integral[T]]
+  def integral: Option[Integral[T]]
 
-  /** An Ordering for this data type. */
-  val ordering: Ordering[T] = new Ordering[T] { def compare(x: T, y: T): Int = self.compare(x, y) }
+  /** An ordering for this data type. */
+  def ordering: Ordering[T]
 
   /**
    * Box a (basic) data type in a `Value`.
@@ -159,6 +159,7 @@ case object BooleanCodec extends Codec[Boolean] {
   val date: Option[Boolean => Date] = None
   val integral: Option[Integral[Boolean]] = None
   val numeric: Option[Numeric[Boolean]] = None
+  val ordering: Ordering[Boolean] = Ordering.Boolean
 
   /** Pattern for parsing `BooleanCodec` from string. */
   val Pattern = "boolean".r
@@ -199,11 +200,12 @@ case object BooleanCodec extends Codec[Boolean] {
 }
 
 /** Codec for dealing with `java.util.Date`. */
-case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] {
+case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =>
   val converters: Set[Codec.Convert[Date]] = Set.empty
   val date: Option[Date => Date] = Option(identity)
   val integral: Option[Integral[Date]] = None
   val numeric: Option[Numeric[Date]] = None
+  def ordering: Ordering[Date] = new Ordering[Date] { def compare(x: Date, y: Date): Int = self.compare(x, y) }
 
   def box(value: Date): Value[Date] = DateValue(value, this)
 
@@ -242,6 +244,7 @@ case object DoubleCodec extends Codec[Double] {
   val date: Option[Double => Date] = None
   val integral: Option[Integral[Double]] = None
   val numeric: Option[Numeric[Double]] = Option(Numeric.DoubleIsFractional)
+  val ordering: Ordering[Double] = Ordering.Double
 
   /** Pattern for parsing `DoubleCodec` from string. */
   val Pattern = "double".r
@@ -275,6 +278,7 @@ case object IntCodec extends Codec[Int] {
   val date: Option[Int => Date] = None
   val integral: Option[Integral[Int]] = Option(Numeric.IntIsIntegral)
   val numeric: Option[Numeric[Int]] = Option(Numeric.IntIsIntegral)
+  val ordering: Ordering[Int] = Ordering.Int
 
   /** Pattern for parsing `IntCodec` from string. */
   val Pattern = "int".r
@@ -316,6 +320,7 @@ case object LongCodec extends Codec[Long] {
   val date: Option[Long => Date] = None
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
+  val ordering: Ordering[Long] = Ordering.Long
 
   /** Pattern for parsing `LongCodec` from string. */
   val Pattern = "long".r
@@ -353,6 +358,7 @@ case object StringCodec extends Codec[String] {
   val date: Option[String => Date] = None
   val integral: Option[Integral[String]] = None
   val numeric: Option[Numeric[String]] = None
+  val ordering: Ordering[String] = Ordering.String
 
   /** Pattern for parsing `StringCodec` from string. */
   val Pattern = "string".r
@@ -381,11 +387,12 @@ case object StringCodec extends Codec[String] {
 }
 
 /** Codec for dealing with `Type`. */
-case object TypeCodec extends Codec[Type] {
+case object TypeCodec extends Codec[Type] { self =>
   val converters: Set[Codec.Convert[Type]] = Set.empty
   val date: Option[Type => Date] = None
   val integral: Option[Integral[Type]] = None
   val numeric: Option[Numeric[Type]] = None
+  def ordering: Ordering[Type] = new Ordering[Type] { def compare(x: Type, y: Type): Int = self.compare(x, y) }
 
   /** Pattern for parsing `TypeCodec` from string. */
   val Pattern = "type".r
