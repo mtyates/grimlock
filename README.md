@@ -34,7 +34,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.5.1"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.5.4"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 

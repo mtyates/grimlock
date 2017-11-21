@@ -34,34 +34,35 @@ lazy val core = Project(
     libraryDependencies ++= noDerby(
       Seq(
         "org.apache.spark" %% "spark-core" % "2.1.1"
-          exclude("com.google.guava",           "guava")                        // 11.0.2  -> 14.0.1  [scalding]
-          exclude("com.twitter",                "chill_2.11")                   // 0.8.0   -> 0.8.4   [scalding]
-          exclude("com.twitter",                "chill-java")                   // 0.8.0   -> 0.8.4   [scalding]
+          exclude("com.google.guava",           "guava")                         // 11.0.2  -> 14.0.1  [scalding]
           ,
         "com.typesafe.play" %% "play-json" % "2.3.10"
-          exclude("com.fasterxml.jackson.core", "jackson-annotations")          // 2.3.2   ->  2.6.5  [spark]
-          exclude("com.fasterxml.jackson.core", "jackson-core")                 // 2.3.2   ->  2.6.5  [spark]
-          exclude("com.fasterxml.jackson.core", "jackson-databind")             // 2.3.2   ->  2.6.5  [spark]
+          exclude("com.fasterxml.jackson.core", "jackson-annotations")           // 2.3.2   ->  2.6.5  [spark]
+          exclude("com.fasterxml.jackson.core", "jackson-core")                  // 2.3.2   ->  2.6.5  [spark]
+          exclude("com.fasterxml.jackson.core", "jackson-databind")              // 2.3.2   ->  2.6.5  [spark]
           ,
         "com.tdunning" %  "t-digest" % "3.2"
           ,
         "com.chuusai" %% "shapeless" % "2.3.2"
           ,
-        "com.twitter" %% "scalding-core" % "0.17.2"
-          exclude("org.slf4j",                  "slf4j-api")                    // 1.6.6   -> 1.7.16  [spark]
+        "com.twitter" %% "scalding-core" % "0.16.0"
+          exclude("org.slf4j",                  "slf4j-api")                     // 1.6.6   -> 1.7.16  [spark]
+          exclude("com.twitter",                "chill-java")                    // 0.7.3   -> 0.8.0   [spark]
+          exclude("com.twitter",                "chill_2.11")                    // 0.7.3   -> 0.8.0   [spark]
+          exclude("org.objenesis",              "objenesis")                     // 1.2     -> 2.1     [kryo]
+          exclude("org.ow2.asm",                "asm")                           // 4.0     -> 5.0.3   [???]
           ,
-        "com.twitter" %% "scalding-parquet-scrooge" % "0.17.2"
-          exclude("commons-lang",               "commons-lang")                 // 2.5     -> 2.6     [spark]
-          exclude("commons-codec",              "commons-codec")                // 1.4     -> 1.5     [spark]
-          exclude("org.codehaus.jackson",       "jackson-core-asl")             // 1.9.11  -> 1.9.13  [spark]
-          exclude("org.codehaus.jackson",       "jackson-mapper-asl")           // 1.9.11  -> 1.9.13  [spark]
-          exclude("org.slf4j",                  "slf4j-api")                    // 1.6.6   -> 1.7.16  [spark]
-          exclude("org.xerial.snappy",          "snappy-java")                  // 1.1.1.6 -> 1.1.2.6 [spark]
+        "com.twitter" %% "scalding-parquet-scrooge" % "0.16.0"
+          exclude("org.codehaus.jackson",       "jackson-core-asl")              // 1.9.11  -> 1.9.13  [spark]
+          exclude("org.codehaus.jackson",       "jackson-mapper-asl")            // 1.9.11  -> 1.9.13  [spark]
+          exclude("org.slf4j",                  "slf4j-api")                     // 1.6.6   -> 1.7.16  [spark]
+          exclude("org.xerial.snappy",          "snappy-java")                   // 1.1.1.6 -> 1.1.2.6 [spark]
+          exclude("org.scala-lang.modules",     "scala-parser-combinators_2.11") // 1.0.2   -> 1.0.4   [scala]
           ,
-        "com.esotericsoftware" % "kryo" % "3.0.3" % "test"                      // Needed by Spark unit tests
+        "com.esotericsoftware" % "kryo" % "3.0.3" % "test"                       // Needed by Spark unit tests
           ,
         "org.scalatest" %% "scalatest" % "3.0.1" % "test"
-          exclude("org.scala-lang.modules",     "scala-xml_2.11")               // 1.0.5   -> 1.0.4   [scala] !
+          exclude("org.scala-lang.modules",     "scala-xml_2.11")                // 1.0.5   -> 1.0.4   [scala] !
       )
     )
   ) ++
