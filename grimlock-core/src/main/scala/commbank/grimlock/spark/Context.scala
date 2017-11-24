@@ -14,30 +14,24 @@
 
 package commbank.grimlock.spark.environment
 
-import com.twitter.scalding.parquet.scrooge.ScroogeReadSupport
-import com.twitter.scrooge.ThriftStruct
-
-import commbank.grimlock.framework.{ Cell, Persist }
+import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
 import commbank.grimlock.framework.environment.{ Context => FwContext }
 
 import org.apache.hadoop.io.Writable
-import org.apache.hadoop.mapreduce.Job
 
-import org.apache.parquet.hadoop.ParquetInputFormat
-
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{ Encoder, SparkSession }
 
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.ClassTag
 
 import shapeless.HList
 
 /**
  * Spark operating context state.
  *
- * @param spark The Spark context.
+ * @param session The Spark session.
  */
-case class Context(spark: SparkContext) extends FwContext[Context] {
+case class Context(session: SparkSession) extends FwContext[Context] {
   type E[A] = Context.E[A]
 
   type U[A] = Context.U[A]
@@ -48,7 +42,7 @@ case class Context(spark: SparkContext) extends FwContext[Context] {
     file: String,
     parser: Persist.TextParser[Cell[P]]
   ): (Context.U[Cell[P]], Context.U[String]) = {
-    val rdd = spark.textFile(file).flatMap { case s => parser(s) }
+    val rdd = session.sparkContext.textFile(file).flatMap { case s => parser(s) }
 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
@@ -61,38 +55,30 @@ case class Context(spark: SparkContext) extends FwContext[Context] {
     file: String,
     parser: Persist.SequenceParser[K, V, Cell[P]]
   ): (Context.U[Cell[P]], Context.U[String]) = {
-    val rdd = spark.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
+    val rdd = session.sparkContext.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 
   def loadParquet[
-    T <: ThriftStruct : Manifest,
+    T,
     P <: HList
   ](
     file: String,
     parser: Persist.ParquetParser[T, Cell[P]]
+  )(implicit
+    cfg: ParquetConfig[T, Context]
   ): (Context.U[Cell[P]], Context.U[String]) = {
-    val job = Job.getInstance()
-
-    ParquetInputFormat.setReadSupportClass(job, classOf[ScroogeReadSupport[T]])
-
-    val rdd = spark.newAPIHadoopFile(
-      file,
-      classOf[ParquetInputFormat[T]],
-      classOf[Void],
-      classTag[T].runtimeClass.asInstanceOf[Class[T]],
-      job.getConfiguration
-    ).flatMap { case (_, v) => parser(v) }
+    val rdd = cfg.load(this, file).flatMap(v => parser(v))
 
     (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
   }
 
   val implicits = Implicits()
 
-  def empty[T : ClassTag]: Context.U[T] = spark.parallelize(List.empty[T])
+  def empty[T : ClassTag]: Context.U[T] = session.sparkContext.parallelize(List.empty[T])
 
-  def from[T : ClassTag](seq: Seq[T]): Context.U[T] = spark.parallelize(seq)
+  def from[T : ClassTag](seq: Seq[T]): Context.U[T] = session.sparkContext.parallelize(seq)
 
   def nop(): Unit = ()
 }
@@ -104,5 +90,19 @@ object Context {
 
   /** Type for distributed data. */
   type U[A] = RDD[A]
+
+  /**
+   * Implicit function that provides spark parquet reader implementation. The method uses
+   * `DataFrameReader` to read parquet.
+   */
+  implicit def toSparkParquet[T : ClassTag](implicit ev: Encoder[T]) = new ParquetConfig[T, Context] {
+    def load(context: Context, file: String): Context.U[T] = context
+      .session
+      .sqlContext
+      .read
+      .parquet(file)
+      .as[T]
+      .rdd
+  }
 }
 

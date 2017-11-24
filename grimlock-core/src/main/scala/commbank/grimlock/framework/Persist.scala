@@ -17,9 +17,20 @@ package commbank.grimlock.framework
 import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 
-import com.twitter.scrooge.ThriftStruct
-
 import org.apache.hadoop.io.Writable
+
+/* Trait for parquet configuration */
+trait ParquetConfig[T, C <: Context[C]] extends java.io.Serializable {
+  /**
+   * Function to read parquet files.
+   *
+   * @param context The operating context
+   * @param file    Name of the output directory or file
+   *
+   * @return A `C#U[T]`; that is it returns distributed data of type `T`.
+   */
+  def load(context: C, file: String): C#U[T]
+}
 
 /** Trait for persisting data. */
 trait Persist[T, C <: Context[C]] extends java.io.Serializable {
@@ -35,7 +46,7 @@ trait Persist[T, C <: Context[C]] extends java.io.Serializable {
 /** Companion object to `Persist` with various types, implicits, etc. */
 object Persist {
   /** Type for parsing Parquet data. */
-  type ParquetParser[S <: ThriftStruct, T] = (S) => TraversableOnce[Either[String, T]]
+  type ParquetParser[S, T] = (S) => TraversableOnce[Either[String, T]]
 
   /** Type for parsing a key value tuple into either a `Cell[P]` or an error message. */
   type SequenceParser[K <: Writable, V <: Writable, T] = (K, V) => TraversableOnce[Either[String, T]]

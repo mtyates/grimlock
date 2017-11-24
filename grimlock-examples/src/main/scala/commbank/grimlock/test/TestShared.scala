@@ -38,6 +38,7 @@ import commbank.grimlock.library.window._
 import java.util.Date
 
 import scala.io.Source
+import scala.util.{ Failure, Success, Try }
 
 import shapeless.{ ::, HList, HNil, Nat }
 import shapeless.nat.{ _0, _1, _2, _3 }
@@ -1781,6 +1782,37 @@ object Shared {
 
     errors
       .saveAsText(ctx, s"./tmp.${tool}/sbp.out", Redistribute(1))
+      .toUnit
+  }
+
+  //TODO: Would nicer if we can move this elsewhere and retain the general structure of tests
+  //Using optional type for wider compatibility between various frameworks/tools
+  case class ParquetSample(a: Option[String], b: Int, c: Boolean)
+
+  def test34[
+    C <: Context[C]
+  ](
+     ctx: C,
+     path: String,
+     tool: String
+   )(implicit
+     ev1: ParquetConfig[ParquetSample, C],
+     ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+   ): Unit = {
+    import ctx.implicits.matrix._
+
+    def dummyParser(arg: ParquetSample): TraversableOnce[Either[String, Cell[Coordinates1[String]]]] =
+      List(
+        Try(Cell(Position("b"), Content(DiscreteSchema[Int](), arg.b))) match {
+            case Success(x) => Right(x)
+            case Failure(x) => Left(x.toString)
+          }
+      )
+
+    ctx
+      .loadParquet[ParquetSample, Coordinates1[String]](path + "/test.parquet", dummyParser)
+      .data
+      .saveAsText(ctx, s"./tmp.${tool}/prq.out", Cell.toShortString(true, "|"), Default())
       .toUnit
   }
 }

@@ -93,7 +93,7 @@ then
 
     for i in $(seq 1 ${NUM_TEST})
     do
-      $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+      $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local --driver-class-path $JAR \
         --class commbank.grimlock.test.TestSpark${i} $JAR local .
     done
 

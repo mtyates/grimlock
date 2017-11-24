@@ -82,7 +82,7 @@ case class CellImplicits() extends FwCellImplicits[Context] {
     c: Cell[P]
   )(implicit
     ctx: Context
-  ): Context.U[Cell[P]] = ctx.spark.parallelize(List(c))
+  ): Context.U[Cell[P]] = ctx.session.sparkContext.parallelize(List(c))
 
   implicit def listCellToU[
     P <: HList
@@ -90,7 +90,7 @@ case class CellImplicits() extends FwCellImplicits[Context] {
     l: List[Cell[P]]
   )(implicit
     ctx: Context
-  ): Context.U[Cell[P]] = ctx.spark.parallelize(l)
+  ): Context.U[Cell[P]] = ctx.session.sparkContext.parallelize(l)
 }
 
 /** Implements all content implicits. */
@@ -118,7 +118,7 @@ case class EnvironmentImplicits() extends FwEnvironmentImplicits[Context]  {
     value: Context.E[X]
   )(implicit
     ctx: Context
-  ): Context.U[X] = ctx.spark.parallelize(Seq(value))
+  ): Context.U[X] = ctx.session.sparkContext.parallelize(Seq(value))
 }
 
 /** Implements all matrix implicits. */
@@ -283,7 +283,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     data: List[Cell[P]]
   )(implicit
     ctx: Context
-  ): Matrix[P] = Matrix(ctx.spark.parallelize(data))
+  ): Matrix[P] = Matrix(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix1D[
     V1 <: Value[_]
@@ -292,7 +292,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context,
     ev1: Position.IndexConstraints.Aux[V1 :: HNil, _0, V1]
-  ): Matrix1D[V1] = Matrix1D(ctx.spark.parallelize(data))
+  ): Matrix1D[V1] = Matrix1D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix2D[
     V1 <: Value[_],
@@ -303,7 +303,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ctx: Context,
     ev1: Position.IndexConstraints.Aux[V1 :: V2 :: HNil, _0, V1],
     ev2: Position.IndexConstraints.Aux[V1 :: V2 :: HNil, _1, V2]
-  ): Matrix2D[V1, V2] = Matrix2D(ctx.spark.parallelize(data))
+  ): Matrix2D[V1, V2] = Matrix2D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix3D[
     V1 <: Value[_],
@@ -316,7 +316,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev1: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: HNil, _0, V1],
     ev2: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: HNil, _1, V2],
     ev3: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: HNil, _2, V3]
-  ): Matrix3D[V1, V2, V3] = Matrix3D(ctx.spark.parallelize(data))
+  ): Matrix3D[V1, V2, V3] = Matrix3D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix4D[
     V1 <: Value[_],
@@ -331,7 +331,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev2: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: HNil, _1, V2],
     ev3: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: HNil, _2, V3],
     ev4: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: HNil, _3, V4]
-  ): Matrix4D[V1, V2, V3, V4] = Matrix4D(ctx.spark.parallelize(data))
+  ): Matrix4D[V1, V2, V3, V4] = Matrix4D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix5D[
     V1 <: Value[_],
@@ -348,7 +348,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev3: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: HNil, _2, V3],
     ev4: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: HNil, _3, V4],
     ev5: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: HNil, _4, V5]
-  ): Matrix5D[V1, V2, V3, V4, V5] = Matrix5D(ctx.spark.parallelize(data))
+  ): Matrix5D[V1, V2, V3, V4, V5] = Matrix5D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix6D[
     V1 <: Value[_],
@@ -367,7 +367,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev4: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: HNil, _3, V4],
     ev5: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: HNil, _4, V5],
     ev6: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: HNil, _5, V6]
-  ): Matrix6D[V1, V2, V3, V4, V5, V6] = Matrix6D(ctx.spark.parallelize(data))
+  ): Matrix6D[V1, V2, V3, V4, V5, V6] = Matrix6D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix7D[
     V1 <: Value[_],
@@ -388,7 +388,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev5: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: HNil, _4, V5],
     ev6: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: HNil, _5, V6],
     ev7: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: HNil, _6, V7]
-  ): Matrix7D[V1, V2, V3, V4, V5, V6, V7] = Matrix7D(ctx.spark.parallelize(data))
+  ): Matrix7D[V1, V2, V3, V4, V5, V6, V7] = Matrix7D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix8D[
     V1 <: Value[_],
@@ -411,7 +411,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev6: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: HNil, _5, V6],
     ev7: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: HNil, _6, V7],
     ev8: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: HNil, _7, V8]
-  ): Matrix8D[V1, V2, V3, V4, V5, V6, V7, V8] = Matrix8D(ctx.spark.parallelize(data))
+  ): Matrix8D[V1, V2, V3, V4, V5, V6, V7, V8] = Matrix8D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMatrix9D[
     V1 <: Value[_],
@@ -436,7 +436,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev7: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: V9 :: HNil, _6, V7],
     ev8: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: V9 :: HNil, _7, V8],
     ev9: Position.IndexConstraints.Aux[V1 :: V2 :: V3 :: V4 :: V5 :: V6 :: V7 :: V8 :: V9 :: HNil, _8, V9]
-  ): Matrix9D[V1, V2, V3, V4, V5, V6, V7, V8, V9] = Matrix9D(ctx.spark.parallelize(data))
+  ): Matrix9D[V1, V2, V3, V4, V5, V6, V7, V8, V9] = Matrix9D(ctx.session.sparkContext.parallelize(data))
 
   implicit def listToMultiDimensionMatrix[
     P <: HList
@@ -445,7 +445,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context,
     ev: Position.IsMultiDimensionalConstraints[P]
-  ): MultiDimensionMatrix[P] = MultiDimensionMatrix(ctx.spark.parallelize(data))
+  ): MultiDimensionMatrix[P] = MultiDimensionMatrix(ctx.session.sparkContext.parallelize(data))
 
   implicit def tuple1ToMatrix[
     T1 <% Value[T1]
@@ -454,7 +454,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates1[T1]] = Matrix(
-    ctx.spark.parallelize(list.map { case (t1, c) => Cell(Position(t1), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, c) => Cell(Position(t1), c) })
   )
 
   implicit def tuple1ToMatrix1D[
@@ -464,7 +464,9 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context,
     ev1: Position.IndexConstraints.Aux[Coordinates1[T1], _0, Value[T1]]
-  ): Matrix1D[Value[T1]] = Matrix1D(ctx.spark.parallelize(list.map { case (t1, c) => Cell(Position(t1), c) }))
+  ): Matrix1D[Value[T1]] = Matrix1D(
+    ctx.session.sparkContext.parallelize(list.map { case (t1, c) => Cell(Position(t1), c) })
+  )
 
   implicit def tuple2ToMatrix[
     T1 <% Value[T1],
@@ -474,7 +476,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates2[T1, T2]] = Matrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
   )
 
   implicit def tuple2ToMatrix2D[
@@ -487,7 +489,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev1: Position.IndexConstraints.Aux[Coordinates2[T1, T2], _0, Value[T1]],
     ev2: Position.IndexConstraints.Aux[Coordinates2[T1, T2], _1, Value[T2]]
   ): Matrix2D[Value[T1], Value[T2]] = Matrix2D(
-    ctx.spark.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
   )
 
   implicit def tuple2ToMultiDimensionMatrix[
@@ -498,7 +500,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates2[T1, T2]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, c) => Cell(Position(t1, t2), c) })
   )
 
   implicit def tuple3ToMatrix[
@@ -510,7 +512,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates3[T1, T2, T3]] = Matrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
   )
 
   implicit def tuple3ToMatrix3D[
@@ -525,7 +527,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev2: Position.IndexConstraints.Aux[Coordinates3[T1, T2, T3], _1, Value[T2]],
     ev3: Position.IndexConstraints.Aux[Coordinates3[T1, T2, T3], _2, Value[T3]]
   ): Matrix3D[Value[T1], Value[T2], Value[T3]] = Matrix3D(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
   )
 
   implicit def tuple3ToMultiDimensionMatrix[
@@ -537,7 +539,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates3[T1, T2, T3]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, c) => Cell(Position(t1, t2, t3), c) })
   )
 
   implicit def tuple4ToMatrix[
@@ -550,7 +552,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates4[T1, T2, T3, T4]] = Matrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
   )
 
   implicit def tuple4ToMatrix4D[
@@ -567,7 +569,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev3: Position.IndexConstraints.Aux[Coordinates4[T1, T2, T3, T4], _2, Value[T3]],
     ev4: Position.IndexConstraints.Aux[Coordinates4[T1, T2, T3, T4], _3, Value[T4]]
   ): Matrix4D[Value[T1], Value[T2], Value[T3], Value[T4]] = Matrix4D(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
   )
 
   implicit def tuple4ToMultiDimensionMatrix[
@@ -580,7 +582,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates4[T1, T2, T3, T4]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
+    ctx.session.sparkContext.parallelize(list.map { case (t1, t2, t3, t4, c) => Cell(Position(t1, t2, t3, t4), c) })
   )
 
   implicit def tuple5ToMatrix[
@@ -594,7 +596,9 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates5[T1, T2, T3, T4, T5]] = Matrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) })
+    ctx.session.sparkContext.parallelize(
+      list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) }
+    )
   )
 
   implicit def tuple5ToMatrix5D[
@@ -613,7 +617,9 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev4: Position.IndexConstraints.Aux[Coordinates5[T1, T2, T3, T4, T5], _3, Value[T4]],
     ev5: Position.IndexConstraints.Aux[Coordinates5[T1, T2, T3, T4, T5], _4, Value[T5]]
   ): Matrix5D[Value[T1], Value[T2], Value[T3], Value[T4], Value[T5]] = Matrix5D(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) })
+    ctx.session.sparkContext.parallelize(
+      list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) }
+    )
   )
 
   implicit def tuple5ToMultiDimensionMatrix[
@@ -627,7 +633,9 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates5[T1, T2, T3, T4, T5]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) })
+    ctx.session.sparkContext.parallelize(
+      list.map { case (t1, t2, t3, t4, t5, c) => Cell(Position(t1, t2, t3, t4, t5), c) }
+    )
   )
 
   implicit def tuple6ToMatrix[
@@ -642,7 +650,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates6[T1, T2, T3, T4, T5, T6]] = Matrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, c) => Cell(Position(t1, t2, t3, t4, t5, t6), c) }
     )
   )
@@ -665,7 +673,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev5: Position.IndexConstraints.Aux[Coordinates6[T1, T2, T3, T4, T5, T6], _4, Value[T5]],
     ev6: Position.IndexConstraints.Aux[Coordinates6[T1, T2, T3, T4, T5, T6], _5, Value[T6]]
   ): Matrix6D[Value[T1], Value[T2], Value[T3], Value[T4], Value[T5], Value[T6]] = Matrix6D(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, c) => Cell(Position(t1, t2, t3, t4, t5, t6), c) }
     )
   )
@@ -682,7 +690,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates6[T1, T2, T3, T4, T5, T6]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, c) => Cell(Position(t1, t2, t3, t4, t5, t6), c) }
     )
   )
@@ -700,7 +708,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates7[T1, T2, T3, T4, T5, T6, T7]] = Matrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7), c) }
     )
   )
@@ -725,7 +733,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev6: Position.IndexConstraints.Aux[Coordinates7[T1, T2, T3, T4, T5, T6, T7], _5, Value[T6]],
     ev7: Position.IndexConstraints.Aux[Coordinates7[T1, T2, T3, T4, T5, T6, T7], _6, Value[T7]]
   ): Matrix7D[Value[T1], Value[T2], Value[T3], Value[T4], Value[T5], Value[T6], Value[T7]] = Matrix7D(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7), c) }
     )
   )
@@ -743,7 +751,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates7[T1, T2, T3, T4, T5, T6, T7]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7), c) }
     )
   )
@@ -762,7 +770,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates8[T1, T2, T3, T4, T5, T6, T7, T8]] = Matrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8), c) }
     )
   )
@@ -789,7 +797,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     ev7: Position.IndexConstraints.Aux[Coordinates8[T1, T2, T3, T4, T5, T6, T7, T8], _6, Value[T7]],
     ev8: Position.IndexConstraints.Aux[Coordinates8[T1, T2, T3, T4, T5, T6, T7, T8], _7, Value[T8]]
   ): Matrix8D[Value[T1], Value[T2], Value[T3], Value[T4], Value[T5], Value[T6], Value[T7], Value[T8]] = Matrix8D(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8), c) }
     )
   )
@@ -808,7 +816,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates8[T1, T2, T3, T4, T5, T6, T7, T8]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8), c) }
     )
   )
@@ -828,7 +836,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): Matrix[Coordinates9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] = Matrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, t9, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8, t9), c) }
     )
   )
@@ -867,7 +875,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
     Value[T8],
     Value[T9]
   ] = Matrix9D(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, t9, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8, t9), c) }
     )
   )
@@ -887,7 +895,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
   )(implicit
     ctx: Context
   ): MultiDimensionMatrix[Coordinates9[T1, T2, T3, T4, T5, T6, T7, T8, T9]] = MultiDimensionMatrix(
-    ctx.spark.parallelize(
+    ctx.session.sparkContext.parallelize(
       list.map { case (t1, t2, t3, t4, t5, t6, t7, t8, t9, c) => Cell(Position(t1, t2, t3, t4, t5, t6, t7, t8, t9), c) }
     )
   )
@@ -911,7 +919,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     t: T
   )(implicit
     ctx: Context
-  ): Context.U[Position[Coordinates1[T]]] = ctx.spark.parallelize(List(Position(t)))
+  ): Context.U[Position[Coordinates1[T]]] = ctx.session.sparkContext.parallelize(List(Position(t)))
 
   implicit def listTToU[
     T <% Value[T]
@@ -919,7 +927,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     l: List[T]
   )(implicit
     ctx: Context
-  ): Context.U[Position[Coordinates1[T]]] = ctx.spark.parallelize(l.map { case t => Position(t) })
+  ): Context.U[Position[Coordinates1[T]]] = ctx.session.sparkContext.parallelize(l.map { case t => Position(t) })
 
   implicit def valueToU[
     V <: Value[_]
@@ -927,7 +935,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     v: V
   )(implicit
     ctx: Context
-  ): Context.U[Position[V :: HNil]] = ctx.spark.parallelize(List(Position(v)))
+  ): Context.U[Position[V :: HNil]] = ctx.session.sparkContext.parallelize(List(Position(v)))
 
   implicit def listValueToU[
     V <: Value[_]
@@ -935,7 +943,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     l: List[V]
   )(implicit
     ctx: Context
-  ): Context.U[Position[V :: HNil]] = ctx.spark.parallelize(l.map { case v => Position(v) })
+  ): Context.U[Position[V :: HNil]] = ctx.session.sparkContext.parallelize(l.map { case v => Position(v) })
 
   implicit def positionToU[
     P <: HList
@@ -943,7 +951,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     p: Position[P]
   )(implicit
     ctx: Context
-  ): Context.U[Position[P]] = ctx.spark.parallelize(List(p))
+  ): Context.U[Position[P]] = ctx.session.sparkContext.parallelize(List(p))
 
   implicit def listPositionToU[
     P <: HList
@@ -951,7 +959,7 @@ case class PositionImplicits() extends FwPositionImplicits[Context] {
     l: List[Position[P]]
   )(implicit
     ctx: Context
-  ): Context.U[Position[P]] = ctx.spark.parallelize(l)
+  ): Context.U[Position[P]] = ctx.session.sparkContext.parallelize(l)
 
   implicit def toPositions[P <: HList](data: Context.U[Position[P]]): Positions[P] = Positions(data)
 }
