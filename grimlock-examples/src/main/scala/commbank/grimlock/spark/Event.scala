@@ -30,8 +30,8 @@ import commbank.grimlock.library.transform._
 import commbank.grimlock.spark.environment._
 import commbank.grimlock.spark.environment.implicits._
 
-import org.apache.spark.{ SparkConf, SparkContext }
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import scala.collection.immutable.StringOps
 
@@ -52,7 +52,8 @@ case class ExampleEvent(
 object ExampleEvent {
   // Function to read a file with event data.
   def load(file: String)(implicit ctx: Context): RDD[Cell[Coordinates1[String]]] = ctx
-    .spark
+    .session
+    .sparkContext
     .textFile(file)
     .flatMap { case line => ExampleEventCodec.decode(line)
       .map(ev => Cell(Position(ev.eventId), Content(ExampleEventSchema, ExampleEventCodec.box(ev))))
@@ -186,7 +187,7 @@ case class WordCounts[
 object InstanceCentricTfIdf {
   def main(args: Array[String]) {
     // Define implicit context.
-    implicit val ctx = Context(new SparkContext(args(0), "Grimlock Spark Demo", new SparkConf()))
+    implicit val ctx = Context(SparkSession.builder().master(args(0)).appName("Grimlock Spark Demo").getOrCreate())
 
     // Path to data files, output folder
     val path = if (args.length > 1) args(1) else "../../data"

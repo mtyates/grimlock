@@ -19,18 +19,21 @@ import cascading.flow.FlowDef
 import com.twitter.scalding.{ Config, Mode }
 import com.twitter.scalding.{ TextLine, WritableSequenceFile }
 import com.twitter.scalding.parquet.scrooge.FixedPathParquetScrooge
+import com.twitter.scalding.parquet.tuple.scheme.ParquetReadSupport
+import com.twitter.scalding.parquet.tuple.TypedParquet
 import com.twitter.scalding.source.NullSink
 import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
+
 import com.twitter.scrooge.ThriftStruct
 
-import commbank.grimlock.framework.{ Cell, Persist }
+import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
 import commbank.grimlock.framework.environment.{ Context => FwContext }
 
 import org.apache.hadoop.io.Writable
 
 import scala.reflect.ClassTag
 
-import shapeless.HList
+import shapeless.{ <:!<, HList }
 
 /**
  * Scalding operating context state.
@@ -69,13 +72,15 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
   }
 
   def loadParquet[
-    T <: ThriftStruct : Manifest,
+    T,
     P <: HList
   ](
     file: String,
     parser: Persist.ParquetParser[T, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
-    val pipe = TypedPipe.from(new FixedPathParquetScrooge[T](file)).flatMap { case s => parser(s) }
+   )(implicit
+     cfg: ParquetConfig[T, Context]
+   ): (Context.U[Cell[P]], Context.U[String]) = {
+    val pipe = cfg.load(this, file).flatMap(parser)
 
     (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
   }
@@ -101,6 +106,30 @@ object Context {
   /** Type for distributed data. */
   type U[A] = TypedPipe[A]
 
+  /**
+   * Implicit function that provides a `TypedParquet` implementation, which uses case class for the
+   * parquet data definition.
+   */
+  implicit def toTypedParquet[
+    T
+  ](implicit
+    ev1: T <:!< ThriftStruct,
+    ev2: ParquetReadSupport[T]
+   ): ParquetConfig[T, Context] = new ParquetConfig[T, Context] {
+    def load(context: Context, file: String): Context.U[T] = TypedPipe.from(TypedParquet[T](file))
+  }
+
+  /**
+   * Implicit function that provides a `ParquetScrooge` implementation, which uses a `ThriftStruct` for
+   * the parquet data definition.
+   */
+  implicit def toScroogeParquet[
+    T <: ThriftStruct : Manifest
+  ]: ParquetConfig[T, Context] = new ParquetConfig[T, Context] {
+    def load(context: Context, file: String): Context.U[T] = TypedPipe.from(new FixedPathParquetScrooge[T](file))
+  }
+
+  /** Create context using implicitly defined environment variables. */
   def apply()(implicit config: Config, flow: FlowDef, mode: Mode): Context = Context(flow, mode, config)
 }
 

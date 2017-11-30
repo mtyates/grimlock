@@ -14,9 +14,7 @@
 
 package commbank.grimlock.framework.environment
 
-import commbank.grimlock.framework.{ Cell, Persist }
-
-import com.twitter.scrooge.ThriftStruct
+import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
 
 import org.apache.hadoop.io.Writable
 
@@ -62,11 +60,13 @@ trait Context[C <: Context[C]] {
    * @param parser Parser that convers single Parquet structure to cells.
    */
   def loadParquet[
-    T <: ThriftStruct : Manifest,
+    T,
     P <: HList
   ](
     file: String,
     parser: Persist.ParquetParser[T, Cell[P]]
+  )(implicit
+    cfg: ParquetConfig[T, C]
   ): (U[Cell[P]], U[String])
 
   /** All implicits for this context. */

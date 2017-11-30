@@ -34,7 +34,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.5.4"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.5.5"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
@@ -360,7 +360,7 @@ import shapeless.nat.{ _0, _1 }
 Next, for convenience, set up grimlock's Context as an implicit:
 
 ```
-scala> implicit val context = Context(sc)
+scala> implicit val context = Context(spark)
 ```
 
 The next step is to read in data (be sure to change <path to> to the correct path to the grimlock repo):

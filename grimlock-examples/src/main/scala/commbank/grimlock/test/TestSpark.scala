@@ -27,13 +27,13 @@ import commbank.grimlock.spark.transform.CutRules
 
 import java.util.Date
 
-import org.apache.spark.{ SparkContext, SparkConf }
+import org.apache.spark.sql.SparkSession
 
 object TestSparkReader {
   def load4TupleDataAddDate(
     ctx: Context,
     file: String
-  ): ctx.U[Cell[Coordinates3[String, String, Date]]] = ctx.spark.textFile(file)
+  ): ctx.U[Cell[Coordinates3[String, String, Date]]] = ctx.session.sparkContext.textFile(file)
     .flatMap {
       _.trim.split(java.util.regex.Pattern.quote("|"), 4) match {
         case Array(i, f, e, v) =>
@@ -65,7 +65,7 @@ object TestSparkReader {
 
 object TestSpark1 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test1(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -74,7 +74,7 @@ object TestSpark1 {
 
 object TestSpark2 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test2(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -83,7 +83,7 @@ object TestSpark2 {
 
 object TestSpark3 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test3(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -92,7 +92,7 @@ object TestSpark3 {
 
 object TestSpark4 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test4(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -101,7 +101,7 @@ object TestSpark4 {
 
 object TestSpark5 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test5(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -110,7 +110,7 @@ object TestSpark5 {
 
 object TestSpark6 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test6(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -119,7 +119,7 @@ object TestSpark6 {
 
 object TestSpark7 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test7(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -128,7 +128,7 @@ object TestSpark7 {
 
 object TestSpark8 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test8(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -137,7 +137,7 @@ object TestSpark8 {
 
 object TestSpark9 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test9(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -146,7 +146,7 @@ object TestSpark9 {
 
 object TestSpark10 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test10(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -155,7 +155,7 @@ object TestSpark10 {
 
 object TestSpark11 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test11(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -164,7 +164,7 @@ object TestSpark11 {
 
 object TestSpark12 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test12(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -173,7 +173,7 @@ object TestSpark12 {
 
 object TestSpark13 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test13(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -182,7 +182,7 @@ object TestSpark13 {
 
 object TestSpark14 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test14(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -191,7 +191,7 @@ object TestSpark14 {
 
 object TestSpark15 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test15(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -200,7 +200,7 @@ object TestSpark15 {
 
 object TestSpark16 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test16(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -209,7 +209,7 @@ object TestSpark16 {
 
 object TestSpark17 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test17(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -218,7 +218,7 @@ object TestSpark17 {
 
 object TestSpark18 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test18(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -227,7 +227,7 @@ object TestSpark18 {
 
 object TestSpark19 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test19(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -236,7 +236,7 @@ object TestSpark19 {
 
 object TestSpark20 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test20(ctx, args(1), "spark")
   }
@@ -244,7 +244,7 @@ object TestSpark20 {
 
 object TestSpark21 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
     Shared.test21(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
@@ -253,7 +253,7 @@ object TestSpark21 {
 
 object TestSpark22 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test22(ctx, args(1), "spark")
   }
@@ -261,7 +261,7 @@ object TestSpark22 {
 
 object TestSpark23 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test23(ctx, args(1), "spark")
   }
@@ -269,7 +269,7 @@ object TestSpark23 {
 
 object TestSpark24 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test24(ctx, args(1), "spark")
   }
@@ -277,7 +277,7 @@ object TestSpark24 {
 
 object TestSpark25 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test25(ctx, args(1), "spark")
   }
@@ -285,7 +285,7 @@ object TestSpark25 {
 
 object TestSpark26 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test26(ctx, args(1), "spark")
   }
@@ -293,7 +293,7 @@ object TestSpark26 {
 
 object TestSpark27 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test27(ctx, args(1), "spark")
   }
@@ -301,7 +301,7 @@ object TestSpark27 {
 
 object TestSpark28 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test28[Context](ctx, CutRules, "spark")
   }
@@ -309,7 +309,7 @@ object TestSpark28 {
 
 object TestSpark29 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test29(ctx, "spark")
   }
@@ -317,7 +317,7 @@ object TestSpark29 {
 
 object TestSpark30 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test30(ctx, args(1), "spark")
   }
@@ -325,7 +325,7 @@ object TestSpark30 {
 
 object TestSpark31 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test31(ctx, "spark")
   }
@@ -333,7 +333,7 @@ object TestSpark31 {
 
 object TestSpark32 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test32(ctx, "spark")
   }
@@ -341,9 +341,20 @@ object TestSpark32 {
 
 object TestSpark33 {
   def main(args: Array[String]) {
-    val ctx = Context(new SparkContext(args(0), "Test Spark", new SparkConf()))
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
     Shared.test33(ctx, "spark")
+  }
+}
+
+object TestSpark34 {
+  def main(args: Array[String]) {
+    val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
+    val path = args(1)
+
+    import ctx.session.sqlContext.sparkSession.implicits._
+
+    Shared.test34(ctx, path, "spark")
   }
 }
 

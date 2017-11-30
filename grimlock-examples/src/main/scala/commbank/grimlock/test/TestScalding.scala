@@ -14,6 +14,9 @@
 
 package commbank.grimlock.test
 
+import com.twitter.scalding.{ Args, Job, TypedPsv }
+import com.twitter.scalding.TDsl.sourceToTypedPipe
+
 import commbank.grimlock.framework.Cell
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.{ DateCodec, DateValue, DoubleCodec, LongCodec, StringCodec, Value }
@@ -24,9 +27,6 @@ import commbank.grimlock.framework.position.{ Coordinates3, Position }
 import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.implicits._
 import commbank.grimlock.scalding.transform.CutRules
-
-import com.twitter.scalding.{ Args, Job, TypedPsv }
-import com.twitter.scalding.TDsl.sourceToTypedPipe
 
 import java.util.Date
 
@@ -276,5 +276,14 @@ class TestScalding33(args: Args) extends Job(args) {
   val ctx = Context()
 
   Shared.test33(ctx, "scalding")
+}
+
+class TestScalding34(args: Args) extends Job(args) {
+  val ctx = Context()
+  val path = args("path")
+
+  import com.twitter.scalding.parquet.tuple.macros.Macros._
+
+  Shared.test34(ctx, path, "scalding")
 }
 

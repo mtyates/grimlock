@@ -36,6 +36,8 @@ lazy val core = Project(
         "org.apache.spark" %% "spark-core" % "2.1.1"
           exclude("com.google.guava",           "guava")                         // 11.0.2  -> 14.0.1  [scalding]
           ,
+        "org.apache.spark" %% "spark-sql" % "2.1.1"
+          ,
         "com.typesafe.play" %% "play-json" % "2.3.10"
           exclude("com.fasterxml.jackson.core", "jackson-annotations")           // 2.3.2   ->  2.6.5  [spark]
           exclude("com.fasterxml.jackson.core", "jackson-core")                  // 2.3.2   ->  2.6.5  [spark]
@@ -50,6 +52,7 @@ lazy val core = Project(
           exclude("com.twitter",                "chill-java")                    // 0.7.3   -> 0.8.0   [spark]
           exclude("com.twitter",                "chill_2.11")                    // 0.7.3   -> 0.8.0   [spark]
           exclude("org.objenesis",              "objenesis")                     // 1.2     -> 2.1     [kryo]
+          exclude("org.codehaus.janino",        "janino")                        // 2.7.5   -> 3.0.0   [spark]
           exclude("org.ow2.asm",                "asm")                           // 4.0     -> 5.0.3   [???]
           ,
         "com.twitter" %% "scalding-parquet-scrooge" % "0.16.0"
@@ -59,6 +62,9 @@ lazy val core = Project(
           exclude("org.xerial.snappy",          "snappy-java")                   // 1.1.1.6 -> 1.1.2.6 [spark]
           exclude("org.scala-lang.modules",     "scala-parser-combinators_2.11") // 1.0.2   -> 1.0.4   [scala]
           ,
+        "com.twitter" %% "scalding-parquet" % "0.16.0"
+          exclude("org.slf4j",                  "slf4j-api")                     // 1.6.6   -> 1.7.16  [spark]
+        ,
         "com.esotericsoftware" % "kryo" % "3.0.3" % "test"                       // Needed by Spark unit tests
           ,
         "org.scalatest" %% "scalatest" % "3.0.1" % "test"
