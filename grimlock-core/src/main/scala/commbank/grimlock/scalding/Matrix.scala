@@ -474,11 +474,12 @@ case class Matrix[
     hash: (Position[P]) => Int
   ): (Context.U[Cell[Q]], Context.U[String]) = {
     val tuner = Default(reducers)
+    val func = Stream.delegate(command, files)
 
     val result = data
       .flatMap { case c => writer(c).map { case s => (hash(c.position) % reducers.reducers, s) } }
       .tuneReducers(tuner)
-      .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })
+      .tunedStream(tuner, (key, itr) => func(key, itr).flatMap { case s => parser(s) })
 
     (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
   }
@@ -499,6 +500,7 @@ case class Matrix[
     ev: Position.GreaterEqualConstraints[Q, S]
   ): (Context.U[Cell[Q]], Context.U[String]) = {
     val tuner = Default(reducers)
+    val func = Stream.delegate(command, files)
     val murmur = new scala.util.hashing.MurmurHash3.ArrayHashing[Value[_]]()
     val (rows, _) = Util.pivot(data, slice, tuner)
 
@@ -507,7 +509,7 @@ case class Matrix[
         .map { case s => (murmur.hash(key.asList.toArray) % reducers.reducers, s) }
       }
       .tuneReducers(tuner)
-      .tunedStream(tuner, (key, itr) => Stream.delegate(command, files)(key, itr).flatMap { case s => parser(s) })
+      .tunedStream(tuner, (key, itr) => func(key, itr).flatMap { case s => parser(s) })
 
     (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
   }
