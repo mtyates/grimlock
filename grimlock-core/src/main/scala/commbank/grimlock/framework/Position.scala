@@ -1241,7 +1241,7 @@ object Position {
     separator: String
   )(implicit
     ev: TextParseConstraints[L]
-  ): Either[String, Position[ev.Q]] = parse(str.split(Pattern.quote(separator)).toList, codecs)
+  ): Either[String, Position[ev.Q]] = parse(str.split(Pattern.quote(separator), -1).toList, codecs)
 }
 
 /** Object with implicits needed to parse coordinates from string. */

@@ -289,5 +289,21 @@ class TestCell extends TestGrimlock {
     val f3 = Cell.jsonParser(StringCodec :: IntCodec :: BooleanCodec :: HNil)
     f3(cell3.toJSON(true, true)) shouldBe List(Right(cell3))
   }
+
+  "A Cell" should "parse with empty strings" in {
+    val f = Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
+
+    f("|def|string|nominal|ghi") shouldBe List(
+      Right(Cell(Position("", "def"), Content(NominalSchema[String](), "ghi")))
+    )
+
+    f("abc||string|nominal|ghi") shouldBe List(
+      Right(Cell(Position("abc", ""), Content(NominalSchema[String](), "ghi")))
+    )
+
+    f("abc|def|string|nominal|") shouldBe List(
+      Right(Cell(Position("abc", "def"), Content(NominalSchema[String](), "")))
+    )
+  }
 }
 

@@ -190,7 +190,7 @@ class TestNominalSchema extends TestGrimlock {
     NominalSchema.fromShortString("nominal,", StringCodec) shouldBe None
     NominalSchema.fromShortString("nominal,)", StringCodec) shouldBe None
     NominalSchema.fromShortString("nominal(,", StringCodec) shouldBe None
-    NominalSchema.fromShortString("nominal(,)", StringCodec) shouldBe None
+    NominalSchema.fromShortString("nominal(,)", StringCodec) shouldBe Option(NominalSchema(Set[String]("")))
 
     NominalSchema.fromShortString("nominal(", DoubleCodec) shouldBe None
     NominalSchema.fromShortString("nominal)", DoubleCodec) shouldBe None
@@ -274,7 +274,7 @@ class TestOrdinalSchema extends TestGrimlock {
     OrdinalSchema.fromShortString("ordinal,", StringCodec) shouldBe None
     OrdinalSchema.fromShortString("ordinal,)", StringCodec) shouldBe None
     OrdinalSchema.fromShortString("ordinal(,", StringCodec) shouldBe None
-    OrdinalSchema.fromShortString("ordinal(,)", StringCodec) shouldBe None
+    OrdinalSchema.fromShortString("ordinal(,)", StringCodec) shouldBe Option(OrdinalSchema(Set[String]("")))
 
     OrdinalSchema.fromShortString("ordinal(", DoubleCodec) shouldBe None
     OrdinalSchema.fromShortString("ordinal)", DoubleCodec) shouldBe None

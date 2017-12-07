@@ -541,7 +541,7 @@ object Cell {
     columns: Set[ColumnDecoder[V]],
     separator: String
   ): Persist.TextParser[Cell[Coordinates2[K, V]]] = (str) => {
-    val parts = str.trim.split(Pattern.quote(separator))
+    val parts = str.trim.split(Pattern.quote(separator), -1)
 
     if (columns.exists(_.equals(pkey)))
       throw new Exception("Primary key can't be in columns") // TODO: can this be enforced at compile time?

@@ -525,7 +525,7 @@ private object SchemaParameters {
     case _ => None
   }
 
-  def splitSet(set: String): Set[String] = set.split("(?<!\\\\),").toSet
+  def splitSet(set: String): Set[String] = set.split("(?<!\\\\),", -1).toSet
 
   def writeList[T](short: Boolean, list: List[T], f: (T) => String, name: String): String =
     if (list.isEmpty)

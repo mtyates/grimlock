@@ -338,7 +338,7 @@ object Content {
   private def parse(
     str: String,
     separator: String
-  ): Either[String, Content] = str.split(Pattern.quote(separator)) match {
+  ): Either[String, Content] = str.split(Pattern.quote(separator), -1) match {
     case Array(c, s, v) => parse(c, s, v)
     case _ => Left(s"Unable to split: '${str}'")
   }

@@ -42,7 +42,7 @@ object Dictionary {
     val result = source
       .getLines()
       .map { case line =>
-        val parts = line.split(Pattern.quote(separator))
+        val parts = line.split(Pattern.quote(separator), -1)
 
         if (List(key, encoding, schema).exists(_ >= parts.length))
           Left("unable to parse: '" + line + "'")
