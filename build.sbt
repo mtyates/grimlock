@@ -81,7 +81,7 @@ lazy val core = Project(
 lazy val examples = Project(
   id = "grimlock-examples",
   base = file("grimlock-examples"),
-  settings = standardSettings ++ assemblySettings
+  settings = standardSettings ++ assemblySettings ++ shadeShapelessSettings
 ).dependsOn(core % "test->test;compile->compile")
 
 lazy val assemblySettings = Seq(
@@ -101,6 +101,13 @@ lazy val assemblySettings = Seq(
   artifact in (Compile, assembly) ~= { _.copy(`classifier` = Some("assembly")) }
 ) ++
 addArtifact(artifact in (Compile, assembly), assembly)
+
+lazy val shadeShapelessSettings = Seq(
+    assemblyShadeRules in assembly := Seq(
+    //Shading shapeless, as it conflicts with spark provided shapeless, until spark-2.2.
+    ShadeRule.rename("shapeless.**" -> "shapeless232.@1").inAll
+  )
+)
 
 lazy val compilerSettings = Seq(
   scalaVersion := "2.11.8",
