@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2014,2015,2016 Commonwealth Bank of Australia
+# Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,20 @@ BASE_DIR="../../../../../../.."
 
 if [ ${DO_BUILD} = "true" ]
 then
+  grep '[a-z]\s*++\s*shadeSha' ${BASE_DIR}/build.sbt > /dev/null 2>&1
+  IS_SHADED=$?
+
+  if [ ${IS_SHADED} -eq 0 -a ${DO_LOCAL} = "true" ]
+  then
+    set +x
+    echo "!!                                           !!"
+    echo "!!                                           !!"
+    echo "!! Local and shaded don't work well together !!"
+    echo "!!                                           !!"
+    echo "!!                                           !!"
+    exit
+  fi
+
   rm -f ${JAR}
   cd ${BASE_DIR}; ./sbt clean assembly; cd -
   cp ${BASE_DIR}/grimlock-examples/target/scala-2.11/grimlock*.jar ${JAR}

@@ -33,7 +33,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.6.5"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.6.7"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
@@ -151,7 +151,7 @@ Usage - Scalding
 The examples below are executed in the Scalding REPL. To use grimlock in the REPL follow the following steps:
 
 1. Install Scalding; follow [these](https://github.com/twitter/scalding/wiki/Getting-Started) instructions.
-2. Check out tag (0.16); `git checkout 0.16`.
+2. Check out tag 0.17.x; `git checkout 0.17.x`.
 3. Update `build.sbt` of the scalding project. For the module `scaldingRepl`, add `grimlock` as a dependency under the `libraryDependencies`:
     `"au.com.cba.omnia" %% "grimlock-core" % "<version-string>"`;
 4. Update `project/plugins.sbt` to add the 'commbank-ext' repository to the `resolvers`:
@@ -168,9 +168,8 @@ After the last command, the console should appear as follows:
 import com.twitter.scalding._
 import com.twitter.scalding.ReplImplicits._
 import com.twitter.scalding.ReplImplicitContext._
-Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_92).
-Type in expressions to have them evaluated.
-Type :help for more information.
+Welcome to Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.8.0_181).
+Type in expressions for evaluation. Or try :help.
 
 scala>
 ```
@@ -307,8 +306,7 @@ The examples below are executed in the Spark REPL. To use grimlock in the REPL f
 
 1. Download the latest source code release for Spark from [here](http://spark.apache.org/downloads.html).
 2. You can, optionally, suppress much of the console INFO output. Follow [these](http://stackoverflow.com/questions/28189408/how-to-reduce-the-verbosity-of-sparks-runtime-output) instructions.
-3. Update the shapeless jar (in the `jars` folder) to version: `shapeless_2.11-2.3.2.jar`.
-4. Start REPL; `./bin/spark-shell --master local --jars <path to>/grimlock-core_2.11-assembly.jar`.
+3. Start REPL; `./bin/spark-shell --master local --jars <path to>/grimlock-core_2.11-assembly.jar`.
 
 After the last command, the console should appear as follows:
 
@@ -321,10 +319,10 @@ Welcome to
       ____              __
      / __/__  ___ _____/ /__
     _\ \/ _ \/ _ `/ __/  '_/
-   /___/ .__/\_,_/_/ /_/\_\   version 2.1.1
+   /___/ .__/\_,_/_/ /_/\_\   version 2.3.2
       /_/
 
-Using Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.8.0_92)
+Using Scala version 2.11.8 (OpenJDK 64-Bit Server VM, Java 1.8.0_181)
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -452,8 +450,4 @@ scala> counts.summarise(Along(_0))(
 ```
 
 For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Scoring.scala).
-
-Acknowledgement
----------------
-We would like to thank the YourKit team for their support in providing us with their excellent [Java Profiler](https://www.yourkit.com/java/profiler/index.jsp). ![YourKit Logo](yk_logo.png)
 
