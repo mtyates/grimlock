@@ -20,7 +20,7 @@ import commbank.grimlock.framework.environment.{ Context => FwContext }
 import org.apache.hadoop.io.Writable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ Encoder, SparkSession }
+import org.apache.spark.sql.{ Encoder, Row, SparkSession }
 
 import scala.reflect.ClassTag
 
@@ -90,6 +90,14 @@ object Context {
 
   /** Type for distributed data. */
   type U[A] = RDD[A]
+
+  /**
+   * Implicit function that provides spark parquet reader implementation. The method uses
+   * `DataFrameReader` to read parquet.
+   */
+  implicit val toSparkRowParquet = new ParquetConfig[Row, Context] {
+    def load(context: Context, file: String): Context.U[Row] = context.session.sqlContext.read.parquet(file).rdd
+  }
 
   /**
    * Implicit function that provides spark parquet reader implementation. The method uses
