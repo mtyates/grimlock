@@ -176,9 +176,8 @@ object Value {
 /**
  * Value for when the data is of type `Boolean`.
  *
- * @param value      A `Boolean`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `Boolean` to some other type.
+ * @param value A `Boolean`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class BooleanValue(value: Boolean, codec: Codec[Boolean] = BooleanCodec) extends Value[Boolean] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Boolean].map(b => cmp(b))
@@ -193,9 +192,8 @@ object BooleanValue {
 /**
  * Value for when the data is of type `java.util.Date`
  *
- * @param value      A `java.util.Date`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `java.util.Date` to some other type.
+ * @param value A `java.util.Date`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class DateValue(value: Date, codec: Codec[Date] = DateCodec()) extends Value[Date] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Date].map(d => cmp(d))
@@ -213,9 +211,8 @@ object DateValue {
 /**
  * Value for when the data is of type `Double`.
  *
- * @param value      A `Double`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `Double` to some other type.
+ * @param value A `Double`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class DoubleValue(value: Double, codec: Codec[Double] = DoubleCodec) extends Value[Double] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Double].map(d => cmp(d))
@@ -230,9 +227,8 @@ object DoubleValue {
 /**
  * Value for when the data is of type `Int`.
  *
- * @param value      A `Int`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `Int` to some other type.
+ * @param value A `Int`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class IntValue(value: Int, codec: Codec[Int] = IntCodec) extends Value[Int] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that
@@ -251,9 +247,8 @@ object IntValue {
 /**
  * Value for when the data is of type `Long`.
  *
- * @param value      A `Long`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `Long` to some other type.
+ * @param value A `Long`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class LongValue(value: Long, codec: Codec[Long] = LongCodec) extends Value[Long] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that
@@ -271,9 +266,8 @@ object LongValue {
 /**
  * Value for when the data is of type `String`.
  *
- * @param value      A `String`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `String` to some other type.
+ * @param value A `String`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class StringValue(value: String, codec: Codec[String] = StringCodec) extends Value[String] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[String].map(s => cmp(s))
@@ -288,9 +282,8 @@ object StringValue {
 /**
  * Value for when the data is of type `Type`.
  *
- * @param value      A `Type`.
- * @param codec      The codec used for encoding/decoding `value`.
- * @param converters Set of custom convertors for `value` from `Type` to some other type.
+ * @param value A `Type`.
+ * @param codec The codec used for encoding/decoding `value`.
  */
 case class TypeValue(value: Type, codec: Codec[Type] = TypeCodec) extends Value[Type] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Type].map(t => cmp(t))
