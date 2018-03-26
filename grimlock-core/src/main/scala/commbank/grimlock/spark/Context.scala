@@ -1,4 +1,4 @@
-// Copyright 2016,2017 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{ Encoder, Row, SparkSession }
 
 import scala.reflect.ClassTag
+import scala.util.{ Failure, Success }
 
 import shapeless.HList
 
@@ -41,10 +42,10 @@ case class Context(session: SparkSession) extends FwContext[Context] {
   ](
     file: String,
     parser: Persist.TextParser[Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
+  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val rdd = session.sparkContext.textFile(file).flatMap { case s => parser(s) }
 
-    (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
+    (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
 
   def loadSequence[
@@ -54,10 +55,10 @@ case class Context(session: SparkSession) extends FwContext[Context] {
   ](
     file: String,
     parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
+  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val rdd = session.sparkContext.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
 
-    (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
+    (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
 
   def loadParquet[
@@ -68,10 +69,10 @@ case class Context(session: SparkSession) extends FwContext[Context] {
     parser: Persist.ParquetParser[T, Cell[P]]
   )(implicit
     cfg: ParquetConfig[T, Context]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
+  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val rdd = cfg.load(this, file).flatMap(v => parser(v))
 
-    (rdd.collect { case Right(c) => c }, rdd.collect { case Left(e) => e })
+    (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
 
   val implicits = Implicits()

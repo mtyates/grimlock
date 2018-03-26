@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,12 @@ package commbank.grimlock.framework
 
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.error.{
+  IncorrectNumberOfFields,
+  UnableToDecodeCell,
+  UnableToDecodeContent,
+  UnableToDecodePosition
+}
 import commbank.grimlock.framework.metadata.Schema
 import commbank.grimlock.framework.position.{ Coordinates2, Position }
 import commbank.grimlock.framework.utility.JSON
@@ -23,6 +29,8 @@ import commbank.grimlock.framework.utility.JSON
 import java.util.regex.Pattern
 
 import play.api.libs.json.{ JsError, JsObject, Json, JsResult, JsSuccess, JsValue, Reads, Writes }
+
+import scala.util.{ Failure, Success, Try }
 
 import shapeless.{ HList, Nat }
 import shapeless.ops.nat.ToInt
@@ -115,7 +123,7 @@ object Cell {
     codecs: L
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = JSON.from(str, reads(codecs)).right.toOption
+  ): Option[Cell[Q]] = JSON.from(str, reads(codecs)).toOption
 
   /**
    * Parse JSON into a `Cell[Q]`.
@@ -135,7 +143,7 @@ object Cell {
     decoder: Content.Decoder
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, decoder)).right.toOption
+  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, decoder)).toOption
 
   /**
    * Parse JSON into a `Cell[Q]`.
@@ -158,7 +166,7 @@ object Cell {
     schema: Schema[T]
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, codec, schema)).right.toOption
+  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, codec, schema)).toOption
 
   /**
    * Parse JSON into a `Cell[Q]`.
@@ -183,7 +191,7 @@ object Cell {
   )(implicit
     ev1: Position.TextParseConstraints.Aux[L, Q],
     ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
-  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, dictionary, dimension)).right.toOption
+  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, dictionary, dimension)).toOption
 
   /**
    * Parse a self-describing short string into a `Cell[Q]`.
@@ -203,7 +211,7 @@ object Cell {
     separator: String
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = parse(str, codecs, separator, SelfDescribing(separator)).right.toOption
+  ): Option[Cell[Q]] = parse(str, codecs, separator, SelfDescribing(separator)).toOption
 
   /**
    * Parse a short string into a `Cell[Q]`.
@@ -225,7 +233,7 @@ object Cell {
     separator: String
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = parse(str, codecs, separator, FromDecoder(decoder)).right.toOption
+  ): Option[Cell[Q]] = parse(str, codecs, separator, FromDecoder(decoder)).toOption
 
   /**
    * Parse a short string into a `Cell[Q]`.
@@ -250,7 +258,7 @@ object Cell {
     separator: String
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Option[Cell[Q]] = parse(str, codecs, separator, FromCodecSchema(codec, schema)).right.toOption
+  ): Option[Cell[Q]] = parse(str, codecs, separator, FromCodecSchema(codec, schema)).toOption
 
   /**
    * Parse a short string into a `Cell[Q]`.
@@ -277,7 +285,7 @@ object Cell {
   )(implicit
     ev1: Position.TextParseConstraints.Aux[L, Q],
     ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
-  ): Option[Cell[Q]] = parse(str, codecs, separator, FromDictionary(dictionary, dimension)).right.toOption
+  ): Option[Cell[Q]] = parse(str, codecs, separator, FromDictionary(dictionary, dimension)).toOption
 
   /**
    * Parse self-describing JSON into a `Cell[Q]`.
@@ -546,16 +554,16 @@ object Cell {
     if (columns.exists(_.equals(pkey)))
       throw new Exception("Primary key can't be in columns") // TODO: can this be enforced at compile time?
     else if (!pkey.validate(parts.length) || columns.exists(!_.validate(parts.length)))
-      List(Left(s"Out of bounds index: '${str}'"))
+      List(Failure(IncorrectNumberOfFields(str)))
     else
       pkey.decode(parts(pkey.index)) match {
-        case Right(key) => columns.map { case dec =>
+        case Success(key) => columns.map { case dec =>
           dec.decode(key, parts(dec.index)) match {
-            case Right(cell) => Right(cell)
-            case Left(err) => Left(s"${err} - '${str}'")
+            case Success(cell) => Success(cell)
+            case Failure(err) => Failure(UnableToDecodeCell(str, err))
           }
         }
-        case Left(err) => List(Left(s"${err} - '${str}'"))
+        case Failure(err) => List(Failure(UnableToDecodeCell(str, err)))
       }
   }
 
@@ -613,19 +621,19 @@ object Cell {
     cfg: ParseConfig[Q]
   )(implicit
     ev: Position.TextParseConstraints.Aux[L, Q]
-  ): Either[String, Cell[Q]] = {
+  ): Try[Cell[Q]] = {
     val (pstr, cstr) = str.splitAt(cfg.idx(str, separator))
 
     if (pstr.isEmpty || cstr.isEmpty)
-      Left("Unable to split: '" + str + "'")
+      Failure(IncorrectNumberOfFields(str))
     else {
       val cell = for {
         pos <- Position.fromShortString(pstr, codecs, separator)
         decoder <- cfg.dec(pos)
         con <- decoder(cstr.drop(1))
-      } yield Right(Cell(pos, con))
+      } yield Success(Cell(pos, con))
 
-      cell.getOrElse(Left("Unable to decode: '" + str + "'"))
+      cell.getOrElse(Failure(UnableToDecodeCell(str)))
     }
   }
 
@@ -700,11 +708,11 @@ trait ColumnDecoder[V] extends TableDecoder {
    * @param pkey The primary key for row.
    * @param str  The column's value for the row.
    *
-   * @return Either an error string or a `Cell` with the data.
+   * @return A `Cell` with the data in case of success or a parse error in case of failure.
    */
-  def decode[K](pkey: Value[K], str: String): Either[String, Cell[Coordinates2[K, V]]] = decoder(str)
-    .map(con => Right(Cell(Position(pkey, coordinate), con)))
-    .getOrElse(Left(s"Unable to decode content: '${str}'"))
+  def decode[K](pkey: Value[K], str: String): Try[Cell[Coordinates2[K, V]]] = decoder(str)
+    .map(con => Success(Cell(Position(pkey, coordinate), con)))
+    .getOrElse(Failure(UnableToDecodeContent(str)))
 }
 
 /** Companion object with constructor. */
@@ -748,11 +756,11 @@ trait KeyDecoder[K] extends TableDecoder {
    *
    * @param str The primary key data.
    *
-   * @return Either an error string or a `Value` with the primary key.
+   * @return A `Value` with the primary key in case of success or a parse error in case of failure.
    */
-  def decode(str: String): Either[String, Value[K]] = decoder(str)
-    .map(key => Right(key))
-    .getOrElse(Left(s"Unable to decode pkey: '${str}'"))
+  def decode(str: String): Try[Value[K]] = decoder(str)
+    .map(key => Success(key))
+    .getOrElse(Failure(UnableToDecodePosition(str)))
 }
 
 /** Companion object with constructor. */
