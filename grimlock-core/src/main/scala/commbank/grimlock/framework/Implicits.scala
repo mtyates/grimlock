@@ -1,4 +1,4 @@
-// Copyright 2017 Commonwealth Bank of Australia
+// Copyright 2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -842,7 +842,7 @@ trait MatrixImplicits[C <: Context[C]] {
   implicit def tupleToParseErrors[
     P <: HList
   ](
-    t: (C#U[Cell[P]], C#U[String])
+    t: (C#U[Cell[P]], C#U[Throwable])
   ): MatrixWithParseErrors[P, C#U] = MatrixWithParseErrors(t._1, t._2)
 }
 

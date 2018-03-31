@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,13 @@ import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{ Codec, Value }
 import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.error.{
+  IncorrectNumberOfFields,
+  InvalidValue,
+  UnableToDecodeCodec,
+  UnableToDecodeContent,
+  UnableToDecodeSchema
+}
 import commbank.grimlock.framework.metadata.{ Schema, Type }
 import commbank.grimlock.framework.position.Position
 import commbank.grimlock.framework.utility.JSON
@@ -25,6 +32,8 @@ import commbank.grimlock.framework.utility.JSON
 import java.util.regex.Pattern
 
 import play.api.libs.json.{ JsError, JsObject, JsResult, Json, JsString, JsSuccess, JsValue, Reads, Writes }
+
+import scala.util.{ Failure, Success, Try }
 
 import shapeless.{ HList, Inl, Inr }
 
@@ -92,7 +101,7 @@ object Content {
    * @return A content decoder.
    */
   def decoder[T](codec: Codec[T], schema: Schema[T]): Decoder = (str: String) =>
-    parse(str, codec, schema).right.toOption
+    parse(str, codec, schema).toOption
 
   /**
    * Return a decoder from component strings.
@@ -100,10 +109,10 @@ object Content {
    * @param codec  The string of the codec to use in the decoder.
    * @param schema The string of the schema to use in the decoder.
    *
-   * @return Either an error string or a content decoder.
+   * @return A `Some[Decoder]` in case of success, `None` in case of failure.
    */
-  def decoderFromComponents(codec: String, schema: String): Either[String, Decoder] = {
-    def toDecoder[T](c: Codec[T], s: Schema[T]) = Right((str: String) => parse(str, c, s).right.toOption)
+  def decoderFromComponents(codec: String, schema: String): Option[Decoder] = {
+    def toDecoder[T](c: Codec[T], s: Schema[T]) = Option((str: String) => parse(str, c, s).toOption)
 
     def schemaToDecoder[T](c: Codec[T]) = Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c) match {
       case Some(Inl(s)) => toDecoder(c, s)
@@ -111,7 +120,7 @@ object Content {
       case Some(Inr(Inr(Inl(s)))) => toDecoder(c, s)
       case Some(Inr(Inr(Inr(Inl(s))))) => toDecoder(c, s)
       case Some(Inr(Inr(Inr(Inr(Inl(s)))))) => toDecoder(c, s)
-      case _ => Left(s"Unable to decode schema: '${schema}'")
+      case _ => None
     }
 
     Codec.fromShortString[Codec.DefaultCodecs](codec) match {
@@ -122,7 +131,7 @@ object Content {
       case Some(Inr(Inr(Inr(Inr(Inl(c)))))) => schemaToDecoder(c)
       case Some(Inr(Inr(Inr(Inr(Inr(Inl(c))))))) => schemaToDecoder(c)
       case Some(Inr(Inr(Inr(Inr(Inr(Inr(Inl(c)))))))) => schemaToDecoder(c)
-      case _ => Left(s"Unable to decode codec: '${codec}'")
+      case _ => None
     }
   }
 
@@ -136,7 +145,6 @@ object Content {
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
   def fromComponents(codec: String, schema: String, value: String): Option[Content] = parse(codec, schema, value)
-    .right
     .toOption
 
   /**
@@ -146,7 +154,7 @@ object Content {
    *
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
-  def fromJSON(str: String): Option[Content] = JSON.from(str, reads).right.toOption
+  def fromJSON(str: String): Option[Content] = JSON.from(str, reads).toOption
 
   /**
    * Parse a content from a JSON string that does not have codec or schema information in it.
@@ -156,7 +164,7 @@ object Content {
    *
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
-  def fromJSON(str: String, decoder: Decoder): Option[Content] = JSON.from(str, reads(decoder)).right.toOption
+  def fromJSON(str: String, decoder: Decoder): Option[Content] = JSON.from(str, reads(decoder)).toOption
 
   /**
    * Parse a content from a JSON string that does not have codec or schema information in it.
@@ -173,7 +181,7 @@ object Content {
     str: String,
     codec: Codec[T],
     schema: Schema[T]
-  ): Option[Content] = JSON.from(str, reads(codec, schema)).right.toOption
+  ): Option[Content] = JSON.from(str, reads(codec, schema)).toOption
 
   /**
    * Parse a content from a short string that does not have codec or schema information in it.
@@ -183,7 +191,7 @@ object Content {
    *
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
-  def fromShortString(str: String, decoder: Decoder): Option[Content] = parse(str, decoder).right.toOption
+  def fromShortString(str: String, decoder: Decoder): Option[Content] = parse(str, decoder).toOption
 
   /**
    * Parse a content from a self-describing short string.
@@ -193,7 +201,7 @@ object Content {
    *
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
-  def fromShortString(str: String, separator: String): Option[Content] = parse(str, separator).right.toOption
+  def fromShortString(str: String, separator: String): Option[Content] = parse(str, separator).toOption
 
   /**
    * Parse a content from a short string that does not have codec or schema information in it.
@@ -205,7 +213,6 @@ object Content {
    * @return A `Some[Content]` if successful, `None` otherwise.
    */
   def fromShortString[T](str: String, codec: Codec[T], schema: Schema[T]): Option[Content] = parse(str, codec, schema)
-    .right
     .toOption
 
   /**
@@ -258,7 +265,7 @@ object Content {
   ](
     codec: Codec[T],
     schema: Schema[T]
-  ): Reads[Content] = reads(Option((str: String) => parse(str, codec, schema).right.toOption))
+  ): Reads[Content] = reads(Option((str: String) => parse(str, codec, schema).toOption))
 
   /**
    * Return content parser from a decoder. This parses strings that do not have codec or schema information.
@@ -331,26 +338,26 @@ object Content {
     )
   }
 
-  private def parse(str: String, decoder: Decoder): Either[String, Content] = decoder(str)
-    .map(con => Right(con))
-    .getOrElse(Left(s"Unable to decode: '${str}'"))
+  private def parse(str: String, decoder: Decoder): Try[Content] = decoder(str)
+    .map(con => Success(con))
+    .getOrElse(Failure(UnableToDecodeContent(str)))
 
   private def parse(
     str: String,
     separator: String
-  ): Either[String, Content] = str.split(Pattern.quote(separator), -1) match {
+  ): Try[Content] = str.split(Pattern.quote(separator), -1) match {
     case Array(c, s, v) => parse(c, s, v)
-    case _ => Left(s"Unable to split: '${str}'")
+    case _ => Failure(IncorrectNumberOfFields(str))
   }
 
-  private def parse(codec: String, schema: String, value: String): Either[String, Content] = {
+  private def parse(codec: String, schema: String, value: String): Try[Content] = {
     def parseSchemaToContent[T](c: Codec[T]) = Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c) match {
       case Some(Inl(s)) => parse(value, c, s)
       case Some(Inr(Inl(s))) => parse(value, c, s)
       case Some(Inr(Inr(Inl(s)))) => parse(value, c, s)
       case Some(Inr(Inr(Inr(Inl(s))))) => parse(value, c, s)
       case Some(Inr(Inr(Inr(Inr(Inl(s)))))) => parse(value, c, s)
-      case _ => Left(s"Unable to decode schema: '${schema}'")
+      case _ => Failure(UnableToDecodeSchema(schema))
     }
 
     Codec.fromShortString[Codec.DefaultCodecs](codec) match {
@@ -361,7 +368,7 @@ object Content {
       case Some(Inr(Inr(Inr(Inr(Inl(c)))))) => parseSchemaToContent(c)
       case Some(Inr(Inr(Inr(Inr(Inr(Inl(c))))))) => parseSchemaToContent(c)
       case Some(Inr(Inr(Inr(Inr(Inr(Inr(Inl(c)))))))) => parseSchemaToContent(c)
-      case _ => Left(s"Unable to decode codec: '${codec}'")
+      case _ => Failure(UnableToDecodeCodec(codec))
     }
   }
 
@@ -371,12 +378,12 @@ object Content {
     str: String,
     codec: Codec[T],
     schema: Schema[T]
-  ): Either[String, Content] = Value.fromShortString(str, codec)
+  ): Try[Content] = Value.fromShortString(str, codec)
     .map {
-      case value if (schema.validate(value)) => Right(Content(schema, value))
-      case _ => Left(s"Invalid value: '${str}'")
+      case value if (schema.validate(value)) => Success(Content(schema, value))
+      case _ => Failure(InvalidValue(str))
     }
-    .getOrElse(Left(s"Unable to decode: '${str}'"))
+    .getOrElse(Failure(UnableToDecodeContent(str)))
 
   private def reads(decoder: Option[Decoder]): Reads[Content] = new Reads[Content] {
     def reads(json: JsValue): JsResult[Content] = {

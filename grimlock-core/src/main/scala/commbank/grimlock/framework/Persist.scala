@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 
 import org.apache.hadoop.io.Writable
+
+import scala.util.Try
 
 /* Trait for parquet configuration */
 trait ParquetConfig[T, C <: Context[C]] extends java.io.Serializable {
@@ -46,16 +48,16 @@ trait Persist[T, C <: Context[C]] extends java.io.Serializable {
 /** Companion object to `Persist` with various types, implicits, etc. */
 object Persist {
   /** Type for parsing Parquet data. */
-  type ParquetParser[S, T] = (S) => TraversableOnce[Either[String, T]]
+  type ParquetParser[S, T] = (S) => TraversableOnce[Try[T]]
 
   /** Type for parsing a key value tuple into either a `Cell[P]` or an error message. */
-  type SequenceParser[K <: Writable, V <: Writable, T] = (K, V) => TraversableOnce[Either[String, T]]
+  type SequenceParser[K <: Writable, V <: Writable, T] = (K, V) => TraversableOnce[Try[T]]
 
   /** Shorthand type for converting a `T` to key value tuple. */
   type SequenceWriter[T, K <: Writable, V <: Writable] = (T) => TraversableOnce[(K, V)]
 
   /** Type for parsing a string to one or more `T`s or an error string. */
-  type TextParser[T] = (String) => TraversableOnce[Either[String, T]]
+  type TextParser[T] = (String) => TraversableOnce[Try[T]]
 
   /** Shorthand type for converting a `T` to string. */
   type TextWriter[T] = (T) => TraversableOnce[String]

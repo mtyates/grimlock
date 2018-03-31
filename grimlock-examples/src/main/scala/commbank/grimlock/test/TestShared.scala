@@ -1,4 +1,4 @@
-// Copyright 2017 Commonwealth Bank of Australia
+// Copyright 2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import commbank.grimlock.library.window._
 import java.util.Date
 
 import scala.io.Source
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 
 import shapeless.{ ::, HList, HNil, Nat }
 import shapeless.nat.{ _0, _1, _2, _3 }
@@ -1589,6 +1589,7 @@ object Shared {
       .toUnit
 
     errors
+      .map(_.getMessage)
       .saveAsText(ctx, s"./tmp.${tool}/nok.out", Default())
       .toUnit
   }
@@ -1781,6 +1782,7 @@ object Shared {
       )
 
     errors
+      .map(_.getMessage)
       .saveAsText(ctx, s"./tmp.${tool}/sbp.out", Redistribute(1))
       .toUnit
   }
@@ -1801,13 +1803,9 @@ object Shared {
    ): Unit = {
     import ctx.implicits.matrix._
 
-    def dummyParser(arg: ParquetSample): TraversableOnce[Either[String, Cell[Coordinates1[String]]]] =
-      List(
-        Try(Cell(Position("b"), Content(DiscreteSchema[Int](), arg.b))) match {
-            case Success(x) => Right(x)
-            case Failure(x) => Left(x.toString)
-          }
-      )
+    def dummyParser(arg: ParquetSample): TraversableOnce[Try[Cell[Coordinates1[String]]]] = List(
+      Try(Cell(Position("b"), Content(DiscreteSchema[Int](), arg.b)))
+    )
 
     ctx
       .loadParquet[ParquetSample, Coordinates1[String]](path + "/test.parquet", dummyParser)

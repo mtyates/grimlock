@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import commbank.grimlock.framework.encoding.{
 }
 import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
+import commbank.grimlock.framework.error.{ IncorrectNumberOfFields, UnableToDecodePosition }
 import commbank.grimlock.framework.utility.JSON
 
 import java.util.regex.Pattern
@@ -35,6 +36,7 @@ import java.util.regex.Pattern
 import play.api.libs.json.{ JsArray, JsError, JsResult, JsString, JsSuccess, JsValue, Reads, Writes }
 
 import scala.reflect.ClassTag
+import scala.util.{ Failure, Success, Try }
 import scala.util.matching.Regex
 
 import shapeless.{
@@ -636,7 +638,7 @@ object Position {
   trait TextParseConstraints[L <: HList] extends java.io.Serializable {
     type Q <: HList
 
-    def parse(coordinates: List[String], codecs: L): Either[String, Position[Q]]
+    def parse(coordinates: List[String], codecs: L): Try[Position[Q]]
   }
 
   /** Companion object with convenience types and constructors. */
@@ -666,18 +668,18 @@ object Position {
     ): Aux[L, OUT] = new TextParseConstraints[L] {
       type Q = OUT
 
-      def parse(coordinates: List[String], codecs: L): Either[String, Position[Q]] = {
+      def parse(coordinates: List[String], codecs: L): Try[Position[Q]] = {
         if (codecs.runtimeLength == coordinates.length) {
           val parsed = codecs
             .zip(codecs.mapConst(coordinates).zipWithIndex.map(GetAtIndex))
             .map(DecodeString)
 
           if (!parsed.foldLeft(false)(IsEmpty))
-            Right(Position(parsed.flatMap(RemoveOption)))
+            Success(Position(parsed.flatMap(RemoveOption)))
           else
-            Left("Unable to parse coordinates")
+            Failure(UnableToDecodePosition(coordinates.mkString("(", ",", ")")))
         } else
-          Left("Incorrect number of coordinates")
+          Failure(IncorrectNumberOfFields(coordinates.mkString("(", ",", ")")))
       }
     }
 
@@ -1106,7 +1108,7 @@ object Position {
     codecs: L
   )(implicit
     ev: TextParseConstraints[L]
-  ): Option[Position[ev.Q]] = parse(coordinates, codecs).right.toOption
+  ): Option[Position[ev.Q]] = parse(coordinates, codecs).toOption
 
   /**
    * Parse a position from a JSON string.
@@ -1123,7 +1125,7 @@ object Position {
     codecs: L
   )(implicit
     ev: TextParseConstraints[L]
-  ): Option[Position[ev.Q]] = JSON.from(str, reads(codecs)).right.toOption
+  ): Option[Position[ev.Q]] = JSON.from(str, reads(codecs)).toOption
 
   /**
    * Parse a position from a short string.
@@ -1142,7 +1144,7 @@ object Position {
     separator: String
   )(implicit
     ev: TextParseConstraints[L]
-  ): Option[Position[ev.Q]] = parse(str, codecs, separator).right.toOption
+  ): Option[Position[ev.Q]] = parse(str, codecs, separator).toOption
 
   /**
    * Return position parser for JSON strings.
@@ -1180,8 +1182,12 @@ object Position {
   )(implicit
     ev: TextParseConstraints[L]
   ): Reads[Position[ev.Q]] = new Reads[Position[ev.Q]] {
-    def reads(json: JsValue): JsResult[Position[ev.Q]] = parse(json.as[JsArray].value.toList.map(_.as[String]), codecs)
-      .fold(JsError(_), JsSuccess(_))
+    def reads(
+      json: JsValue
+    ): JsResult[Position[ev.Q]] = parse(json.as[JsArray].value.toList.map(_.as[String]), codecs) match {
+      case Success(pos) => JsSuccess(pos)
+      case Failure(err) => JsError(err.toString)
+    }
   }
 
   /**
@@ -1231,7 +1237,7 @@ object Position {
     codecs: L
   )(implicit
     ev: TextParseConstraints[L]
-  ): Either[String, Position[ev.Q]] = ev.parse(coordinates, codecs)
+  ): Try[Position[ev.Q]] = ev.parse(coordinates, codecs)
 
   private def parse[
     L <: HList
@@ -1241,7 +1247,7 @@ object Position {
     separator: String
   )(implicit
     ev: TextParseConstraints[L]
-  ): Either[String, Position[ev.Q]] = parse(str.split(Pattern.quote(separator), -1).toList, codecs)
+  ): Try[Position[ev.Q]] = parse(str.split(Pattern.quote(separator), -1).toList, codecs)
 }
 
 /** Object with implicits needed to parse coordinates from string. */

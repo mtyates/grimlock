@@ -1,4 +1,4 @@
-// Copyright 2016,2017 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ trait Context[C <: Context[C]] {
    * @param file   The text file to read from.
    * @param parser The parser that converts a single line to a cell.
    */
-  def loadText[P <: HList](file: String, parser: Persist.TextParser[Cell[P]]): (U[Cell[P]], U[String])
+  def loadText[P <: HList](file: String, parser: Persist.TextParser[Cell[P]]): (U[Cell[P]], U[Throwable])
 
   /**
    * Read binary key-value (sequence) matrix data into a `U[Cell[P]]`.
@@ -51,7 +51,7 @@ trait Context[C <: Context[C]] {
   ](
     file: String,
     parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (U[Cell[P]], U[String])
+  ): (U[Cell[P]], U[Throwable])
 
   /**
    * Load Parquet data.
@@ -67,7 +67,7 @@ trait Context[C <: Context[C]] {
     parser: Persist.ParquetParser[T, Cell[P]]
   )(implicit
     cfg: ParquetConfig[T, C]
-  ): (U[Cell[P]], U[String])
+  ): (U[Cell[P]], U[Throwable])
 
   /** All implicits for this context. */
   val implicits: Implicits[C]

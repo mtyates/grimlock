@@ -1,4 +1,4 @@
-// Copyright 2016,2017 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import commbank.grimlock.framework.environment.{ Context => FwContext }
 import org.apache.hadoop.io.Writable
 
 import scala.reflect.ClassTag
+import scala.util.{ Failure, Success }
 
 import shapeless.{ <:!<, HList }
 
@@ -52,10 +53,10 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
   ](
     file: String,
     parser: Persist.TextParser[Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
+  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val pipe = TypedPipe.from(TextLine(file)).flatMap { parser(_) }
 
-    (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
+    (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
   }
 
   def loadSequence[
@@ -65,10 +66,10 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
   ](
     file: String,
     parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[String]) = {
+  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val pipe = TypedPipe.from(WritableSequenceFile[K, V](file)).flatMap { case (k, v) => parser(k, v) }
 
-    (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
+    (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
   }
 
   def loadParquet[
@@ -79,10 +80,10 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
     parser: Persist.ParquetParser[T, Cell[P]]
    )(implicit
      cfg: ParquetConfig[T, Context]
-   ): (Context.U[Cell[P]], Context.U[String]) = {
+   ): (Context.U[Cell[P]], Context.U[Throwable]) = {
     val pipe = cfg.load(this, file).flatMap(parser)
 
-    (pipe.collect { case Right(c) => c }, pipe.collect { case Left(e) => e })
+    (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
   }
 
   val implicits = Implicits()

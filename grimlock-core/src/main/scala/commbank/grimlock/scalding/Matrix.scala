@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,6 +64,8 @@ import com.twitter.algebird.Semigroup
 import com.twitter.scalding.typed.ValuePipe
 
 import org.apache.hadoop.io.Writable
+
+import scala.util.{ Failure, Success }
 
 import shapeless.{ ::, =:!=, HList, HNil, IsDistinctConstraint, Nat }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8 }
@@ -472,7 +474,7 @@ case class Matrix[
     parser: FwPersist.TextParser[Cell[Q]],
     reducers: Reducers,
     hash: (Position[P]) => Int
-  ): (Context.U[Cell[Q]], Context.U[String]) = {
+  ): (Context.U[Cell[Q]], Context.U[Throwable]) = {
     val tuner = Default(reducers)
     val func = Stream.delegate(command, files)
 
@@ -481,7 +483,7 @@ case class Matrix[
       .tuneReducers(tuner)
       .tunedStream(tuner, (key, itr) => func(key, itr).flatMap { case s => parser(s) })
 
-    (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
+    (result.collect { case (_, Success(c)) => c }, result.collect { case (_, Failure(e)) => e })
   }
 
   def streamByPosition[
@@ -498,7 +500,7 @@ case class Matrix[
     reducers: Reducers
   )(implicit
     ev: Position.GreaterEqualConstraints[Q, S]
-  ): (Context.U[Cell[Q]], Context.U[String]) = {
+  ): (Context.U[Cell[Q]], Context.U[Throwable]) = {
     val tuner = Default(reducers)
     val func = Stream.delegate(command, files)
     val murmur = new scala.util.hashing.MurmurHash3.ArrayHashing[Value[_]]()
@@ -511,7 +513,7 @@ case class Matrix[
       .tuneReducers(tuner)
       .tunedStream(tuner, (key, itr) => func(key, itr).flatMap { case s => parser(s) })
 
-    (result.collect { case (_, Right(c)) => c }, result.collect { case (_, Left(e)) => e })
+    (result.collect { case (_, Success(c)) => c }, result.collect { case (_, Failure(e)) => e })
   }
 
   def summarise[

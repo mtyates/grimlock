@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -499,7 +499,7 @@ trait Matrix[
    * @param hash      Function maps each cell's position to an integer. Use this function to tag cells
    *                  that should be sent to the same reducer.
    *
-   * @return A `C#U[Cell[Q]]` with the new data as well as a `C#U[String]` with any parse errors.
+   * @return A `C#U[Cell[Q]]` with the new data as well as a `C#U[Throwable]` with any parse errors.
    *
    * @note The `command` must be installed on each node of the cluster.
    */
@@ -512,7 +512,7 @@ trait Matrix[
     parser: Persist.TextParser[Cell[Q]],
     reducers: Reducers = Reducers(1),
     hash: (Position[P]) => Int = _ => 0
-  ): (C#U[Cell[Q]], C#U[String])
+  ): (C#U[Cell[Q]], C#U[Throwable])
 
   /**
    * Stream this matrix through `command` and apply `script`, after grouping all data by `slice`.
@@ -525,7 +525,7 @@ trait Matrix[
    * @param parser    Function that parses the resulting string back to a cell.
    * @param reducers  The number of reducers to use.
    *
-   * @return A `C#U[Cell[Q]]` with the new data as well as a `C#U[String]` with any parse errors.
+   * @return A `C#U[Cell[Q]]` with the new data as well as a `C#U[Throwable]` with any parse errors.
    *
    * @note The `command` must be installed on each node of the cluster. The implementation assumes that all
    *       values for a given slice fit into memory.
@@ -544,7 +544,7 @@ trait Matrix[
     reducers: Reducers = Reducers(1)
   )(implicit
     ev: Position.GreaterEqualConstraints[Q, S]
-  ): (C#U[Cell[Q]], C#U[String])
+  ): (C#U[Cell[Q]], C#U[Throwable])
 
   /**
    * Summarise a matrix and return the aggregates.
@@ -1659,5 +1659,5 @@ trait Matrix9D[
  * @param data   The parsed matrix.
  * @param errors Any parse errors.
  */
-case class MatrixWithParseErrors[P <: HList, U[_]](data: U[Cell[P]], errors: U[String])
+case class MatrixWithParseErrors[P <: HList, U[_]](data: U[Cell[P]], errors: U[Throwable])
 
