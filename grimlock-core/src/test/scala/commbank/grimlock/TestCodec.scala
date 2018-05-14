@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,37 +14,54 @@
 
 package commbank.grimlock.test
 
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+
 import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.metadata._
 
 class TestDateCodec extends TestGrimlock {
 
-  val dfmt = new java.text.SimpleDateFormat("yyyy-MM-dd hh:ss:mm")
+  val codec = DateCodec("yyyy-MM-dd hh:ss:mm")
+
+  val dfmt = new SimpleDateFormat(codec.format)
+
+  val date1 = dfmt.parse("2001-01-01 01:01:01")
+  val date2 = dfmt.parse("2002-01-01 01:01:01")
 
   "A DateCodec" should "have a name" in {
-    DateCodec("yyyy-MM-dd hh:ss:mm").toShortString shouldBe "date(yyyy-MM-dd hh:ss:mm)"
+    codec.toShortString shouldBe "date(yyyy-MM-dd hh:ss:mm)"
   }
 
   it should "decode a correct value" in {
-    DateCodec("yyyy-MM-dd hh:ss:mm").decode("2001-01-01 01:01:01") shouldBe Option(dfmt.parse("2001-01-01 01:01:01"))
+    codec.decode("2001-01-01 01:01:01") shouldBe Option(date1)
   }
 
   it should "not decode an incorrect value" in {
-    DateCodec("yyyy-MM-dd hh:ss:mm").decode("a") shouldBe None
-    DateCodec("yyyy-MM-dd hh:ss:mm").decode("1") shouldBe None
+    codec.decode("a") shouldBe None
+    codec.decode("1") shouldBe None
   }
 
   it should "encode a correct value" in {
-    DateCodec("yyyy-MM-dd hh:ss:mm").encode(dfmt.parse("2001-01-01 01:01:01")) shouldBe "2001-01-01 01:01:01"
+    codec.encode(date1) shouldBe "2001-01-01 01:01:01"
   }
 
   it should "compare a correct value" in {
-    DateCodec("yyyy-MM-dd hh:ss:mm")
-      .compare(dfmt.parse("2001-01-01 01:01:01"), dfmt.parse("2002-01-01 01:01:01")) shouldBe -1
-    DateCodec("yyyy-MM-dd hh:ss:mm")
-      .compare(dfmt.parse("2001-01-01 01:01:01"), dfmt.parse("2001-01-01 01:01:01")) shouldBe 0
-    DateCodec("yyyy-MM-dd hh:ss:mm")
-      .compare(dfmt.parse("2002-01-01 01:01:01"), dfmt.parse("2001-01-01 01:01:01")) shouldBe 1
+    codec.compare(date1, date2) shouldBe -1
+    codec.compare(date1, date1) shouldBe 0
+    codec.compare(date2, date1) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    codec.box(date1) shouldBe DateValue(date1, codec.format)
+  }
+
+  it should "return fields" in {
+    codec.converters.size shouldBe 2
+
+    codec.date.isDefined shouldBe true
+    codec.integral.isEmpty shouldBe true
+    codec.numeric.isEmpty shouldBe true
   }
 }
 
@@ -66,6 +83,18 @@ class TestStringCodec extends TestGrimlock {
     StringCodec.compare("abc", "bbc") shouldBe -1
     StringCodec.compare("abc", "abc") shouldBe 0
     StringCodec.compare("bbc", "abc") shouldBe 1
+  }
+
+  it should "box correctly" in {
+    StringCodec.box("abc") shouldBe StringValue("abc")
+  }
+
+  it should "return fields" in {
+    StringCodec.converters.size shouldBe 0
+
+    StringCodec.date.isEmpty shouldBe true
+    StringCodec.integral.isEmpty shouldBe true
+    StringCodec.numeric.isEmpty shouldBe true
   }
 }
 
@@ -93,6 +122,18 @@ class TestDoubleCodec extends TestGrimlock {
     DoubleCodec.compare(3.14, 3.14) shouldBe 0
     DoubleCodec.compare(4.14, 3.14) shouldBe 1
   }
+
+  it should "box correctly" in {
+    DoubleCodec.box(3.14) shouldBe DoubleValue(3.14)
+  }
+
+  it should "return fields" in {
+    DoubleCodec.converters.size shouldBe 0
+
+    DoubleCodec.date.isEmpty shouldBe true
+    DoubleCodec.integral.isEmpty shouldBe true
+    DoubleCodec.numeric.isDefined shouldBe true
+  }
 }
 
 class TestIntCodec extends TestGrimlock {
@@ -118,6 +159,18 @@ class TestIntCodec extends TestGrimlock {
     IntCodec.compare(3, 4) shouldBe -1
     IntCodec.compare(3, 3) shouldBe 0
     IntCodec.compare(4, 3) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    IntCodec.box(3) shouldBe IntValue(3)
+  }
+
+  it should "return fields" in {
+    IntCodec.converters.size shouldBe 2
+
+    IntCodec.date.isEmpty shouldBe true
+    IntCodec.integral.isDefined shouldBe true
+    IntCodec.numeric.isDefined shouldBe true
   }
 }
 
@@ -145,6 +198,18 @@ class TestLongCodec extends TestGrimlock {
     LongCodec.compare(3L, 3L) shouldBe 0
     LongCodec.compare(4L, 3L) shouldBe 1
   }
+
+  it should "box correctly" in {
+    LongCodec.box(3) shouldBe LongValue(3)
+  }
+
+  it should "return fields" in {
+    LongCodec.converters.size shouldBe 3
+
+    LongCodec.date.isDefined shouldBe true
+    LongCodec.integral.isDefined shouldBe true
+    LongCodec.numeric.isDefined shouldBe true
+  }
 }
 
 class TestBooleanCodec extends TestGrimlock {
@@ -171,6 +236,61 @@ class TestBooleanCodec extends TestGrimlock {
     BooleanCodec.compare(false, true) shouldBe -1
     BooleanCodec.compare(false, false) shouldBe 0
     BooleanCodec.compare(true, false) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    BooleanCodec.box(true) shouldBe BooleanValue(true)
+  }
+
+  it should "return fields" in {
+    BooleanCodec.converters.size shouldBe 3
+
+    BooleanCodec.date.isEmpty shouldBe true
+    BooleanCodec.integral.isEmpty shouldBe true
+    BooleanCodec.numeric.isEmpty shouldBe true
+  }
+}
+
+class TestTimestampCodec extends TestGrimlock {
+
+  val dfmt = new SimpleDateFormat("yyyy-MM-dd hh:ss:mm")
+
+  val date1 = new Timestamp(dfmt.parse("2001-01-01 01:01:01").getTime)
+  val date2 = new Timestamp(dfmt.parse("2002-01-01 01:01:01").getTime)
+
+  "A DateCodec" should "have a name" in {
+    TimestampCodec.toShortString shouldBe "timestamp"
+  }
+
+  it should "decode a correct value" in {
+    TimestampCodec.decode("2001-01-01 01:01:01") shouldBe Option(date1)
+  }
+
+  it should "not decode an incorrect value" in {
+    TimestampCodec.decode("a") shouldBe None
+    TimestampCodec.decode("1") shouldBe None
+  }
+
+  it should "encode a correct value" in {
+    TimestampCodec.encode(date1) shouldBe "2001-01-01 01:01:01.0"
+  }
+
+  it should "compare a correct value" in {
+    TimestampCodec.compare(date1, date2) shouldBe -1
+    TimestampCodec.compare(date1, date1) shouldBe 0
+    TimestampCodec.compare(date2, date1) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    TimestampCodec.box(date1) shouldBe TimestampValue(date1)
+  }
+
+  it should "return fields" in {
+    TimestampCodec.converters.size shouldBe 1
+
+    TimestampCodec.date.isDefined shouldBe true
+    TimestampCodec.integral.isEmpty shouldBe true
+    TimestampCodec.numeric.isEmpty shouldBe true
   }
 }
 
@@ -211,6 +331,18 @@ class TestTypeCodec extends TestGrimlock {
     TypeCodec.compare(DiscreteType, MixedType) < 0 shouldBe true
     TypeCodec.compare(DateType, DateType) shouldBe 0
     TypeCodec.compare(NominalType, ContinuousType) > 0 shouldBe true
+  }
+
+  it should "box correctly" in {
+    TypeCodec.box(MixedType) shouldBe TypeValue(MixedType)
+  }
+
+  it should "return fields" in {
+    TypeCodec.converters.size shouldBe 0
+
+    TypeCodec.date.isEmpty shouldBe true
+    TypeCodec.integral.isEmpty shouldBe true
+    TypeCodec.numeric.isEmpty shouldBe true
   }
 }
 

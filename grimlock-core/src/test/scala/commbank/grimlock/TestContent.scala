@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("double|continuous|3.14", "|") shouldBe Option(Content(ContinuousSchema[Double](), 3.14))
-    Content.fromShortString("double|continuous(0.0:10.0)|3.14", "|") shouldBe
+    Content.fromShortString("double|continuous(min=0.0,max=10.0)|3.14", "|") shouldBe
       Option(Content(ContinuousSchema[Double](), 3.14))
     Content.fromShortString("string|continuous|3.14", "|") shouldBe None
     Content.fromShortString("double|continuous|abc", "|") shouldBe None
@@ -55,7 +55,9 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("long|continuous|42", "|") shouldBe Option(Content(ContinuousSchema[Long](), 42L))
-    Content.fromShortString("long|continuous(0:100)|42", "|") shouldBe Option(Content(ContinuousSchema[Long](), 42L))
+    Content.fromShortString("long|continuous(min=0,max=100)|42", "|") shouldBe Option(
+      Content(ContinuousSchema[Long](), 42L)
+    )
     Content.fromShortString("string|continuous|42", "|") shouldBe None
     Content.fromShortString("long|continuous|abc", "|") shouldBe None
     Content.fromShortString("long|continuouz|42", "|") shouldBe None
@@ -74,7 +76,9 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("long|discrete|42", "|") shouldBe Option(Content(DiscreteSchema[Long](), 42L))
-    Content.fromShortString("long|discrete(0:100,2)|42", "|") shouldBe Option(Content(DiscreteSchema[Long](), 42L))
+    Content.fromShortString("long|discrete(min=0,max=100,step=2)|42", "|") shouldBe Option(
+      Content(DiscreteSchema[Long](), 42L)
+    )
     Content.fromShortString("string|discrete|42", "|") shouldBe None
     Content.fromShortString("long|discrete|abc", "|") shouldBe None
     Content.fromShortString("long|discrets|42", "|") shouldBe None
@@ -94,7 +98,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("string|nominal|a", "|") shouldBe Option(Content(NominalSchema[String](), "a"))
-    Content.fromShortString("string|nominal(a,b,c)|a", "|") shouldBe Option(Content(NominalSchema[String](), "a"))
+    Content.fromShortString("string|nominal(set={a,b,c})|a", "|") shouldBe Option(Content(NominalSchema[String](), "a"))
     Content.fromShortString("string|nominas|a", "|") shouldBe None
     Content.fromShortString("strign|nominal|a", "|") shouldBe None
   }
@@ -112,7 +116,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("double|nominal|1.0", "|") shouldBe Option(Content(NominalSchema[Double](), 1.0))
-    Content.fromShortString("double|nominal(1.0,2.0,3.0)|1.0", "|") shouldBe
+    Content.fromShortString("double|nominal(set={1.0,2.0,3.0})|1.0", "|") shouldBe
       Option(Content(NominalSchema[Double](), 1.0))
     Content.fromShortString("double|nominal|abc", "|") shouldBe None
     Content.fromShortString("double|nominas|1.0", "|") shouldBe None
@@ -132,7 +136,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("long|nominal|1", "|") shouldBe Option(Content(NominalSchema[Long](), 1L))
-    Content.fromShortString("long|nominal(1,2,3)|1", "|") shouldBe Option(Content(NominalSchema[Long](), 1L))
+    Content.fromShortString("long|nominal(set={1,2,3})|1", "|") shouldBe Option(Content(NominalSchema[Long](), 1L))
     Content.fromShortString("long|nominal|abc", "|") shouldBe None
     Content.fromShortString("long|nominas|1", "|") shouldBe None
     Content.fromShortString("logn|nominal|1", "|") shouldBe None
@@ -151,7 +155,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("string|ordinal|a", "|") shouldBe Option(Content(OrdinalSchema[String](), "a"))
-    Content.fromShortString("string|ordinal(a,b,c)|a", "|") shouldBe Option(Content(OrdinalSchema[String](), "a"))
+    Content.fromShortString("string|ordinal(set={a,b,c})|a", "|") shouldBe Option(Content(OrdinalSchema[String](), "a"))
     Content.fromShortString("string|ordinas|a", "|") shouldBe None
     Content.fromShortString("strign|ordinal|a", "|") shouldBe None
   }
@@ -169,7 +173,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("double|ordinal|1.0", "|") shouldBe Option(Content(OrdinalSchema[Double](), 1.0))
-    Content.fromShortString("double|ordinal(1.0,2.0,3.0)|1.0", "|") shouldBe
+    Content.fromShortString("double|ordinal(set={1.0,2.0,3.0})|1.0", "|") shouldBe
       Option(Content(OrdinalSchema[Double](), 1.0))
     Content.fromShortString("double|ordinal|abc", "|") shouldBe None
     Content.fromShortString("double|ordinas|1.0", "|") shouldBe None
@@ -189,7 +193,7 @@ class TestContent extends TestGrimlock {
 
   it should "parse from string" in {
     Content.fromShortString("long|ordinal|1", "|") shouldBe Option(Content(OrdinalSchema[Long](), 1L))
-    Content.fromShortString("long|ordinal(1,2,3)|1", "|") shouldBe Option(Content(OrdinalSchema[Long](), 1L))
+    Content.fromShortString("long|ordinal(set={1,2,3})|1", "|") shouldBe Option(Content(OrdinalSchema[Long](), 1L))
     Content.fromShortString("long|ordinal|abc", "|") shouldBe None
     Content.fromShortString("long|ordinas|1", "|") shouldBe None
     Content.fromShortString("logn|ordinal|1", "|") shouldBe None
