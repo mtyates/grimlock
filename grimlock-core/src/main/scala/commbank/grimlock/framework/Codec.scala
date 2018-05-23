@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@ package commbank.grimlock.framework.encoding
 import commbank.grimlock.framework.metadata.Type
 
 import java.math.BigDecimal
-import java.text.SimpleDateFormat
+import java.sql.Timestamp
+import java.text.{ ParsePosition, SimpleDateFormat }
 import java.util.Date
 
-import scala.util.Try
+import scala.util.{ Success, Try }
 
 import shapeless.{ :+:, CNil, Coproduct }
 import shapeless.ops.coproduct.Inject
@@ -95,6 +96,7 @@ object Codec {
     IntCodec.type :+:
     LongCodec.type :+:
     StringCodec.type :+:
+    TimestampCodec.type :+:
     TypeCodec.type :+:
     CNil
 
@@ -106,6 +108,7 @@ object Codec {
     implicit val asInt: Inject[C, IntCodec.type]
     implicit val asLong: Inject[C, LongCodec.type]
     implicit val asString: Inject[C, StringCodec.type]
+    implicit val asTimestamp: Inject[C, TimestampCodec.type]
     implicit val asType: Inject[C, TypeCodec.type]
   }
 
@@ -119,7 +122,8 @@ object Codec {
     ev4: Inject[C, IntCodec.type],
     ev5: Inject[C, LongCodec.type],
     ev6: Inject[C, StringCodec.type],
-    ev7: Inject[C, TypeCodec.type]
+    ev7: Inject[C, TimestampCodec.type],
+    ev8: Inject[C, TypeCodec.type]
   ): TextParseConstraints[C] = new TextParseConstraints[C] {
     implicit val asBoolean = ev1
     implicit val asDate = ev2
@@ -127,7 +131,8 @@ object Codec {
     implicit val asInt = ev4
     implicit val asLong = ev5
     implicit val asString = ev6
-    implicit val asType = ev7
+    implicit val asTimestamp = ev7
+    implicit val asType = ev8
   }
 
   /**
@@ -147,6 +152,7 @@ object Codec {
       case IntCodec.Pattern() => IntCodec.fromShortString(str).map(Coproduct(_))
       case LongCodec.Pattern() => LongCodec.fromShortString(str).map(Coproduct(_))
       case StringCodec.Pattern() => StringCodec.fromShortString(str).map(Coproduct(_))
+      case TimestampCodec.Pattern() => TimestampCodec.fromShortString(str).map(Coproduct(_))
       case TypeCodec.Pattern() => TypeCodec.fromShortString(str).map(Coproduct(_))
       case _ => None
     }
@@ -201,7 +207,7 @@ case object BooleanCodec extends Codec[Boolean] {
 
 /** Codec for dealing with `java.util.Date`. */
 case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =>
-  val converters: Set[Codec.Convert[Date]] = Set.empty
+  val converters: Set[Codec.Convert[Date]] = Set(DateAsLong, DateAsTimestamp)
   val date: Option[Date => Date] = Option(identity)
   val integral: Option[Integral[Date]] = None
   val numeric: Option[Numeric[Date]] = None
@@ -209,15 +215,33 @@ case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =
 
   def box(value: Date): Value[Date] = DateValue(value, this)
 
-  def compare(x: Date, y: Date): Int = x.getTime.compare(y.getTime)
+  def compare(x: Date, y: Date): Int = x.compareTo(y)
 
-  def decode(value: String): Option[Date] = Try(df.parse(value)).toOption
+  def decode(value: String): Option[Date] = {
+    val fmt = df
+    val pos = new ParsePosition(0)
+
+    fmt.setLenient(false)
+
+    Try(fmt.parse(value, pos)) match {
+      case Success(d) if (pos.getIndex == value.length) => Option(d)
+      case _ => None
+    }
+  }
 
   def encode(value: Date): String = df.format(value)
 
   def toShortString = s"date(${format})"
 
   private def df: SimpleDateFormat = new SimpleDateFormat(format)
+
+  private case object DateAsLong extends (Date => Long) {
+    def apply(d: Date): Long = d.getTime
+  }
+
+  private case object DateAsTimestamp extends (Date => Timestamp) {
+    def apply(d: Date): Timestamp = new Timestamp(d.getTime)
+  }
 }
 
 /** Companion object to DateCodec. */
@@ -316,8 +340,8 @@ case object IntCodec extends Codec[Int] {
 
 /** Codec for dealing with `Long`. */
 case object LongCodec extends Codec[Long] {
-  val converters: Set[Codec.Convert[Long]] = Set(LongAsDouble)
-  val date: Option[Long => Date] = None
+  val converters: Set[Codec.Convert[Long]] = Set(LongAsDate, LongAsDouble, LongAsTimestamp)
+  val date: Option[Long => Date] = Option(l => new Date(l))
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
   val ordering: Ordering[Long] = Ordering.Long
@@ -347,8 +371,16 @@ case object LongCodec extends Codec[Long] {
 
   def toShortString = Pattern.toString
 
+  private case object LongAsDate extends (Long => Date) {
+    def apply(l: Long): Date = new Date(l)
+  }
+
   private case object LongAsDouble extends (Long => Double) {
     def apply(l: Long): Double = l.toDouble
+  }
+
+  private case object LongAsTimestamp extends (Long => Timestamp) {
+    def apply(l: Long): Timestamp = new Timestamp(l)
   }
 }
 
@@ -384,6 +416,46 @@ case object StringCodec extends Codec[String] {
   }
 
   def toShortString = Pattern.toString
+}
+
+/** Codec for dealing with `Timestamp`. */
+case object TimestampCodec extends Codec[Timestamp] { self =>
+  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsLong)
+  val date: Option[Timestamp => Date] = Option(identity)
+  val integral: Option[Integral[Timestamp]] = None
+  val numeric: Option[Numeric[Timestamp]] = None
+  def ordering: Ordering[Timestamp] = new Ordering[Timestamp] {
+    def compare(x: Timestamp, y: Timestamp): Int = self.compare(x, y)
+  }
+
+  /** Pattern for parsing `TimestampCodec` from string. */
+  val Pattern = "timestamp".r
+
+  def box(value: Timestamp): Value[Timestamp] = TimestampValue(value, this)
+
+  def compare(x: Timestamp, y: Timestamp): Int = x.compareTo(y)
+
+  def decode(str: String): Option[Timestamp] = Try(Timestamp.valueOf(str.trim)).toOption
+
+  def encode(value: Timestamp): String = value.toString
+
+  /**
+   * Parse a TimestampCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[TimestampCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[TimestampCodec.type] = str match {
+    case Pattern() => Option(this)
+    case _ => None
+  }
+
+  def toShortString = Pattern.toString
+
+  private case object TimestampAsLong extends (Timestamp => Long) {
+    def apply(t: Timestamp): Long = t.getTime
+  }
 }
 
 /** Codec for dealing with `Type`. */

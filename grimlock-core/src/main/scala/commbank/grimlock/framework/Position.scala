@@ -23,6 +23,7 @@ import commbank.grimlock.framework.encoding.{
   IntCodec,
   LongCodec,
   StringCodec,
+  TimestampCodec,
   TypeCodec,
   Value
 }
@@ -1272,6 +1273,9 @@ object DecodeString extends Poly1 {
 
   /** Convenience implicit to parse string coordinate from string without having to cast it to a Codec. */
   implicit def goString = at[(StringCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
+
+  /** Convenience implicit to parse timestamp coordinate from string without having to cast it to a Codec. */
+  implicit def goTimestamp = at[(TimestampCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
 
   /** Convenience implicit to parse type coordinate from string without having to cast it to a Codec. */
   implicit def goType = at[(TypeCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }

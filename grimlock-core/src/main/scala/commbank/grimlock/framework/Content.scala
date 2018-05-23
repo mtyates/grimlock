@@ -15,7 +15,18 @@
 package commbank.grimlock.framework.content
 
 import commbank.grimlock.framework.Persist
-import commbank.grimlock.framework.encoding.{ Codec, Value }
+import commbank.grimlock.framework.encoding.{
+  BooleanCodec,
+  Codec,
+  DateCodec,
+  DoubleCodec,
+  IntCodec,
+  LongCodec,
+  StringCodec,
+  TimestampCodec,
+  TypeCodec,
+  Value
+}
 import commbank.grimlock.framework.environment.Context
 import commbank.grimlock.framework.environment.tuner.Tuner
 import commbank.grimlock.framework.error.{
@@ -25,7 +36,15 @@ import commbank.grimlock.framework.error.{
   UnableToDecodeContent,
   UnableToDecodeSchema
 }
-import commbank.grimlock.framework.metadata.{ Schema, Type }
+import commbank.grimlock.framework.metadata.{
+  ContinuousSchema,
+  DateSchema,
+  DiscreteSchema,
+  NominalSchema,
+  OrdinalSchema,
+  Schema,
+  Type
+}
 import commbank.grimlock.framework.position.Position
 import commbank.grimlock.framework.utility.JSON
 
@@ -35,7 +54,7 @@ import play.api.libs.json.{ JsError, JsObject, JsResult, Json, JsString, JsSucce
 
 import scala.util.{ Failure, Success, Try }
 
-import shapeless.{ HList, Inl, Inr }
+import shapeless.{ HList, Poly1 }
 
 /** Contents of a cell in a matrix. */
 trait Content {
@@ -112,27 +131,32 @@ object Content {
    * @return A `Some[Decoder]` in case of success, `None` in case of failure.
    */
   def decoderFromComponents(codec: String, schema: String): Option[Decoder] = {
-    def toDecoder[T](c: Codec[T], s: Schema[T]) = Option((str: String) => parse(str, c, s).toOption)
-
-    def schemaToDecoder[T](c: Codec[T]) = Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c) match {
-      case Some(Inl(s)) => toDecoder(c, s)
-      case Some(Inr(Inl(s))) => toDecoder(c, s)
-      case Some(Inr(Inr(Inl(s)))) => toDecoder(c, s)
-      case Some(Inr(Inr(Inr(Inl(s))))) => toDecoder(c, s)
-      case Some(Inr(Inr(Inr(Inr(Inl(s)))))) => toDecoder(c, s)
-      case _ => None
+    object codecToDecoder extends Poly1 {
+      implicit val atBooleanCodec = at[BooleanCodec.type](c => toDecoder(c))
+      implicit val atDateCodec = at[DateCodec](c => toDecoder(c))
+      implicit val atDoubleCodec = at[DoubleCodec.type](c => toDecoder(c))
+      implicit val atIntCodec = at[IntCodec.type](c => toDecoder(c))
+      implicit val atLongCodec = at[LongCodec.type](c => toDecoder(c))
+      implicit val atStringCodec = at[StringCodec.type](c => toDecoder(c))
+      implicit val atTimestampCodec = at[TimestampCodec.type](c => toDecoder(c))
+      implicit val atTypeCodec = at[TypeCodec.type](c => toDecoder(c))
     }
 
-    Codec.fromShortString[Codec.DefaultCodecs](codec) match {
-      case Some(Inl(c)) => schemaToDecoder(c)
-      case Some(Inr(Inl(c))) => schemaToDecoder(c)
-      case Some(Inr(Inr(Inl(c)))) => schemaToDecoder(c)
-      case Some(Inr(Inr(Inr(Inl(c))))) => schemaToDecoder(c)
-      case Some(Inr(Inr(Inr(Inr(Inl(c)))))) => schemaToDecoder(c)
-      case Some(Inr(Inr(Inr(Inr(Inr(Inl(c))))))) => schemaToDecoder(c)
-      case Some(Inr(Inr(Inr(Inr(Inr(Inr(Inl(c)))))))) => schemaToDecoder(c)
-      case _ => None
+    def toDecoder[T](c: Codec[T]) = {
+      object schemaToDecoder extends Poly1 {
+        implicit val atContinuousSchema = at[ContinuousSchema[T]](s => toDecoder(s))
+        implicit val atDateSchema = at[DateSchema[T]](s => toDecoder(s))
+        implicit val atDiscreteSchema = at[DiscreteSchema[T]](s => toDecoder(s))
+        implicit val atNominalSchema = at[NominalSchema[T]](s => toDecoder(s))
+        implicit val atOrdinalSchema = at[OrdinalSchema[T]](s => toDecoder(s))
+      }
+
+      def toDecoder(s: Schema[T]) = Option((str: String) => parse(str, c, s).toOption)
+
+      Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c).flatMap(_.fold(schemaToDecoder))
     }
+
+    Codec.fromShortString[Codec.DefaultCodecs](codec).flatMap(_.fold(codecToDecoder))
   }
 
   /**
@@ -342,33 +366,43 @@ object Content {
     .map(con => Success(con))
     .getOrElse(Failure(UnableToDecodeContent(str)))
 
-  private def parse(
-    str: String,
-    separator: String
-  ): Try[Content] = str.split(Pattern.quote(separator), -1) match {
+  private def parse(str: String, separator: String): Try[Content] = str.split(Pattern.quote(separator), -1) match {
     case Array(c, s, v) => parse(c, s, v)
     case _ => Failure(IncorrectNumberOfFields(str))
   }
 
   private def parse(codec: String, schema: String, value: String): Try[Content] = {
-    def parseSchemaToContent[T](c: Codec[T]) = Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c) match {
-      case Some(Inl(s)) => parse(value, c, s)
-      case Some(Inr(Inl(s))) => parse(value, c, s)
-      case Some(Inr(Inr(Inl(s)))) => parse(value, c, s)
-      case Some(Inr(Inr(Inr(Inl(s))))) => parse(value, c, s)
-      case Some(Inr(Inr(Inr(Inr(Inl(s)))))) => parse(value, c, s)
-      case _ => Failure(UnableToDecodeSchema(schema))
+    object codecToContent extends Poly1 {
+      implicit val atBooleanCodec = at[BooleanCodec.type](c => toContent(c))
+      implicit val atDateCodec = at[DateCodec](c => toContent(c))
+      implicit val atDoubleCodec = at[DoubleCodec.type](c => toContent(c))
+      implicit val atIntCodec = at[IntCodec.type](c => toContent(c))
+      implicit val atLongCodec = at[LongCodec.type](c => toContent(c))
+      implicit val atStringCodec = at[StringCodec.type](c => toContent(c))
+      implicit val atTimestampCodec = at[TimestampCodec.type](c => toContent(c))
+      implicit val atTypeCodec = at[TypeCodec.type](c => toContent(c))
+    }
+
+    def toContent[T](c: Codec[T]) = {
+      object schemaToContent extends Poly1 {
+        implicit val atContinuousSchema = at[ContinuousSchema[T]](s => toContent(s))
+        implicit val atDateSchema = at[DateSchema[T]](s => toContent(s))
+        implicit val atDiscreteSchema = at[DiscreteSchema[T]](s => toContent(s))
+        implicit val atNominalSchema = at[NominalSchema[T]](s => toContent(s))
+        implicit val atOrdinalSchema = at[OrdinalSchema[T]](s => toContent(s))
+      }
+
+      def toContent(s: Schema[T]) = parse(value, c, s)
+
+      Schema.fromShortString[Schema.DefaultSchemas[T], T](schema, c) match {
+        case Some(schemas) => schemas.fold(schemaToContent)
+        case None => Failure(UnableToDecodeSchema(schema))
+      }
     }
 
     Codec.fromShortString[Codec.DefaultCodecs](codec) match {
-      case Some(Inl(c)) => parseSchemaToContent(c)
-      case Some(Inr(Inl(c))) => parseSchemaToContent(c)
-      case Some(Inr(Inr(Inl(c)))) => parseSchemaToContent(c)
-      case Some(Inr(Inr(Inr(Inl(c))))) => parseSchemaToContent(c)
-      case Some(Inr(Inr(Inr(Inr(Inl(c)))))) => parseSchemaToContent(c)
-      case Some(Inr(Inr(Inr(Inr(Inr(Inl(c))))))) => parseSchemaToContent(c)
-      case Some(Inr(Inr(Inr(Inr(Inr(Inr(Inl(c)))))))) => parseSchemaToContent(c)
-      case _ => Failure(UnableToDecodeCodec(codec))
+      case Some(codecs) => codecs.fold(codecToContent)
+      case None => Failure(UnableToDecodeCodec(codec))
     }
   }
 

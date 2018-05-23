@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.environment.implicits._
 import commbank.grimlock.framework.metadata._
 
+import java.sql.Timestamp
 import java.util.Date
 
 class TestDateValue extends TestGrimlock {
@@ -45,8 +46,8 @@ class TestDateValue extends TestGrimlock {
     dv2001.as[Double] shouldBe None
   }
 
-  it should "not return a long" in {
-    dv2001.as[Long] shouldBe None
+  it should "return a long" in {
+    dv2001.as[Long] shouldBe Option(date2001.getTime)
   }
 
   it should "not return a int" in {
@@ -61,13 +62,22 @@ class TestDateValue extends TestGrimlock {
     dv2001.as[Type] shouldBe None
   }
 
+  it should "return a timestamp" in {
+    dv2001.as[Timestamp] shouldBe Option(new Timestamp(date2001.getTime))
+  }
+
   it should "equal itself" in {
     dv2001.equ(dv2001) shouldBe true
     dv2001.equ(DateValue(date2001, DateCodec("dd/MM/yyyy"))) shouldBe true
+    dv2001.equ(TimestampValue(new Timestamp(date2001.getTime))) shouldBe true
+    dv2001.equ(LongValue(date2001.getTime)) shouldBe true
   }
 
   it should "not equal another date" in {
     dv2001.equ(dv2002) shouldBe false
+    dv2001.equ(DateValue(date2002, DateCodec("dd/MM/yyyy"))) shouldBe false
+    dv2001.equ(TimestampValue(new Timestamp(date2002.getTime))) shouldBe false
+    dv2001.equ(LongValue(date2002.getTime)) shouldBe false
   }
 
   it should "not equal another value" in {
@@ -98,7 +108,7 @@ class TestDateValue extends TestGrimlock {
   }
 
   it should "not identify another value calling lss" in {
-    dv2001.lss(2) shouldBe false
+    dv2001.lss("2") shouldBe false
   }
 
   it should "identify a smaller value calling leq" in {
@@ -114,7 +124,7 @@ class TestDateValue extends TestGrimlock {
   }
 
   it should "not identify another value calling leq" in {
-    dv2001.leq(2) shouldBe false
+    dv2001.leq("2") shouldBe false
   }
 
   it should "not identify a smaller value calling gtr" in {
@@ -130,7 +140,7 @@ class TestDateValue extends TestGrimlock {
   }
 
   it should "not identify another value calling gtr" in {
-    dv2001.gtr(2) shouldBe false
+    dv2001.gtr("2") shouldBe false
   }
 
   it should "not identify a smaller value calling geq" in {
@@ -146,7 +156,7 @@ class TestDateValue extends TestGrimlock {
   }
 
   it should "not identify another value calling geq" in {
-    dv2001.geq(2) shouldBe false
+    dv2001.geq("2") shouldBe false
   }
 }
 
@@ -188,6 +198,10 @@ class TestStringValue extends TestGrimlock {
 
   it should "not return a type" in {
     dvfoo.as[Type] shouldBe None
+  }
+
+  it should "not return a timestamp" in {
+    dvfoo.as[Timestamp] shouldBe None
   }
 
   it should "equal itself" in {
@@ -318,6 +332,10 @@ class TestDoubleValue extends TestGrimlock {
     dvone.as[Type] shouldBe None
   }
 
+  it should "not return a timestamp" in {
+    dvone.as[Timestamp] shouldBe None
+  }
+
   it should "equal itself" in {
     dvone.equ(dvone) shouldBe true
     dvone.equ(DoubleValue(one)) shouldBe true
@@ -416,8 +434,8 @@ class TestLongValue extends TestGrimlock {
     dvone.toShortString shouldBe "1"
   }
 
-  it should "not return a date" in {
-    dvone.as[Date] shouldBe None
+  it should "return a date" in {
+    dvone.as[Date] shouldBe Option(new Date(one))
   }
 
   it should "not return a string" in {
@@ -446,9 +464,15 @@ class TestLongValue extends TestGrimlock {
     dvone.as[Type] shouldBe None
   }
 
+  it should "return a timestamp" in {
+    dvone.as[Timestamp] shouldBe Option(new Timestamp(one))
+  }
+
   it should "equal itself" in {
     dvone.equ(dvone) shouldBe true
     dvone.equ(LongValue(one)) shouldBe true
+    dvone.equ(DateValue(new Date(one))) shouldBe true
+    dvone.equ(TimestampValue(new Timestamp(one))) shouldBe true
   }
 
   it should "not equal another double" in {
@@ -573,6 +597,10 @@ class TestIntValue extends TestGrimlock {
 
   it should "not return a type" in {
     dvone.as[Type] shouldBe None
+  }
+
+  it should "not return a timestamp" in {
+    dvone.as[Timestamp] shouldBe None
   }
 
   it should "equal itself" in {
@@ -705,6 +733,10 @@ class TestBooleanValue extends TestGrimlock {
     dvpos.as[Type] shouldBe None
   }
 
+  it should "not return a timestamp" in {
+    dvpos.as[Timestamp] shouldBe None
+  }
+
   it should "equal itself" in {
     dvpos.equ(dvpos) shouldBe true
     dvpos.equ(BooleanValue(pos)) shouldBe true
@@ -793,6 +825,145 @@ class TestBooleanValue extends TestGrimlock {
   }
 }
 
+class TestTimestampValue extends TestGrimlock {
+
+  val dfmt = new java.text.SimpleDateFormat("dd/MM/yyyy")
+  val date2001 = dfmt.parse("01/01/2001")
+  val date2002 = dfmt.parse("01/01/2002")
+  val dv2001 = TimestampValue(new Timestamp(date2001.getTime))
+  val dv2002 = TimestampValue(new Timestamp(date2002.getTime))
+
+  "A TimestampValue" should "return its short string" in {
+    dv2001.toShortString shouldBe "2001-01-01 00:00:00.0"
+  }
+
+  it should "return a date" in {
+    dv2001.as[Date] shouldBe Option(dv2001.value)
+  }
+
+  it should "not return a string" in {
+    dv2001.as[String] shouldBe None
+  }
+
+  it should "not return a double" in {
+    dv2001.as[Double] shouldBe None
+  }
+
+  it should "return a long" in {
+    dv2001.as[Long] shouldBe Option(date2001.getTime)
+  }
+
+  it should "not return a int" in {
+    dv2001.as[Int] shouldBe None
+  }
+
+  it should "not return a boolean" in {
+    dv2001.as[Boolean] shouldBe None
+  }
+
+  it should "not return a type" in {
+    dv2001.as[Type] shouldBe None
+  }
+
+  it should "return a timestamp" in {
+    dv2001.as[Timestamp] shouldBe Option(dv2001.value)
+    dv2001.as[Timestamp] shouldBe Option(new Timestamp(date2001.getTime))
+  }
+
+  it should "equal itself" in {
+    dv2001.equ(dv2001) shouldBe true
+    dv2001.equ(DateValue(date2001, DateCodec("dd/MM/yyyy"))) shouldBe true
+    dv2001.equ(TimestampValue(new Timestamp(date2001.getTime))) shouldBe true
+    dv2001.equ(LongValue(date2001.getTime)) shouldBe true
+  }
+
+  it should "not equal another date" in {
+    dv2001.equ(dv2002) shouldBe false
+    dv2001.equ(DateValue(date2002)) shouldBe false
+    dv2001.equ(TimestampValue(new Timestamp(date2002.getTime))) shouldBe false
+    dv2001.equ(LongValue(date2002.getTime)) shouldBe false
+  }
+
+  it should "not equal another value" in {
+    dv2001.equ("a") shouldBe false
+    dv2001.equ(2) shouldBe false
+    dv2001.equ(2.0) shouldBe false
+    dv2001.equ(false) shouldBe false
+  }
+
+  it should "match a matching pattern" in {
+    dv2001.like("^20.*".r) shouldBe true
+  }
+
+  it should "not match a non-existing pattern" in {
+    dv2001.like("^02.*".r) shouldBe false
+  }
+
+  it should "identify a smaller value calling lss" in {
+    dv2001.lss(dv2002) shouldBe true
+  }
+
+  it should "not identify an equal value calling lss" in {
+    dv2001.lss(dv2001) shouldBe false
+  }
+
+  it should "not identify a greater value calling lss" in {
+    dv2002.lss(dv2001) shouldBe false
+  }
+
+  it should "not identify another value calling lss" in {
+    dv2001.lss("2") shouldBe false
+  }
+
+  it should "identify a smaller value calling leq" in {
+    dv2001.leq(dv2002) shouldBe true
+  }
+
+  it should "identify an equal value calling leq" in {
+    dv2001.leq(dv2001) shouldBe true
+  }
+
+  it should "not identify a greater value calling leq" in {
+    dv2002.leq(dv2001) shouldBe false
+  }
+
+  it should "not identify another value calling leq" in {
+    dv2001.leq("2") shouldBe false
+  }
+
+  it should "not identify a smaller value calling gtr" in {
+    dv2001.gtr(dv2002) shouldBe false
+  }
+
+  it should "not identify an equal value calling gtr" in {
+    dv2001.gtr(dv2001) shouldBe false
+  }
+
+  it should "identify a greater value calling gtr" in {
+    dv2002.gtr(dv2001) shouldBe true
+  }
+
+  it should "not identify another value calling gtr" in {
+    dv2001.gtr("2") shouldBe false
+  }
+
+  it should "not identify a smaller value calling geq" in {
+    dv2001.geq(dv2002) shouldBe false
+  }
+
+  it should "identify an equal value calling geq" in {
+    dv2001.geq(dv2001) shouldBe true
+  }
+
+  it should "identify a greater value calling geq" in {
+    dv2002.geq(dv2001) shouldBe true
+  }
+
+  it should "not identify another value calling geq" in {
+    dv2001.geq("2") shouldBe false
+  }
+}
+
 class TestTypeValue extends TestGrimlock {
 
   val mix = MixedType
@@ -830,6 +1001,10 @@ class TestTypeValue extends TestGrimlock {
 
   it should "return a type" in {
     dvmix.as[Type] shouldBe Option(MixedType)
+  }
+
+  it should "not return a timestamp" in {
+    dvmix.as[Timestamp] shouldBe None
   }
 
   it should "equal itself" in {

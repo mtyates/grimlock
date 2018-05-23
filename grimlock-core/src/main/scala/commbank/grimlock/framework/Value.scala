@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package commbank.grimlock.framework.encoding
 
 import commbank.grimlock.framework.metadata.Type
 
+import java.sql.Timestamp
 import java.util.Date
 
 import scala.reflect.{ classTag, ClassTag }
@@ -33,14 +34,18 @@ trait Value[T] {
   def as[X : ClassTag]: Option[X] = {
     val ct = implicitly[ClassTag[X]]
 
-    (codec.converters + identity)
-      .flatMap { case convert =>
-        convert(value) match {
-          case ct(x) => Option(x)
-          case _ => None
+    value match {
+      case ct(x) => Option(x)
+      case _ => codec
+        .converters
+        .flatMap { case convert =>
+          convert(value) match {
+            case ct(x) => Option(x)
+            case _ => None
+          }
         }
-      }
-      .headOption
+        .headOption
+    }
   }
 
   /**
@@ -277,6 +282,22 @@ case class StringValue(value: String, codec: Codec[String] = StringCodec) extend
 object StringValue {
   /** `unapply` method for pattern matching. */
   def unapply(value: Value[_]): Option[String] = classTag[String].unapply(value.value)
+}
+
+/**
+ * Value for when the data is of type `Timestamp`.
+ *
+ * @param value A `Timestamp`.
+ * @param codec The codec used for encoding/decoding `value`.
+ */
+case class TimestampValue(value: Timestamp, codec: Codec[Timestamp] = TimestampCodec) extends Value[Timestamp] {
+  def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Timestamp].map(t => cmp(t))
+}
+
+/** Companion object to `TimestampValue` case class. */
+object TimestampValue {
+  /** `unapply` method for pattern matching. */
+  def unapply(value: Value[_]): Option[Timestamp] = classTag[Timestamp].unapply(value.value)
 }
 
 /**
