@@ -2,7 +2,6 @@ grimlock
 ========
 
 [![Build Status](https://travis-ci.org/CommBank/grimlock.svg?branch=master)](https://travis-ci.org/CommBank/grimlock)
-[![Gitter](https://badges.gitter.im/CommBank/grimlock.png)](https://gitter.im/CommBank/grimlock)
 
 Overview
 --------
@@ -34,7 +33,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.6.1"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.6.2"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
