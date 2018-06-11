@@ -331,7 +331,7 @@ class TestDecimalValue extends TestGrimlock {
   }
 
   it should "return a double" in {
-    dvone.as[Double] shouldBe Option(1.0)
+    dvone.as[Double] shouldBe None
   }
 
   it should "not return a long" in {
@@ -498,7 +498,7 @@ class TestDoubleValue extends TestGrimlock {
   }
 
   it should "return a decimal" in {
-    dvone.as[BigDecimal] shouldBe Option(BigDecimal(dvone.value))
+    dvone.as[BigDecimal] shouldBe None
   }
 
   it should "equal itself" in {
@@ -630,7 +630,7 @@ class TestLongValue extends TestGrimlock {
   }
 
   it should "return a timestamp" in {
-    dvone.as[Timestamp] shouldBe Option(new Timestamp(one))
+    dvone.as[Timestamp] shouldBe None
   }
 
   it should "not return a byte array" in {
@@ -645,7 +645,6 @@ class TestLongValue extends TestGrimlock {
     dvone.equ(dvone) shouldBe true
     dvone.equ(LongValue(one)) shouldBe true
     dvone.equ(DateValue(new Date(one))) shouldBe true
-    dvone.equ(TimestampValue(new Timestamp(one))) shouldBe true
   }
 
   it should "not equal another double" in {
@@ -1039,7 +1038,7 @@ class TestTimestampValue extends TestGrimlock {
   }
 
   it should "return a long" in {
-    dv2001.as[Long] shouldBe Option(date2001.getTime)
+    dv2001.as[Long] shouldBe None
   }
 
   it should "not return a int" in {
@@ -1070,7 +1069,6 @@ class TestTimestampValue extends TestGrimlock {
   it should "equal itself" in {
     dv2001.equ(dv2001) shouldBe true
     dv2001.equ(TimestampValue(new Timestamp(date2001.getTime))) shouldBe true
-    dv2001.equ(LongValue(date2001.getTime)) shouldBe true
   }
 
   it should "not equal another date" in {

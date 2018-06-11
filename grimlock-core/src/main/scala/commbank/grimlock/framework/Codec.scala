@@ -87,7 +87,7 @@ trait Codec[T] {
 /** Companion object to the `Codec` trait. */
 object Codec {
   /** Type for converting a T to any other type. */
-  type Convert[T] = (T) => Option[Any]
+  type Convert[T] = (T) => Any
 
   /** Type for a default Codec co-product when parsing Codecs from string. */
   type DefaultCodecs = BinaryCodec.type :+:
@@ -248,16 +248,16 @@ case object BooleanCodec extends Codec[Boolean] {
 
   def toShortString = Pattern.toString
 
-  private case object BooleanAsDouble extends (Boolean => Option[Double]) {
-    def apply(b: Boolean): Option[Double] = Option(if (b) 1 else 0)
+  private case object BooleanAsDouble extends (Boolean => Double) {
+    def apply(b: Boolean): Double = if (b) 1 else 0
   }
 
-  private case object BooleanAsInt extends (Boolean => Option[Int]) {
-    def apply(b: Boolean): Option[Int] = Option(if (b) 1 else 0)
+  private case object BooleanAsInt extends (Boolean => Int) {
+    def apply(b: Boolean): Int = if (b) 1 else 0
   }
 
-  private case object BooleanAsLong extends (Boolean => Option[Long]) {
-    def apply(b: Boolean): Option[Long] = Option(if (b) 1 else 0)
+  private case object BooleanAsLong extends (Boolean => Long) {
+    def apply(b: Boolean): Long = if (b) 1 else 0
   }
 }
 
@@ -335,11 +335,8 @@ case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =
 
   private def df: SimpleDateFormat = new SimpleDateFormat(format)
 
-  // TODO: It would be nice to also convert Date => Option[Timestamp] but that is problematic as then
-  //       all dates end up as Timestamp
-
-  private case object DateAsLong extends (Date => Option[Long]) {
-    def apply(d: Date): Option[Long] = Option(d.getTime)
+  private case object DateAsLong extends (Date => Long) {
+    def apply(d: Date): Long = d.getTime
   }
 }
 
@@ -363,7 +360,7 @@ object DateCodec {
 
 /** Codec for dealing with `BigDecimal`. */
 case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
-  val converters: Set[Codec.Convert[BigDecimal]] = Set(DecimalAsDouble)
+  val converters: Set[Codec.Convert[BigDecimal]] = Set.empty
   val date: Option[BigDecimal => Date] = None
   val integral: Option[Integral[BigDecimal]] = None
   val numeric: Option[Numeric[BigDecimal]] = Option(Numeric.BigDecimalIsFractional)
@@ -380,10 +377,6 @@ case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
   def encode(value: BigDecimal): String = value.toString
 
   def toShortString = s"decimal(${precision},${scale})"
-
-  private case object DecimalAsDouble extends (BigDecimal => Option[Double]) {
-    def apply(b: BigDecimal): Option[Double] = Option(b.toDouble)
-  }
 }
 
 /** Companion object to DecimalCodec. */
@@ -410,7 +403,7 @@ object DecimalCodec {
 
 /** Codec for dealing with `Double`. */
 case object DoubleCodec extends Codec[Double] {
-  val converters: Set[Codec.Convert[Double]] = Set(DoubleAsBigDecimal)
+  val converters: Set[Codec.Convert[Double]] = Set.empty
   val date: Option[Double => Date] = None
   val integral: Option[Integral[Double]] = None
   val numeric: Option[Numeric[Double]] = Option(Numeric.DoubleIsFractional)
@@ -440,10 +433,6 @@ case object DoubleCodec extends Codec[Double] {
   }
 
   def toShortString = Pattern.toString
-
-  private case object DoubleAsBigDecimal extends (Double => Option[BigDecimal]) {
-    def apply(d: Double): Option[BigDecimal] = Try(BigDecimal(d)).toOption
-  }
 }
 
 /** Codec for dealing with `Int`. */
@@ -479,22 +468,22 @@ case object IntCodec extends Codec[Int] {
 
   def toShortString = Pattern.toString
 
-  private case object IntAsBigDecimal extends (Int => Option[BigDecimal]) {
-    def apply(i: Int): Option[BigDecimal] = Option(BigDecimal(i))
+  private case object IntAsBigDecimal extends (Int => BigDecimal) {
+    def apply(i: Int): BigDecimal = BigDecimal(i)
   }
 
-  private case object IntAsDouble extends (Int => Option[Double]) {
-    def apply(i: Int): Option[Double] = Option(i.toDouble)
+  private case object IntAsDouble extends (Int => Double) {
+    def apply(i: Int): Double = i.toDouble
   }
 
-  private case object IntAsLong extends (Int => Option[Long]) {
-    def apply(i: Int): Option[Long] = Option(i.toLong)
+  private case object IntAsLong extends (Int => Long) {
+    def apply(i: Int): Long = i.toLong
   }
 }
 
 /** Codec for dealing with `Long`. */
 case object LongCodec extends Codec[Long] {
-  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble, LongAsTimestamp)
+  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble)
   val date: Option[Long => Date] = Option(l => new Date(l))
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
@@ -525,20 +514,16 @@ case object LongCodec extends Codec[Long] {
 
   def toShortString = Pattern.toString
 
-  private case object LongAsBigDecimal extends (Long => Option[BigDecimal]) {
-    def apply(l: Long): Option[BigDecimal] = Option(BigDecimal(l))
+  private case object LongAsBigDecimal extends (Long => BigDecimal) {
+    def apply(l: Long): BigDecimal = BigDecimal(l)
   }
 
-  private case object LongAsDate extends (Long => Option[Date]) {
-    def apply(l: Long): Option[Date] = Option(new Date(l))
+  private case object LongAsDate extends (Long => Date) {
+    def apply(l: Long): Date = new Date(l)
   }
 
-  private case object LongAsDouble extends (Long => Option[Double]) {
-    def apply(l: Long): Option[Double] = Option(l.toDouble)
-  }
-
-  private case object LongAsTimestamp extends (Long => Option[Timestamp]) {
-    def apply(l: Long): Option[Timestamp] = Option(new Timestamp(l))
+  private case object LongAsDouble extends (Long => Double) {
+    def apply(l: Long): Double = l.toDouble
   }
 }
 
@@ -578,7 +563,7 @@ case object StringCodec extends Codec[String] {
 
 /** Codec for dealing with `java.sql.Timestamp`. */
 case object TimestampCodec extends Codec[Timestamp] { self =>
-  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsDate, TimestampAsLong)
+  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsDate)
   val date: Option[Timestamp => Date] = Option(t => toDate(t))
   val integral: Option[Integral[Timestamp]] = None
   val numeric: Option[Numeric[Timestamp]] = None
@@ -613,12 +598,8 @@ case object TimestampCodec extends Codec[Timestamp] { self =>
 
   private def toDate(t: Timestamp): Date = new Date(t.getTime() + (t.getNanos() / 1000000))
 
-  private case object TimestampAsDate extends (Timestamp => Option[Date]) {
-    def apply(t: Timestamp): Option[Date] = Option(toDate(t))
-  }
-
-  private case object TimestampAsLong extends (Timestamp => Option[Long]) {
-    def apply(t: Timestamp): Option[Long] = Option(t.getTime)
+  private case object TimestampAsDate extends (Timestamp => Date) {
+    def apply(t: Timestamp): Date = toDate(t)
   }
 }
 

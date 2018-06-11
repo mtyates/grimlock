@@ -44,7 +44,7 @@ trait Value[T] {
 
     codec
       .converters
-      .flatMap { case convert => convert(value).flatMap(v => cast(v)) }
+      .flatMap { case convert => cast(convert(value)) }
       .headOption
       .orElse(cast(value))
   }

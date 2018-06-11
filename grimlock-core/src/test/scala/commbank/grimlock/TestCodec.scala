@@ -134,7 +134,7 @@ class TestDecimalCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    codec.converters.size shouldBe 1
+    codec.converters.size shouldBe 0
 
     codec.date.isEmpty shouldBe true
     codec.integral.isEmpty shouldBe true
@@ -172,7 +172,7 @@ class TestDoubleCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    DoubleCodec.converters.size shouldBe 1
+    DoubleCodec.converters.size shouldBe 0
 
     DoubleCodec.date.isEmpty shouldBe true
     DoubleCodec.integral.isEmpty shouldBe true
@@ -248,7 +248,7 @@ class TestLongCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    LongCodec.converters.size shouldBe 4
+    LongCodec.converters.size shouldBe 3
 
     LongCodec.date.isDefined shouldBe true
     LongCodec.integral.isDefined shouldBe true
@@ -330,7 +330,7 @@ class TestTimestampCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    TimestampCodec.converters.size shouldBe 2
+    TimestampCodec.converters.size shouldBe 1
 
     TimestampCodec.date.isDefined shouldBe true
     TimestampCodec.integral.isEmpty shouldBe true
