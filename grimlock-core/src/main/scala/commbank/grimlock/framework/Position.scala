@@ -16,9 +16,12 @@ package commbank.grimlock.framework.position
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{
+  BinaryCodec,
   BooleanCodec,
+  BoundedStringCodec,
   Codec,
   DateCodec,
+  DecimalCodec,
   DoubleCodec,
   IntCodec,
   LongCodec,
@@ -1256,11 +1259,20 @@ object DecodeString extends Poly1 {
   /** Parse coordinate from string using a Codec. */
   implicit def go[T] = at[(Codec[T], String)] { case (c, s) => Value.fromShortString(s, c) }
 
+  /** Convenience implicit to parse byte array coordinate from string without having to cast it to a Codec. */
+  implicit def goBinary = at[(BinaryCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
+
   /** Convenience implicit to parse boolean coordinate from string without having to cast it to a Codec. */
   implicit def goBoolean = at[(BooleanCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
 
+  /** Convenience implicit to parse bounded string coordinate from string without having to cast it to a Codec. */
+  implicit def goBounded = at[(BoundedStringCodec, String)] { case (c, s) => Value.fromShortString(s, c) }
+
   /** Convenience implicit to parse date coordinate from string without having to cast it to a Codec. */
   implicit def goDate = at[(DateCodec, String)] { case (c, s) => Value.fromShortString(s, c) }
+
+  /** Convenience implicit to parse decimal coordinate from string without having to cast it to a Codec. */
+  implicit def goDecimal = at[(DecimalCodec, String)] { case (c, s) => Value.fromShortString(s, c) }
 
   /** Convenience implicit to parse double coordinate from string without having to cast it to a Codec. */
   implicit def goDouble = at[(DoubleCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }

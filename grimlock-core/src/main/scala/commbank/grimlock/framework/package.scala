@@ -15,20 +15,27 @@
 package commbank.grimlock.framework
 
 import commbank.grimlock.framework.encoding.{
+  BinaryValue,
   BooleanValue,
   DoubleValue,
   IntValue,
   LongValue,
   StringValue,
+  TimestampValue,
   TypeValue,
   Value
 }
 import commbank.grimlock.framework.metadata.Type
 
+import java.sql.Timestamp
+
 import shapeless.{ ::, HNil }
 
 package environment {
   package object implicits {
+    /** Converts a `Array[Byte]` to a `Value`. */
+    implicit def binaryToValue(t: Array[Byte]): Value[Array[Byte]] = BinaryValue(t)
+
     /** Converts a `Boolean` to a `Value`. */
     implicit def booleanToValue(t: Boolean): Value[Boolean] = BooleanValue(t)
 
@@ -43,6 +50,9 @@ package environment {
 
     /** Converts a `String` to a `Value`. */
     implicit def stringToValue(t: String): Value[String] = StringValue(t)
+
+    /** Converts a `Timestamp` to a `Value`. */
+    implicit def timestampToValue(t: Timestamp): Value[Timestamp] = TimestampValue(t)
 
     /** Converts a `Type` to a `Value`. */
     implicit def typeToValue(t: Type): Value[Type] = TypeValue(t)

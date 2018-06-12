@@ -57,7 +57,7 @@ class TestDateCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    codec.converters.size shouldBe 2
+    codec.converters.size shouldBe 1
 
     codec.date.isDefined shouldBe true
     codec.integral.isEmpty shouldBe true
@@ -95,6 +95,50 @@ class TestStringCodec extends TestGrimlock {
     StringCodec.date.isEmpty shouldBe true
     StringCodec.integral.isEmpty shouldBe true
     StringCodec.numeric.isEmpty shouldBe true
+  }
+}
+
+class TestDecimalCodec extends TestGrimlock {
+
+  val codec = DecimalCodec(5, 4)
+
+  val bd1 = BigDecimal(3.1415)
+  val bd2 = BigDecimal(42)
+
+  "A DecimalCodec" should "have a name" in {
+    codec.toShortString shouldBe "decimal(5,4)"
+  }
+
+  it should "decode a correct value" in {
+    codec.decode("3.1415") shouldBe Option(bd1)
+  }
+
+  it should "not decode an incorrect value" in {
+    codec.decode("a") shouldBe None
+    codec.decode("3.14159265") shouldBe None
+    codec.decode("314159.265") shouldBe None
+  }
+
+  it should "encode a correct value" in {
+    codec.encode(bd1) shouldBe "3.1415"
+  }
+
+  it should "compare a correct value" in {
+    codec.compare(bd1, bd2) shouldBe -1
+    codec.compare(bd1, bd1) shouldBe 0
+    codec.compare(bd2, bd1) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    codec.box(bd1) shouldBe DecimalValue(bd1, codec)
+  }
+
+  it should "return fields" in {
+    codec.converters.size shouldBe 0
+
+    codec.date.isEmpty shouldBe true
+    codec.integral.isEmpty shouldBe true
+    codec.numeric.isDefined shouldBe true
   }
 }
 
@@ -166,7 +210,7 @@ class TestIntCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    IntCodec.converters.size shouldBe 2
+    IntCodec.converters.size shouldBe 3
 
     IntCodec.date.isEmpty shouldBe true
     IntCodec.integral.isDefined shouldBe true
@@ -291,6 +335,47 @@ class TestTimestampCodec extends TestGrimlock {
     TimestampCodec.date.isDefined shouldBe true
     TimestampCodec.integral.isEmpty shouldBe true
     TimestampCodec.numeric.isEmpty shouldBe true
+  }
+}
+
+class TestBinaryCodec extends TestGrimlock {
+
+  val one = "1".getBytes.head
+  val two = "2".getBytes.head
+
+  val bin = Array(one, two)
+
+  "A BinaryCodec" should "have a name" in {
+    BinaryCodec.toShortString shouldBe "binary"
+  }
+
+  it should "decode a correct value" in {
+    BinaryCodec.decode("12").map(_.sameElements(bin)) shouldBe Option(true)
+  }
+
+  it should "encode a correct value" in {
+    BinaryCodec.encode(bin) shouldBe "12"
+  }
+
+  it should "compare a correct value" in {
+    BinaryCodec.compare(Array(one), bin) < 0 shouldBe true
+    BinaryCodec.compare(Array(one, one), bin) < 0 shouldBe true
+    BinaryCodec.compare(bin, bin) shouldBe 0
+    BinaryCodec.compare(bin, Array(one)) > 0 shouldBe true
+    BinaryCodec.compare(bin, Array(one, one)) > 0 shouldBe true
+    BinaryCodec.compare(Array(one, one, one), bin) > 0 shouldBe true
+  }
+
+  it should "box correctly" in {
+    BinaryCodec.box(bin) shouldBe BinaryValue(bin)
+  }
+
+  it should "return fields" in {
+    BinaryCodec.converters.size shouldBe 0
+
+    BinaryCodec.date.isEmpty shouldBe true
+    BinaryCodec.integral.isEmpty shouldBe true
+    BinaryCodec.numeric.isEmpty shouldBe true
   }
 }
 

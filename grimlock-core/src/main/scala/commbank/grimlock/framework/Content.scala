@@ -16,9 +16,12 @@ package commbank.grimlock.framework.content
 
 import commbank.grimlock.framework.Persist
 import commbank.grimlock.framework.encoding.{
+  BinaryCodec,
   BooleanCodec,
+  BoundedStringCodec,
   Codec,
   DateCodec,
+  DecimalCodec,
   DoubleCodec,
   IntCodec,
   LongCodec,
@@ -132,8 +135,11 @@ object Content {
    */
   def decoderFromComponents(codec: String, schema: String): Option[Decoder] = {
     object codecToDecoder extends Poly1 {
+      implicit val atBinaryCodec = at[BinaryCodec.type](c => toDecoder(c))
       implicit val atBooleanCodec = at[BooleanCodec.type](c => toDecoder(c))
+      implicit val atBoundedStringCodec = at[BoundedStringCodec](c => toDecoder(c))
       implicit val atDateCodec = at[DateCodec](c => toDecoder(c))
+      implicit val atDecimalCodec = at[DecimalCodec](c => toDecoder(c))
       implicit val atDoubleCodec = at[DoubleCodec.type](c => toDecoder(c))
       implicit val atIntCodec = at[IntCodec.type](c => toDecoder(c))
       implicit val atLongCodec = at[LongCodec.type](c => toDecoder(c))
@@ -373,8 +379,11 @@ object Content {
 
   private def parse(codec: String, schema: String, value: String): Try[Content] = {
     object codecToContent extends Poly1 {
+      implicit val atBinaryCodec = at[BinaryCodec.type](c => toContent(c))
       implicit val atBooleanCodec = at[BooleanCodec.type](c => toContent(c))
+      implicit val atBoundedStringCodec = at[BoundedStringCodec](c => toContent(c))
       implicit val atDateCodec = at[DateCodec](c => toContent(c))
+      implicit val atDecimalCodec = at[DecimalCodec](c => toContent(c))
       implicit val atDoubleCodec = at[DoubleCodec.type](c => toContent(c))
       implicit val atIntCodec = at[IntCodec.type](c => toContent(c))
       implicit val atLongCodec = at[LongCodec.type](c => toContent(c))

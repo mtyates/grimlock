@@ -16,11 +16,11 @@ package commbank.grimlock.framework.encoding
 
 import commbank.grimlock.framework.metadata.Type
 
-import java.math.BigDecimal
 import java.sql.Timestamp
 import java.text.{ ParsePosition, SimpleDateFormat }
 import java.util.Date
 
+import scala.math.BigDecimal
 import scala.util.{ Success, Try }
 
 import shapeless.{ :+:, CNil, Coproduct }
@@ -90,8 +90,11 @@ object Codec {
   type Convert[T] = (T) => Any
 
   /** Type for a default Codec co-product when parsing Codecs from string. */
-  type DefaultCodecs = BooleanCodec.type :+:
+  type DefaultCodecs = BinaryCodec.type :+:
+    BooleanCodec.type :+:
+    BoundedStringCodec :+:
     DateCodec :+:
+    DecimalCodec :+:
     DoubleCodec.type :+:
     IntCodec.type :+:
     LongCodec.type :+:
@@ -102,8 +105,11 @@ object Codec {
 
   /** Type that captures all constraints for parsing default Codecs from string. */
   trait TextParseConstraints[C <: Coproduct] extends java.io.Serializable {
+    implicit val asBinary: Inject[C, BinaryCodec.type]
     implicit val asBoolean: Inject[C, BooleanCodec.type]
+    implicit val asBounded: Inject[C, BoundedStringCodec]
     implicit val asDate: Inject[C, DateCodec]
+    implicit val asDecimal: Inject[C, DecimalCodec]
     implicit val asDouble: Inject[C, DoubleCodec.type]
     implicit val asInt: Inject[C, IntCodec.type]
     implicit val asLong: Inject[C, LongCodec.type]
@@ -116,23 +122,29 @@ object Codec {
   implicit def codecTextParseConstraints[
     C <: Coproduct
   ](implicit
-    ev1: Inject[C, BooleanCodec.type],
-    ev2: Inject[C, DateCodec],
-    ev3: Inject[C, DoubleCodec.type],
-    ev4: Inject[C, IntCodec.type],
-    ev5: Inject[C, LongCodec.type],
-    ev6: Inject[C, StringCodec.type],
-    ev7: Inject[C, TimestampCodec.type],
-    ev8: Inject[C, TypeCodec.type]
+    ev1: Inject[C, BinaryCodec.type],
+    ev2: Inject[C, BooleanCodec.type],
+    ev3: Inject[C, BoundedStringCodec],
+    ev4: Inject[C, DateCodec],
+    ev5: Inject[C, DecimalCodec],
+    ev6: Inject[C, DoubleCodec.type],
+    ev7: Inject[C, IntCodec.type],
+    ev8: Inject[C, LongCodec.type],
+    ev9: Inject[C, StringCodec.type],
+    ev10: Inject[C, TimestampCodec.type],
+    ev11: Inject[C, TypeCodec.type]
   ): TextParseConstraints[C] = new TextParseConstraints[C] {
-    implicit val asBoolean = ev1
-    implicit val asDate = ev2
-    implicit val asDouble = ev3
-    implicit val asInt = ev4
-    implicit val asLong = ev5
-    implicit val asString = ev6
-    implicit val asTimestamp = ev7
-    implicit val asType = ev8
+    implicit val asBinary = ev1
+    implicit val asBoolean = ev2
+    implicit val asBounded = ev3
+    implicit val asDate = ev4
+    implicit val asDecimal = ev5
+    implicit val asDouble = ev6
+    implicit val asInt = ev7
+    implicit val asLong = ev8
+    implicit val asString = ev9
+    implicit val asTimestamp = ev10
+    implicit val asType = ev11
   }
 
   /**
@@ -146,8 +158,11 @@ object Codec {
     import ev._
 
     str match {
+      case BinaryCodec.Pattern() => BinaryCodec.fromShortString(str).map(Coproduct(_))
       case BooleanCodec.Pattern() => BooleanCodec.fromShortString(str).map(Coproduct(_))
+      case BoundedStringCodec.Pattern(_, _) => BoundedStringCodec.fromShortString(str).map(Coproduct(_))
       case DateCodec.Pattern(_) => DateCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.Pattern(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
       case DoubleCodec.Pattern() => DoubleCodec.fromShortString(str).map(Coproduct(_))
       case IntCodec.Pattern() => IntCodec.fromShortString(str).map(Coproduct(_))
       case LongCodec.Pattern() => LongCodec.fromShortString(str).map(Coproduct(_))
@@ -157,6 +172,47 @@ object Codec {
       case _ => None
     }
   }
+}
+
+/** Codec for dealing with `Array[Byte]`. */
+case object BinaryCodec extends Codec[Array[Byte]] { self =>
+  val converters: Set[Codec.Convert[Array[Byte]]] = Set.empty
+  val date: Option[Array[Byte] => Date] = None
+  val integral: Option[Integral[Array[Byte]]] = None
+  val numeric: Option[Numeric[Array[Byte]]] = None
+  val ordering: Ordering[Array[Byte]] = new Ordering[Array[Byte]] {
+    def compare(x: Array[Byte], y: Array[Byte]): Int = self.compare(x, y)
+  }
+
+  /** Pattern for parsing `BinaryCodec` from string. */
+  val Pattern = "binary".r
+
+  def box(value: Array[Byte]): Value[Array[Byte]] = BinaryValue(value, this)
+
+  def compare(x: Array[Byte], y: Array[Byte]): Int = {
+    x.size.compare(y.size) match {
+      case 0 => x.zip(y).collectFirst { case (l, r) if l.compare(r) != 0 => l.compare(r) }.getOrElse(0)
+      case z => z
+    }
+  }
+
+  def decode(str: String): Option[Array[Byte]] = Try(str.getBytes).toOption
+
+  def encode(value: Array[Byte]): String = value.map(_.toChar).mkString
+
+  /**
+   * Parse a BooleanCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[BinaryCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[BinaryCodec.type] = str match {
+    case Pattern() => Option(this)
+    case _ => None
+  }
+
+  def toShortString = Pattern.toString
 }
 
 /** Codec for dealing with `Boolean`. */
@@ -205,9 +261,53 @@ case object BooleanCodec extends Codec[Boolean] {
   }
 }
 
+/** Codec for dealing with bounded `String`. */
+case class BoundedStringCodec(min: Int, max: Int) extends Codec[String] {
+  val converters: Set[Codec.Convert[String]] = Set.empty
+  val date: Option[String => Date] = None
+  val integral: Option[Integral[String]] = None
+  val numeric: Option[Numeric[String]] = None
+  val ordering: Ordering[String] = Ordering.String
+
+  def box(value: String): Value[String] = StringValue(value, this)
+
+  def compare(x: String, y: String): Int = x.compare(y)
+
+  def decode(str: String): Option[String] = if (str.size >= min && str.size <= max) Option(str) else None
+
+  def encode(value: String): String = value
+
+  def toShortString = s"boundedString(${min},${max})"
+}
+
+/** Companion object to BoundedStringCodec. */
+object BoundedStringCodec {
+  /** Pattern for parsing `BoundedStringCodec` from string. */
+  val Pattern = "boundedString\\((\\d+),(\\d+)\\)".r
+
+  /** Create a fixed size BoundedStringCodec. */
+  def apply(size: Int): BoundedStringCodec = BoundedStringCodec(size, size)
+
+  /**
+   * Parse a BoundedStringCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[BoundedStringCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[BoundedStringCodec] = str match {
+    case Pattern(min, max) =>
+      for {
+        l <- IntCodec.decode(min)
+        u <- IntCodec.decode(max)
+      } yield BoundedStringCodec(l, u)
+    case _ => None
+  }
+}
+
 /** Codec for dealing with `java.util.Date`. */
 case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =>
-  val converters: Set[Codec.Convert[Date]] = Set(DateAsLong, DateAsTimestamp)
+  val converters: Set[Codec.Convert[Date]] = Set(DateAsLong)
   val date: Option[Date => Date] = Option(identity)
   val integral: Option[Integral[Date]] = None
   val numeric: Option[Numeric[Date]] = None
@@ -238,16 +338,12 @@ case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =
   private case object DateAsLong extends (Date => Long) {
     def apply(d: Date): Long = d.getTime
   }
-
-  private case object DateAsTimestamp extends (Date => Timestamp) {
-    def apply(d: Date): Timestamp = new Timestamp(d.getTime)
-  }
 }
 
 /** Companion object to DateCodec. */
 object DateCodec {
   /** Pattern for parsing `DateCodec` from string. */
-  val Pattern = """date\((.*)\)""".r
+  val Pattern = "date\\((.*)\\)".r
 
   /**
    * Parse a DateCodec from a string.
@@ -258,6 +354,49 @@ object DateCodec {
    */
   def fromShortString(str: String): Option[DateCodec] = str match {
     case Pattern(format) => Option(DateCodec(format))
+    case _ => None
+  }
+}
+
+/** Codec for dealing with `BigDecimal`. */
+case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
+  val converters: Set[Codec.Convert[BigDecimal]] = Set.empty
+  val date: Option[BigDecimal => Date] = None
+  val integral: Option[Integral[BigDecimal]] = None
+  val numeric: Option[Numeric[BigDecimal]] = Option(Numeric.BigDecimalIsFractional)
+  def ordering: Ordering[BigDecimal] = Ordering.BigDecimal
+
+  def box(value: BigDecimal): Value[BigDecimal] = DecimalValue(value, this)
+
+  def compare(x: BigDecimal, y: BigDecimal): Int = x.compare(y)
+
+  def decode(value: String): Option[BigDecimal] = Try(BigDecimal(value))
+    .toOption
+    .flatMap { case db => if (db.precision <= precision && db.scale <= scale) Option(db) else None }
+
+  def encode(value: BigDecimal): String = value.toString
+
+  def toShortString = s"decimal(${precision},${scale})"
+}
+
+/** Companion object to DecimalCodec. */
+object DecimalCodec {
+  /** Pattern for parsing `DecimalCodec` from string. */
+  val Pattern = "decimal\\((\\d+),(\\d+)\\)".r
+
+  /**
+   * Parse a DecimalCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[DecimalCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[DecimalCodec] = str match {
+    case Pattern(precision, scale) =>
+      for {
+        p <- IntCodec.decode(precision)
+        s <- IntCodec.decode(scale)
+      } yield DecimalCodec(p, s)
     case _ => None
   }
 }
@@ -298,7 +437,7 @@ case object DoubleCodec extends Codec[Double] {
 
 /** Codec for dealing with `Int`. */
 case object IntCodec extends Codec[Int] {
-  val converters: Set[Codec.Convert[Int]] = Set(IntAsDouble, IntAsLong)
+  val converters: Set[Codec.Convert[Int]] = Set(IntAsBigDecimal, IntAsDouble, IntAsLong)
   val date: Option[Int => Date] = None
   val integral: Option[Integral[Int]] = Option(Numeric.IntIsIntegral)
   val numeric: Option[Numeric[Int]] = Option(Numeric.IntIsIntegral)
@@ -311,7 +450,7 @@ case object IntCodec extends Codec[Int] {
 
   def compare(x: Int, y: Int): Int = x.compare(y)
 
-  def decode(str: String): Option[Int] = Try(new BigDecimal(str.trim).intValueExact).toOption
+  def decode(str: String): Option[Int] = Try(BigDecimal(str.trim).toIntExact).toOption
 
   def encode(value: Int): String = value.toString
 
@@ -329,18 +468,22 @@ case object IntCodec extends Codec[Int] {
 
   def toShortString = Pattern.toString
 
+  private case object IntAsBigDecimal extends (Int => BigDecimal) {
+    def apply(i: Int): BigDecimal = BigDecimal(i)
+  }
+
   private case object IntAsDouble extends (Int => Double) {
-    def apply(l: Int): Double = l.toDouble
+    def apply(i: Int): Double = i.toDouble
   }
 
   private case object IntAsLong extends (Int => Long) {
-    def apply(l: Int): Long = l.toLong
+    def apply(i: Int): Long = i.toLong
   }
 }
 
 /** Codec for dealing with `Long`. */
 case object LongCodec extends Codec[Long] {
-  val converters: Set[Codec.Convert[Long]] = Set(LongAsDate, LongAsDouble, LongAsTimestamp)
+  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble)
   val date: Option[Long => Date] = Option(l => new Date(l))
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
@@ -353,7 +496,7 @@ case object LongCodec extends Codec[Long] {
 
   def compare(x: Long, y: Long): Int = x.compare(y)
 
-  def decode(str: String): Option[Long] = Try(new BigDecimal(str.trim).longValueExact).toOption
+  def decode(str: String): Option[Long] = Try(BigDecimal(str.trim).toLongExact).toOption
 
   def encode(value: Long): String = value.toString
 
@@ -371,16 +514,16 @@ case object LongCodec extends Codec[Long] {
 
   def toShortString = Pattern.toString
 
+  private case object LongAsBigDecimal extends (Long => BigDecimal) {
+    def apply(l: Long): BigDecimal = BigDecimal(l)
+  }
+
   private case object LongAsDate extends (Long => Date) {
     def apply(l: Long): Date = new Date(l)
   }
 
   private case object LongAsDouble extends (Long => Double) {
     def apply(l: Long): Double = l.toDouble
-  }
-
-  private case object LongAsTimestamp extends (Long => Timestamp) {
-    def apply(l: Long): Timestamp = new Timestamp(l)
   }
 }
 
@@ -418,10 +561,10 @@ case object StringCodec extends Codec[String] {
   def toShortString = Pattern.toString
 }
 
-/** Codec for dealing with `Timestamp`. */
+/** Codec for dealing with `java.sql.Timestamp`. */
 case object TimestampCodec extends Codec[Timestamp] { self =>
-  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsLong)
-  val date: Option[Timestamp => Date] = Option(identity)
+  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsDate)
+  val date: Option[Timestamp => Date] = Option(t => toDate(t))
   val integral: Option[Integral[Timestamp]] = None
   val numeric: Option[Numeric[Timestamp]] = None
   def ordering: Ordering[Timestamp] = new Ordering[Timestamp] {
@@ -453,8 +596,10 @@ case object TimestampCodec extends Codec[Timestamp] { self =>
 
   def toShortString = Pattern.toString
 
-  private case object TimestampAsLong extends (Timestamp => Long) {
-    def apply(t: Timestamp): Long = t.getTime
+  private def toDate(t: Timestamp): Date = new Date(t.getTime() + (t.getNanos() / 1000000))
+
+  private case object TimestampAsDate extends (Timestamp => Date) {
+    def apply(t: Timestamp): Date = toDate(t)
   }
 }
 

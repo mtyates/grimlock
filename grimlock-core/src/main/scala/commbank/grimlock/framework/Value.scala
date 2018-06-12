@@ -19,6 +19,7 @@ import commbank.grimlock.framework.metadata.Type
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.math.BigDecimal
 import scala.reflect.{ classTag, ClassTag }
 import scala.util.matching.Regex
 
@@ -32,20 +33,20 @@ trait Value[T] {
 
   /** Return value as `X` (if an appropriate converter exists), or `None` if the conversion is not supported. */
   def as[X : ClassTag]: Option[X] = {
-    val ct = implicitly[ClassTag[X]]
+    def cast(v: Any): Option[X] = {
+      val ct = implicitly[ClassTag[X]]
 
-    value match {
-      case ct(x) => Option(x)
-      case _ => codec
-        .converters
-        .flatMap { case convert =>
-          convert(value) match {
-            case ct(x) => Option(x)
-            case _ => None
-          }
-        }
-        .headOption
+      v match {
+        case ct(x) => Option(x)
+        case _ => None
+      }
     }
+
+    codec
+      .converters
+      .flatMap { case convert => cast(convert(value)) }
+      .headOption
+      .orElse(cast(value))
   }
 
   /**
@@ -179,6 +180,22 @@ object Value {
 }
 
 /**
+ * Value for when the data is of type `Array[Byte]`.
+ *
+ * @param value An `Array[Byte]`.
+ * @param codec The codec used for encoding/decoding `value`.
+ */
+case class BinaryValue(value: Array[Byte], codec: Codec[Array[Byte]] = BinaryCodec) extends Value[Array[Byte]] {
+  def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Array[Byte]].map(ab => cmp(ab))
+}
+
+/** Companion object to `BinaryValue` case class. */
+object BinaryValue {
+  /** `unapply` method for pattern matching. */
+  def unapply(value: Value[_]): Option[Array[Byte]] = classTag[Array[Byte]].unapply(value.value)
+}
+
+/**
  * Value for when the data is of type `Boolean`.
  *
  * @param value A `Boolean`.
@@ -211,6 +228,22 @@ object DateValue {
 
   /** `unapply` method for pattern matching. */
   def unapply(value: Value[_]): Option[Date] = classTag[Date].unapply(value.value)
+}
+
+/**
+ * Value for when the data is of type `BigDecimal`.
+ *
+ * @param value A `BigDecimal`.
+ * @param codec The codec used for encoding/decoding `value`.
+ */
+case class DecimalValue(value: BigDecimal, codec: Codec[BigDecimal]) extends Value[BigDecimal] {
+  def cmp[V <% Value[_]](that: V): Option[Int] = that.as[BigDecimal].map(bd => cmp(bd))
+}
+
+/** Companion object to `DecimalValue` case class. */
+object DecimalValue {
+  /** `unapply` method for pattern matching. */
+  def unapply(value: Value[_]): Option[BigDecimal] = classTag[BigDecimal].unapply(value.value)
 }
 
 /**

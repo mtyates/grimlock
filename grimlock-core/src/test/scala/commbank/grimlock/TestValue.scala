@@ -21,6 +21,8 @@ import commbank.grimlock.framework.metadata._
 import java.sql.Timestamp
 import java.util.Date
 
+import scala.math.BigDecimal
+
 class TestDateValue extends TestGrimlock {
 
   val dfmt = new java.text.SimpleDateFormat("dd/MM/yyyy")
@@ -62,8 +64,16 @@ class TestDateValue extends TestGrimlock {
     dv2001.as[Type] shouldBe None
   }
 
-  it should "return a timestamp" in {
-    dv2001.as[Timestamp] shouldBe Option(new Timestamp(date2001.getTime))
+  it should "not return a timestamp" in {
+    dv2001.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    dv2001.as[Array[Byte]] shouldBe None
+  }
+
+  it should "not return a decimal" in {
+    dv2001.as[BigDecimal] shouldBe None
   }
 
   it should "equal itself" in {
@@ -204,6 +214,14 @@ class TestStringValue extends TestGrimlock {
     dvfoo.as[Timestamp] shouldBe None
   }
 
+  it should "not return a byte array" in {
+    dvfoo.as[Array[Byte]] shouldBe None
+  }
+
+  it should "not return a decimal" in {
+    dvfoo.as[BigDecimal] shouldBe None
+  }
+
   it should "equal itself" in {
     dvfoo.equ(dvfoo) shouldBe true
     dvfoo.equ(StringValue(foo)) shouldBe true
@@ -292,6 +310,145 @@ class TestStringValue extends TestGrimlock {
   }
 }
 
+class TestDecimalValue extends TestGrimlock {
+
+  val cdc = DecimalCodec(3, 2)
+  val one = BigDecimal(1.0)
+  val pi = BigDecimal(3.14)
+  val dvone = DecimalValue(one, cdc)
+  val dvpi = DecimalValue(pi, cdc)
+
+  "A DecimalValue" should "return its short string" in {
+    dvone.toShortString shouldBe "1.0"
+  }
+
+  it should "not return a date" in {
+    dvone.as[Date] shouldBe None
+  }
+
+  it should "not return a string" in {
+    dvone.as[String] shouldBe None
+  }
+
+  it should "return a double" in {
+    dvone.as[Double] shouldBe None
+  }
+
+  it should "not return a long" in {
+    dvone.as[Long] shouldBe None
+  }
+
+  it should "not return a int" in {
+    dvone.as[Int] shouldBe None
+  }
+
+  it should "not return a boolean" in {
+    dvone.as[Boolean] shouldBe None
+  }
+
+  it should "not return a type" in {
+    dvone.as[Type] shouldBe None
+  }
+
+  it should "not return a timestamp" in {
+    dvone.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    dvone.as[Array[Byte]] shouldBe None
+  }
+
+  it should "return a decimal" in {
+    dvone.as[BigDecimal] shouldBe Option(dvone.value)
+  }
+
+  it should "equal itself" in {
+    dvone.equ(dvone) shouldBe true
+    dvone.equ(DecimalValue(one, cdc)) shouldBe true
+  }
+
+  it should "not equal another decimal" in {
+    dvone.equ(dvpi) shouldBe false
+  }
+
+  it should "not equal another value" in {
+    dvone.equ("a") shouldBe false
+    dvone.equ(false) shouldBe false
+  }
+
+  it should "match a matching pattern" in {
+    dvone.like("..0$".r) shouldBe true
+  }
+
+  it should "not match a non-existing pattern" in {
+    dvone.like("^3...".r) shouldBe false
+  }
+
+  it should "identify a smaller value calling lss" in {
+    dvone.lss(dvpi) shouldBe true
+  }
+
+  it should "not identify an equal value calling lss" in {
+    dvone.lss(dvone) shouldBe false
+  }
+
+  it should "not identify a greater value calling lss" in {
+    dvpi.lss(dvone) shouldBe false
+  }
+
+  it should "not identify another value calling lss" in {
+    dvone.lss("a") shouldBe false
+  }
+
+  it should "identify a smaller value calling leq" in {
+    dvone.leq(dvpi) shouldBe true
+  }
+
+  it should "identify an equal value calling leq" in {
+    dvone.leq(dvone) shouldBe true
+  }
+
+  it should "not identify a greater value calling leq" in {
+    dvpi.leq(dvone) shouldBe false
+  }
+
+  it should "not identify another value calling leq" in {
+    dvone.leq("a") shouldBe false
+  }
+
+  it should "not identify a smaller value calling gtr" in {
+    dvone.gtr(dvpi) shouldBe false
+  }
+
+  it should "not identify an equal value calling gtr" in {
+    dvone.gtr(dvpi) shouldBe false
+  }
+
+  it should "identify a greater value calling gtr" in {
+    dvpi.gtr(dvone) shouldBe true
+  }
+
+  it should "not identify another value calling gtr" in {
+    dvone.gtr("a") shouldBe false
+  }
+
+  it should "not identify a smaller value calling geq" in {
+    dvone.geq(dvpi) shouldBe false
+  }
+
+  it should "identify an equal value calling geq" in {
+    dvone.geq(dvone) shouldBe true
+  }
+
+  it should "identify a greater value calling geq" in {
+    dvpi.geq(dvone) shouldBe true
+  }
+
+  it should "not identify another value calling geq" in {
+    dvone.geq("a") shouldBe false
+  }
+}
+
 class TestDoubleValue extends TestGrimlock {
 
   val one = 1.0
@@ -334,6 +491,14 @@ class TestDoubleValue extends TestGrimlock {
 
   it should "not return a timestamp" in {
     dvone.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    dvone.as[Array[Byte]] shouldBe None
+  }
+
+  it should "return a decimal" in {
+    dvone.as[BigDecimal] shouldBe None
   }
 
   it should "equal itself" in {
@@ -465,14 +630,21 @@ class TestLongValue extends TestGrimlock {
   }
 
   it should "return a timestamp" in {
-    dvone.as[Timestamp] shouldBe Option(new Timestamp(one))
+    dvone.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    dvone.as[Array[Byte]] shouldBe None
+  }
+
+  it should "return a decimal" in {
+    dvone.as[BigDecimal] shouldBe Option(BigDecimal(dvone.value))
   }
 
   it should "equal itself" in {
     dvone.equ(dvone) shouldBe true
     dvone.equ(LongValue(one)) shouldBe true
     dvone.equ(DateValue(new Date(one))) shouldBe true
-    dvone.equ(TimestampValue(new Timestamp(one))) shouldBe true
   }
 
   it should "not equal another double" in {
@@ -601,6 +773,14 @@ class TestIntValue extends TestGrimlock {
 
   it should "not return a timestamp" in {
     dvone.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    dvone.as[Array[Byte]] shouldBe None
+  }
+
+  it should "return a decimal" in {
+    dvone.as[BigDecimal] shouldBe Option(BigDecimal(dvone.value))
   }
 
   it should "equal itself" in {
@@ -737,6 +917,14 @@ class TestBooleanValue extends TestGrimlock {
     dvpos.as[Timestamp] shouldBe None
   }
 
+  it should "not return a byte array" in {
+    dvpos.as[Array[Byte]] shouldBe None
+  }
+
+  it should "not return a decimal" in {
+    dvpos.as[BigDecimal] shouldBe None
+  }
+
   it should "equal itself" in {
     dvpos.equ(dvpos) shouldBe true
     dvpos.equ(BooleanValue(pos)) shouldBe true
@@ -850,7 +1038,7 @@ class TestTimestampValue extends TestGrimlock {
   }
 
   it should "return a long" in {
-    dv2001.as[Long] shouldBe Option(date2001.getTime)
+    dv2001.as[Long] shouldBe None
   }
 
   it should "not return a int" in {
@@ -870,11 +1058,17 @@ class TestTimestampValue extends TestGrimlock {
     dv2001.as[Timestamp] shouldBe Option(new Timestamp(date2001.getTime))
   }
 
+  it should "not return a byte array" in {
+    dv2001.as[Array[Byte]] shouldBe None
+  }
+
+  it should "not return a decimal" in {
+    dv2001.as[BigDecimal] shouldBe None
+  }
+
   it should "equal itself" in {
     dv2001.equ(dv2001) shouldBe true
-    dv2001.equ(DateValue(date2001, DateCodec("dd/MM/yyyy"))) shouldBe true
     dv2001.equ(TimestampValue(new Timestamp(date2001.getTime))) shouldBe true
-    dv2001.equ(LongValue(date2001.getTime)) shouldBe true
   }
 
   it should "not equal another date" in {
@@ -1007,6 +1201,14 @@ class TestTypeValue extends TestGrimlock {
     dvmix.as[Timestamp] shouldBe None
   }
 
+  it should "not return a byte array" in {
+    dvmix.as[Array[Byte]] shouldBe None
+  }
+
+  it should "not return a decimal" in {
+    dvmix.as[BigDecimal] shouldBe None
+  }
+
   it should "equal itself" in {
     dvmix.equ(dvmix) shouldBe true
     dvmix.equ(TypeValue(mix)) shouldBe true
@@ -1092,6 +1294,146 @@ class TestTypeValue extends TestGrimlock {
 
   it should "not identify another value calling geq" in {
     dvcon.geq(2) shouldBe false
+  }
+}
+
+class TestBinaryValue extends TestGrimlock {
+
+  val one = "1".getBytes.head
+
+  val dvone = BinaryValue(Array(one))
+  val dvtwo = BinaryValue(Array("2".getBytes.head))
+
+  "A BinaryValue" should "return its short string" in {
+    dvone.toShortString shouldBe "1"
+  }
+
+  it should "not return a date" in {
+    dvone.as[Date] shouldBe None
+  }
+
+  it should "not return a string" in {
+    dvone.as[String] shouldBe None
+  }
+
+  it should "not return a double" in {
+    dvone.as[Double] shouldBe None
+  }
+
+  it should "not return a long" in {
+    dvone.as[Long] shouldBe None
+  }
+
+  it should "not return a int" in {
+    dvone.as[Int] shouldBe None
+  }
+
+  it should "not return a boolean" in {
+    dvone.as[Boolean] shouldBe None
+  }
+
+  it should "not return a type" in {
+    dvone.as[Type] shouldBe None
+  }
+
+  it should "not return a timestamp" in {
+    dvone.as[Timestamp] shouldBe None
+  }
+
+  it should "return a byte array" in {
+    dvone.as[Array[Byte]] shouldBe Option(dvone.value)
+    dvone.as[Array[Byte]].map(_.sameElements(Array(one))) shouldBe Option(true)
+  }
+
+  it should "not return a decimal" in {
+    dvone.as[BigDecimal] shouldBe None
+  }
+
+  it should "equal itself" in {
+    dvone.equ(dvone) shouldBe true
+    dvone.equ(BinaryValue(Array(one))) shouldBe true
+  }
+
+  it should "not equal another binary" in {
+    dvone.equ(dvtwo) shouldBe false
+  }
+
+  it should "not equal another value" in {
+    dvone.equ("a") shouldBe false
+    dvone.equ(2) shouldBe false
+    dvone.equ(2.0) shouldBe false
+  }
+
+  it should "match a matching pattern" in {
+    dvone.like("^1".r) shouldBe true
+  }
+
+  it should "not match a non-existing pattern" in {
+    dvone.like("^2".r) shouldBe false
+  }
+
+  it should "identify a smaller value calling lss" in {
+    dvone.lss(dvtwo) shouldBe true
+  }
+
+  it should "not identify an equal value calling lss" in {
+    dvone.lss(dvone) shouldBe false
+  }
+
+  it should "not identify a greater value calling lss" in {
+    dvtwo.lss(dvone) shouldBe false
+  }
+
+  it should "not identify another value calling lss" in {
+    dvone.lss(2) shouldBe false
+  }
+
+  it should "identify a smaller value calling leq" in {
+    dvone.leq(dvtwo) shouldBe true
+  }
+
+  it should "identify an equal value calling leq" in {
+    dvone.leq(dvone) shouldBe true
+  }
+
+  it should "not identify a greater value calling leq" in {
+    dvtwo.leq(dvone) shouldBe false
+  }
+
+  it should "not identify another value calling leq" in {
+    dvone.leq(2) shouldBe false
+  }
+
+  it should "not identify a smaller value calling gtr" in {
+    dvone.gtr(dvtwo) shouldBe false
+  }
+
+  it should "not identify an equal value calling gtr" in {
+    dvone.gtr(dvone) shouldBe false
+  }
+
+  it should "identify a greater value calling gtr" in {
+    dvtwo.gtr(dvone) shouldBe true
+  }
+
+  it should "not identify another value calling gtr" in {
+    dvone.gtr(2) shouldBe false
+  }
+
+  it should "not identify a smaller value calling geq" in {
+    dvone.geq(dvtwo) shouldBe false
+  }
+
+  it should "identify an equal value calling geq" in {
+    dvone.geq(dvone) shouldBe true
+  }
+
+  it should "identify a greater value calling geq" in {
+    dvtwo.geq(dvone) shouldBe true
+  }
+
+  it should "not identify another value calling geq" in {
+    dvtwo.geq(2) shouldBe false
   }
 }
 
