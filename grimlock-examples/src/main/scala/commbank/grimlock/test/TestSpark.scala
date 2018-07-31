@@ -23,7 +23,6 @@ import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
 import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.implicits._
-import commbank.grimlock.spark.transform.CutRules
 
 import java.util.Date
 
@@ -303,7 +302,7 @@ object TestSpark28 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test28[Context](ctx, CutRules, "spark")
+    Shared.test28[Context](ctx, "spark")
   }
 }
 

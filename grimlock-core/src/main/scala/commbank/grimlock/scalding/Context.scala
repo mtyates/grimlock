@@ -88,6 +88,8 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
 
   val implicits = Implicits()
 
+  val library = Library
+
   def empty[T : ClassTag]: Context.U[T] = TypedPipe.empty
 
   def from[T : ClassTag](seq: Seq[T]): Context.U[T] = TypedPipe.from(seq)

@@ -77,6 +77,8 @@ case class Context(session: SparkSession) extends FwContext[Context] {
 
   val implicits = Implicits()
 
+  val library = Library
+
   def empty[T : ClassTag]: Context.U[T] = session.sparkContext.parallelize(List.empty[T])
 
   def from[T : ClassTag](seq: Seq[T]): Context.U[T] = session.sparkContext.parallelize(seq)

@@ -26,7 +26,6 @@ import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
 import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.implicits._
-import commbank.grimlock.scalding.transform.CutRules
 
 import java.util.Date
 
@@ -245,7 +244,7 @@ class TestScalding27(args: Args) extends Job(args) {
 class TestScalding28(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test28[Context](ctx, CutRules, "scalding")
+  Shared.test28[Context](ctx, "scalding")
 }
 
 class TestScalding29(args: Args) extends Job(args) {
