@@ -430,6 +430,9 @@ case class SquareRoot[P <: HList]()(implicit ev: Value.Box[Double]) extends Tran
  * Convert a numeric value to categorical.
  *
  * @param extractor Object that will extract, for `cell`, its corresponding bins.
+ * @param right     Indicates if the interval should be closed on the right (and open on the left) or vice versa.
+ * @param include   Indicates if a value equal to the lowest (or highest, for right=false) should be included.
+ * @param name      Function that gets the bin name. Arguments are: (bin index, bin lower bound, bin upper bound).
  *
  * @note Cut is only applied to numerical variables.
  */
@@ -437,22 +440,44 @@ case class Cut[
   P <: HList,
   W
 ](
-  bins: Extract[P, W, List[Double]]
+  bins: Extract[P, W, List[Double]],
+  right: Boolean = true,
+  include: Boolean = false,
+  name: (Int, Double, Double) => String = (idx, low, upp) => s"(${low},${upp}]"
 )(implicit
   ev: Value.Box[String]
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = for {
-    v <- cell.content.value.as[Double]
-    b <- bins.extract(cell, ext)
+  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = {
+    val result = for {
+      v <- cell.content.value.as[Double]
+      b <- bins.extract(cell, ext)
 
-    if (Transform.check(cell, NumericType))
-  } yield {
-    val bstr = b.sliding(2).map("(" + _.mkString(",") + "]").toList
+      if (Transform.check(cell, NumericType))
+    } yield {
+      val bstr = b.sliding(2).zipWithIndex.map { case (List(lower, upper), idx) => name(idx, lower, upper) }.toList
+      val idx = if (right) {
+        if (v <= b.head && include == false)
+          -1
+        else if (v == b.head && include == true)
+          0
+        else
+          b.lastIndexWhere(_ < v)
+      } else {
+        if (v >= b.last && include == false)
+          -1
+        else if (v == b.last && include == true)
+          b.length - 2
+        else
+          b.lastIndexWhere(_ <= v)
+      }
 
-    // TODO: Add correct Ordering to bstr
-    Cell(cell.position, Content(OrdinalSchema[String](bstr.toSet), bstr(b.lastIndexWhere(_ < v))))
+      // TODO: Add correct Ordering to bstr
+      if (idx < 0) None else Option(Cell(cell.position, Content(OrdinalSchema[String](bstr.toSet), bstr(idx))))
+    }
+
+    result.map(_.toList).getOrElse(List.empty)
   }
 }
 
@@ -695,7 +720,6 @@ trait CutRules[E[_]] {
   ): Map[Position[Coordinates1[T]], List[Double]] = range
     .map { case (p, l) => (Position(implicitly[T](p)), l) }
 
-  // TODO: Add 'right' and 'labels' options (analogous to R's)
   private def cut[
     K <: HList,
     V <: HList

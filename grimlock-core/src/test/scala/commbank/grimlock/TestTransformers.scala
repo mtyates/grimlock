@@ -800,27 +800,61 @@ class TestCut extends TestTransformers {
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], List[Double]]
 
-  val cell = Cell(Position("foo"), getDoubleContent(3.1415))
+  val cell1 = Cell(Position("foo"), getDoubleContent(3.1415))
+  val cell2 = Cell(Position("foo"), getDoubleContent(4.0))
+  val cell3 = Cell(Position("foo"), getDoubleContent(3.0))
+  val cell4 = Cell(Position("foo"), getDoubleContent(0.0))
+  val cell5 = Cell(Position("foo"), getDoubleContent(5.0))
   val ext = Map(Position("foo") -> List[Double](0,1,2,3,4,5))
 
   val binExtractor = ExtractWithDimension[P, _0, List[Double]]
 
   "A Cut" should "present" in {
-    Cut[P, W](binExtractor).presentWithValue(cell, ext) shouldBe List(
-      Cell(
-        Position("foo"),
-        Content(
-          OrdinalSchema[String](Set("(0.0,1.0]", "(1.0,2.0]", "(2.0,3.0]", "(3.0,4.0]", "(4.0,5.0]")),
-          "(3.0,4.0]"
-         )
-       )
-     )
+    val pos = Position("foo")
+
+    def right(idx: Int, lower: Double, upper: Double): String = s"[${lower},${upper})"
+
+    val cut1 = Cut[P, W](binExtractor)
+    val schema1 = OrdinalSchema[String](Set("(0.0,1.0]", "(1.0,2.0]", "(2.0,3.0]", "(3.0,4.0]", "(4.0,5.0]"))
+
+    cut1.presentWithValue(cell1, ext) shouldBe List(Cell(pos, Content(schema1, "(3.0,4.0]")))
+    cut1.presentWithValue(cell2, ext) shouldBe List(Cell(pos, Content(schema1, "(3.0,4.0]")))
+    cut1.presentWithValue(cell3, ext) shouldBe List(Cell(pos, Content(schema1, "(2.0,3.0]")))
+    cut1.presentWithValue(cell4, ext) shouldBe List()
+    cut1.presentWithValue(cell5, ext) shouldBe List(Cell(pos, Content(schema1, "(4.0,5.0]")))
+
+    val cut2 = Cut[P, W](binExtractor, right=false, name=right)
+    val schema2 = OrdinalSchema[String](Set("[0.0,1.0)", "[1.0,2.0)", "[2.0,3.0)", "[3.0,4.0)", "[4.0,5.0)"))
+
+    cut2.presentWithValue(cell1, ext) shouldBe List(Cell(pos, Content(schema2, "[3.0,4.0)")))
+    cut2.presentWithValue(cell2, ext) shouldBe List(Cell(pos, Content(schema2, "[4.0,5.0)")))
+    cut2.presentWithValue(cell3, ext) shouldBe List(Cell(pos, Content(schema2, "[3.0,4.0)")))
+    cut2.presentWithValue(cell4, ext) shouldBe List(Cell(pos, Content(schema2, "[0.0,1.0)")))
+    cut2.presentWithValue(cell5, ext) shouldBe List()
+
+    val cut3 = Cut[P, W](binExtractor, include=true)
+    val schema3 = OrdinalSchema[String](Set("(0.0,1.0]", "(1.0,2.0]", "(2.0,3.0]", "(3.0,4.0]", "(4.0,5.0]"))
+
+    cut3.presentWithValue(cell1, ext) shouldBe List(Cell(pos, Content(schema3, "(3.0,4.0]")))
+    cut3.presentWithValue(cell2, ext) shouldBe List(Cell(pos, Content(schema3, "(3.0,4.0]")))
+    cut3.presentWithValue(cell3, ext) shouldBe List(Cell(pos, Content(schema3, "(2.0,3.0]")))
+    cut3.presentWithValue(cell4, ext) shouldBe List(Cell(pos, Content(schema3, "(0.0,1.0]")))
+    cut3.presentWithValue(cell5, ext) shouldBe List(Cell(pos, Content(schema3, "(4.0,5.0]")))
+
+    val cut4 = Cut[P, W](binExtractor, right=false, include=true, name=right)
+    val schema4 = OrdinalSchema[String](Set("[0.0,1.0)", "[1.0,2.0)", "[2.0,3.0)", "[3.0,4.0)", "[4.0,5.0)"))
+
+    cut4.presentWithValue(cell1, ext) shouldBe List(Cell(pos, Content(schema4, "[3.0,4.0)")))
+    cut4.presentWithValue(cell2, ext) shouldBe List(Cell(pos, Content(schema4, "[4.0,5.0)")))
+    cut4.presentWithValue(cell3, ext) shouldBe List(Cell(pos, Content(schema4, "[3.0,4.0)")))
+    cut4.presentWithValue(cell4, ext) shouldBe List(Cell(pos, Content(schema4, "[0.0,1.0)")))
+    cut4.presentWithValue(cell5, ext) shouldBe List(Cell(pos, Content(schema4, "[4.0,5.0)")))
   }
 
   it should "present with name" in {
     Cut[P, W](binExtractor)
       .andThenRelocate(Locate.RenameDimension(_0, (v: Value[String]) => v.toShortString + ".cut"))
-      .presentWithValue(cell, ext).toList shouldBe List(
+      .presentWithValue(cell1, ext).toList shouldBe List(
         Cell(
           Position("foo.cut"),
           Content(
@@ -832,7 +866,7 @@ class TestCut extends TestTransformers {
   }
 
   it should "not present with missing bins" in {
-    Cut[P, W](binExtractor).presentWithValue(cell, Map()) shouldBe List()
+    Cut[P, W](binExtractor).presentWithValue(cell1, Map()) shouldBe List()
   }
 }
 
@@ -879,6 +913,10 @@ class TestScaldingCutRules extends TestTransformers {
 
   "A fixed" should "cut" in {
     CutRules.fixed(stats, "min", "max", 5) shouldBe ValuePipe(Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5)))
+
+    scaldingCtx.library.rules.fixed(stats, "min", "max", 5) shouldBe ValuePipe(
+      Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+    )
   }
 
   it should "not cut with missing values" in {
@@ -888,6 +926,10 @@ class TestScaldingCutRules extends TestTransformers {
 
   "A squareRootChoice" should "cut" in {
     CutRules.squareRootChoice(stats, "count", "min", "max") shouldBe ValuePipe(
+      Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+    )
+
+    scaldingCtx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe ValuePipe(
       Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
     )
   }
@@ -903,6 +945,10 @@ class TestScaldingCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
 
     CutRules.sturgesFormula(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
+
+    scaldingCtx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe ValuePipe(
+      Map(Position("foo") -> vals)
+    )
   }
 
   it should "not cut with missing values" in {
@@ -916,6 +962,8 @@ class TestScaldingCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
 
     CutRules.riceRule(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
+
+    scaldingCtx.library.rules.riceRule(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
   }
 
   it should "not cut with missing values" in {
@@ -929,6 +977,10 @@ class TestScaldingCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 8)).tail
 
     CutRules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe ValuePipe(Map(Position("foo") -> vals))
+
+    scaldingCtx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe ValuePipe(
+      Map(Position("foo") -> vals)
+    )
   }
 
   it should "not cut with missing values" in {
@@ -945,6 +997,10 @@ class TestScaldingCutRules extends TestTransformers {
     CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe ValuePipe(
       Map(Position("foo") -> vals)
     )
+
+    scaldingCtx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe ValuePipe(
+      Map(Position("foo") -> vals)
+    )
   }
 
   it should "not cut with missing values" in {
@@ -956,6 +1012,10 @@ class TestScaldingCutRules extends TestTransformers {
 
   "A breaks" should "cut" in {
     CutRules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe ValuePipe(
+      Map(Position("foo") -> List[Double](0,1,2,3,4,5))
+    )
+
+    scaldingCtx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe ValuePipe(
       Map(Position("foo") -> List[Double](0,1,2,3,4,5))
     )
   }
@@ -973,6 +1033,8 @@ class TestSparkCutRules extends TestTransformers {
 
   "A fixed" should "cut" in {
     CutRules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+
+    sparkCtx.library.rules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
   }
 
   it should "not cut with missing values" in {
@@ -982,6 +1044,10 @@ class TestSparkCutRules extends TestTransformers {
 
   "A squareRootChoice" should "cut" in {
     CutRules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
+      Position("foo") -> List[Double](-0.005,1,2,3,4,5)
+    )
+
+    sparkCtx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
       Position("foo") -> List[Double](-0.005,1,2,3,4,5)
     )
   }
@@ -997,6 +1063,8 @@ class TestSparkCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
 
     CutRules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+
+    sparkCtx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1010,6 +1078,8 @@ class TestSparkCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
 
     CutRules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+
+    sparkCtx.library.rules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1023,6 +1093,8 @@ class TestSparkCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 8)).tail
 
     CutRules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
+
+    sparkCtx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1037,6 +1109,10 @@ class TestSparkCutRules extends TestTransformers {
     val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 3)).tail
 
     CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(Position("foo") -> vals)
+
+    sparkCtx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(
+      Position("foo") -> vals
+    )
   }
 
   it should "not cut with missing values" in {
@@ -1048,6 +1124,10 @@ class TestSparkCutRules extends TestTransformers {
 
   "A breaks" should "cut" in {
     CutRules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
+      Position("foo") -> List[Double](0,1,2,3,4,5)
+    )
+
+    sparkCtx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
       Position("foo") -> List[Double](0,1,2,3,4,5)
     )
   }

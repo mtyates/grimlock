@@ -72,6 +72,9 @@ trait Context[C <: Context[C]] {
   /** All implicits for this context. */
   val implicits: Implicits[C]
 
+  /** All library data/functions for this context. */
+  val library: Library[C]
+
   /** Create empty instance of `U`. */
   def empty[T : ClassTag]: U[T]
 

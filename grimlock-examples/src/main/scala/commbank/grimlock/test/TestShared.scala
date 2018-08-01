@@ -1439,7 +1439,6 @@ object Shared {
     C <: Context[C]
   ](
     ctx: C,
-    rules: CutRules[C#E],
     tool: String
   )(implicit
     ev1: Matrix.GatherTuner[C#U, Default[NoParameters]],
@@ -1476,13 +1475,13 @@ object Shared {
     val extractor = ExtractWithDimension[Coordinates2[String, String], _1, List[Double]]
 
     data
-      .transformWithValue(rules.fixed(stats, "min", "max", 4), Cut(extractor))
+      .transformWithValue(ctx.library.rules.fixed(stats, "min", "max", 4), Cut(extractor))
       .saveAsText(ctx, s"./tmp.${tool}/cut1.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     data
       .transformWithValue(
-        rules.squareRootChoice(stats, "count", "min", "max"),
+        ctx.library.rules.squareRootChoice(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.square"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut2.out", Cell.toShortString(true, "|"), Default())
@@ -1490,7 +1489,7 @@ object Shared {
 
     data
       .transformWithValue(
-        rules.sturgesFormula(stats, "count", "min", "max"),
+        ctx.library.rules.sturgesFormula(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.sturges"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut3.out", Cell.toShortString(true, "|"), Default())
@@ -1498,7 +1497,7 @@ object Shared {
 
     data
       .transformWithValue(
-        rules.riceRule(stats, "count", "min", "max"),
+        ctx.library.rules.riceRule(stats, "count", "min", "max"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.rice"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut4.out", Cell.toShortString(true, "|"), Default())
@@ -1506,7 +1505,7 @@ object Shared {
 
     data
       .transformWithValue(
-        rules.doanesFormula(stats, "count", "min", "max", "skewness"),
+        ctx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.doane"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut5.out", Cell.toShortString(true, "|"), Default())
@@ -1514,7 +1513,7 @@ object Shared {
 
     data
       .transformWithValue(
-        rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd"),
+        ctx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd"),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.scott"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut6.out", Cell.toShortString(true, "|"), Default())
@@ -1522,7 +1521,7 @@ object Shared {
 
     data
       .transformWithValue(
-        rules.breaks(Map("fid:A" -> List(-1, 4, 8, 12, 16))),
+        ctx.library.rules.breaks(Map("fid:A" -> List(-1, 4, 8, 12, 16))),
         Cut(extractor).andThenRelocate(Locate.RenameDimension(_1, (c: Value[String]) => s"${c.toShortString}.break"))
       )
       .saveAsText(ctx, s"./tmp.${tool}/cut7.out", Cell.toShortString(true, "|"), Default())
