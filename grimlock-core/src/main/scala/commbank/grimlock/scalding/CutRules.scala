@@ -26,7 +26,7 @@ import com.twitter.scalding.typed.LiteralValue
 import shapeless.HList
 
 /** Implement cut rules using Scalding. */
-object CutRules extends FwCutRules[Context.E] {
+case object CutRules extends FwCutRules[Context.E] {
   def fixed[
     K <: HList,
     V <: HList

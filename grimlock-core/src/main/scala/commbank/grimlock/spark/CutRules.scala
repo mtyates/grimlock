@@ -24,7 +24,7 @@ import commbank.grimlock.library.transform.{ CutRules => FwCutRules }
 import shapeless.HList
 
 /** Implement cut rules for Spark. */
-object CutRules extends FwCutRules[Context.E] {
+case object CutRules extends FwCutRules[Context.E] {
   def fixed[
     K <: HList,
     V <: HList
