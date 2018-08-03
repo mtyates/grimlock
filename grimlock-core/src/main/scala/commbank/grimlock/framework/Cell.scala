@@ -194,6 +194,31 @@ object Cell {
   ): Option[Cell[Q]] = JSON.from(str, reads(codecs, dictionary, dimension)).toOption
 
   /**
+   * Parse JSON into a `Cell[Q]`.
+   *
+   * @param str       The JSON string to decode.
+   * @param codecs    The codecs for decoding the position.
+   * @param method    The method used to lookup the decoder from the coordinate.
+   * @param dimension The index of the position's coordinate to use to lookup the decoder.
+   *
+   * @return A `Some[Cell[Q]]` if successful, `None` otherwise.
+   */
+  def fromJSON[
+    L <: HList,
+    T,
+    D <: Nat,
+    Q <: HList
+  ](
+    str: String,
+    codecs: L,
+    method: (T) => Option[Content.Decoder],
+    dimension: D
+  )(implicit
+    ev1: Position.TextParseConstraints.Aux[L, Q],
+    ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
+  ): Option[Cell[Q]] = JSON.from(str, reads(codecs, method, dimension)).toOption
+
+  /**
    * Parse a self-describing short string into a `Cell[Q]`.
    *
    * @param str       The JSON string to decode.
@@ -288,6 +313,33 @@ object Cell {
   ): Option[Cell[Q]] = parse(str, codecs, separator, FromDictionary(dictionary, dimension)).toOption
 
   /**
+   * Parse a short string into a `Cell[Q]`.
+   *
+   * @param str       The JSON string to decode.
+   * @param codecs    The codecs for decoding the position.
+   * @param method    The method used to lookup the decoder from the coordinate.
+   * @param dimension The index of the position's coordinate to use to lookup the decoder.
+   * @param separator The column separator.
+   *
+   * @return A `Some[Cell[Q]]` if successful, `None` otherwise.
+   */
+  def fromShortString[
+    L <: HList,
+    T,
+    D <: Nat,
+    Q <: HList
+  ](
+    str: String,
+    codecs: L,
+    method: (T) => Option[Content.Decoder],
+    dimension: D,
+    separator: String
+  )(implicit
+    ev1: Position.TextParseConstraints.Aux[L, Q],
+    ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
+  ): Option[Cell[Q]] = parse(str, codecs, separator, FromMethod(method, dimension)).toOption
+
+  /**
    * Parse self-describing JSON into a `Cell[Q]`.
    *
    * @param codecs The codecs for decoding the position.
@@ -364,6 +416,29 @@ object Cell {
     ev1: Position.TextParseConstraints.Aux[L, Q],
     ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
   ): Persist.TextParser[Cell[Q]] = (str) => List(JSON.from(str, reads(codecs, dictionary, dimension)))
+
+  /**
+   * Parse JSON into a `Cell[Q]`.
+   *
+   * @param codecs    The codecs for decoding the position.
+   * @param method    The method used to lookup the decoder from the coordinate.
+   * @param dimension The index of the position's coordinate to use to lookup the decoder.
+   *
+   * @return The parser function.
+   */
+  def jsonParser[
+    L <: HList,
+    T,
+    D <: Nat,
+    Q <: HList
+  ](
+    codecs: L,
+    method: (T) => Option[Content.Decoder],
+    dimension: D
+  )(implicit
+    ev1: Position.TextParseConstraints.Aux[L, Q],
+    ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
+  ): Persist.TextParser[Cell[Q]] = (str) => List(JSON.from(str, reads(codecs, method, dimension)))
 
   /**
    * Return a `Reads` for parsing a self-describing JSON cell.
@@ -444,6 +519,32 @@ object Cell {
   ): Reads[Cell[Q]] = reads(
     Position.reads(codecs),
     (pos: Position[Q]) => dictionary.get(pos(dimension).value).map(Content.reads(_))
+  )
+
+  /**
+   * Return a `Reads` for parsing a JSON cell.
+   *
+   * @param codecs    List of codecs for parsing the position.
+   * @param method    The method used to lookup the decoder from the coordinate.
+   * @param dimension The index of the position's coordinate to use to lookup the decoder.
+   *
+   * @return The JSON `Reads`.
+   */
+  def reads[
+    L <: HList,
+    T,
+    D <: Nat,
+    Q <: HList
+  ](
+    codecs: L,
+    method: (T) => Option[Content.Decoder],
+    dimension: D
+  )(implicit
+    ev1: Position.TextParseConstraints.Aux[L, Q],
+    ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
+  ): Reads[Cell[Q]] = reads(
+    Position.reads(codecs),
+    (pos: Position[Q]) => method(pos(dimension).value).map(Content.reads(_))
   )
 
   /**
@@ -531,6 +632,31 @@ object Cell {
     ev1: Position.TextParseConstraints.Aux[L, Q],
     ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
   ): Persist.TextParser[Cell[Q]] = (str) => List(parse(str, codecs, separator, FromDictionary(dictionary, dimension)))
+
+  /**
+   * Parse a short string into a `Cell[Q]`.
+   *
+   * @param codecs     The codecs for decoding the position.
+   * @param dictionary Map of coordinate to content decoder.
+   * @param dimension  The index of the position's coordinate to use to lookup the decoder.
+   * @param separator  The column separator.
+   *
+   * @return The parser function.
+   */
+  def shortStringParser[
+    L <: HList,
+    T,
+    D <: Nat,
+    Q <: HList
+  ](
+    codecs: L,
+    method: (T) => Option[Content.Decoder],
+    dimension: D,
+    separator: String
+  )(implicit
+    ev1: Position.TextParseConstraints.Aux[L, Q],
+    ev2: Position.IndexConstraints.Aux[Q, D, Value[T]]
+  ): Persist.TextParser[Cell[Q]] = (str) => List(parse(str, codecs, separator, FromMethod(method, dimension)))
 
   /**
    * Returns a function that parses a line of tabular data into a `List[Cell[Coordinates2[K, V]]]`.
@@ -817,5 +943,19 @@ private case class FromDictionary[
   def dec(pos: Position[Q]): Option[Content.Decoder] = dictionary
     .get(pos(dimension).value)
     .map(decoder => (str) => Content.fromShortString(str, decoder))
+}
+
+private case class FromMethod[
+  Q <: HList,
+  T,
+  D <: Nat
+](
+  method: (T) => Option[Content.Decoder],
+  dimension: D
+)(implicit
+  ev: Position.IndexConstraints.Aux[Q, D, Value[T]]
+) extends ParseConfig[Q] {
+  def idx(str: String, sep: String) = str.lastIndexOf(sep)
+  def dec(pos: Position[Q]): Option[Content.Decoder] = method(pos(dimension).value)
 }
 

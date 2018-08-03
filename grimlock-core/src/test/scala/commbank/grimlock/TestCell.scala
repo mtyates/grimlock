@@ -56,6 +56,7 @@ class TestCell extends TestGrimlock {
 
   val schema = Content.decoder(DoubleCodec, ContinuousSchema[Double]())
   val dictionary = Map(123L -> schema)
+  val method = (l: Long) => Map(123L -> schema).get(l)
   val codecs1 = LongCodec :: HNil
   val codecs2a = LongCodec :: StringCodec :: HNil
   val codecs2b = StringCodec :: LongCodec :: HNil
@@ -88,6 +89,19 @@ class TestCell extends TestGrimlock {
     val f4 = Cell.shortStringParser(codecs1, dictionary, _0, ":")
     f4("123:3:14") shouldBe List(Failure(UnableToDecodeCell("123:3:14")))
     val f5 = Cell.shortStringParser(codecs1, dictionary, _0, ":")
+    f5("123|3.14") shouldBe List(Failure(IncorrectNumberOfFields("123|3.14")))
+  }
+
+  "A Cell" should "parse 1D with method" in {
+    val f1 = Cell.shortStringParser(codecs1, method, _0, ":")
+    f1("123:3.14") shouldBe List(Success(Cell(Position(123L), Content(ContinuousSchema[Double](), 3.14))))
+    val f2 = Cell.shortStringParser(codecs1, method, _0, ":")
+    f2("abc:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:3.14")))
+    val f3 = Cell.shortStringParser(codecs1, method, _0, ":")
+    f3("123:abc") shouldBe List(Failure(UnableToDecodeCell("123:abc")))
+    val f4 = Cell.shortStringParser(codecs1, method, _0, ":")
+    f4("123:3:14") shouldBe List(Failure(UnableToDecodeCell("123:3:14")))
+    val f5 = Cell.shortStringParser(codecs1, method, _0, ":")
     f5("123|3.14") shouldBe List(Failure(IncorrectNumberOfFields("123|3.14")))
   }
 
@@ -135,6 +149,23 @@ class TestCell extends TestGrimlock {
     val f6 = Cell.shortStringParser(codecs2a, dictionary, _0, ":")
     f6("123:def:3:14") shouldBe List(Failure(UnableToDecodeCell("123:def:3:14")))
     val f7 = Cell.shortStringParser(codecs2a, dictionary, _0, ":")
+    f7("123|def:3.14") shouldBe List(Failure(UnableToDecodeCell("123|def:3.14")))
+  }
+
+  "A Cell" should "parse 2D with method" in {
+    val f1 = Cell.shortStringParser(codecs2a, method, _0, ":")
+    f1("123:def:3.14") shouldBe List(Success(Cell(Position(123L, "def"), Content(ContinuousSchema[Double](), 3.14))))
+    val f2 = Cell.shortStringParser(codecs2b, method, _1, ":")
+    f2("def:123:3.14") shouldBe List(Success(Cell(Position("def", 123L), Content(ContinuousSchema[Double](), 3.14))))
+    val f3 = Cell.shortStringParser(codecs2a, method, _0, ":")
+    f3("abc:def:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:def:3.14")))
+    val f4 = Cell.shortStringParser(codecs2b, method, _1, ":")
+    f4("abc:def:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:def:3.14")))
+    val f5 = Cell.shortStringParser(codecs2a, method, _0, ":")
+    f5("123:def:abc") shouldBe List(Failure(UnableToDecodeCell("123:def:abc")))
+    val f6 = Cell.shortStringParser(codecs2a, method, _0, ":")
+    f6("123:def:3:14") shouldBe List(Failure(UnableToDecodeCell("123:def:3:14")))
+    val f7 = Cell.shortStringParser(codecs2a, method, _0, ":")
     f7("123|def:3.14") shouldBe List(Failure(UnableToDecodeCell("123|def:3.14")))
   }
 
@@ -206,6 +237,33 @@ class TestCell extends TestGrimlock {
     val f8 = Cell.shortStringParser(codecs3a, dictionary, _0, ":")
     f8("123:def:ghi:3:14") shouldBe List(Failure(UnableToDecodeCell("123:def:ghi:3:14")))
     val f9 = Cell.shortStringParser(codecs3a, dictionary, _0, ":")
+    f9("123|def:ghi:3.14") shouldBe List(Failure(UnableToDecodeCell("123|def:ghi:3.14")))
+  }
+
+  "A Cell" should "parse 3D with method" in {
+    val f1 = Cell.shortStringParser(codecs3a, method, _0, ":")
+    f1("123:def:ghi:3.14") shouldBe List(
+      Success(Cell(Position(123L, "def", "ghi"), Content(ContinuousSchema[Double](), 3.14)))
+    )
+    val f2 = Cell.shortStringParser(codecs3b, method, _1, ":")
+    f2("def:123:ghi:3.14") shouldBe List(
+      Success(Cell(Position("def", 123L, "ghi"), Content(ContinuousSchema[Double](), 3.14)))
+    )
+    val f3 = Cell.shortStringParser(codecs3c, method, _2, ":")
+    f3("def:ghi:123:3.14") shouldBe List(
+      Success(Cell(Position("def", "ghi", 123L), Content(ContinuousSchema[Double](), 3.14)))
+    )
+    val f4 = Cell.shortStringParser(codecs3a, method, _0, ":")
+    f4("abc:def:ghi:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:def:ghi:3.14")))
+    val f5 = Cell.shortStringParser(codecs3b, method, _1, ":")
+    f5("abc:def:ghi:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:def:ghi:3.14")))
+    val f6 = Cell.shortStringParser(codecs3c, method, _2, ":")
+    f6("abc:def:ghi:3.14") shouldBe List(Failure(UnableToDecodeCell("abc:def:ghi:3.14")))
+    val f7 = Cell.shortStringParser(codecs3a, method, _0, ":")
+    f7("123:def:ghi:abc") shouldBe List(Failure(UnableToDecodeCell("123:def:ghi:abc")))
+    val f8 = Cell.shortStringParser(codecs3a, method, _0, ":")
+    f8("123:def:ghi:3:14") shouldBe List(Failure(UnableToDecodeCell("123:def:ghi:3:14")))
+    val f9 = Cell.shortStringParser(codecs3a, method, _0, ":")
     f9("123|def:ghi:3.14") shouldBe List(Failure(UnableToDecodeCell("123|def:ghi:3.14")))
   }
 
