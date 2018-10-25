@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-addSbtPlugin("com.eed3si9n"     % "sbt-assembly"         % "0.14.5")
-addSbtPlugin("com.eed3si9n"     % "sbt-unidoc"           % "0.3.2")
-addSbtPlugin("com.typesafe.sbt" % "sbt-site"             % "0.8.1")
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
-addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.0")
+addSbtPlugin("com.eed3si9n"     % "sbt-assembly"         % "0.14.8")
+addSbtPlugin("com.eed3si9n"     % "sbt-unidoc"           % "0.3.2") // TODO: update
+addSbtPlugin("com.typesafe.sbt" % "sbt-site"             % "0.8.1") // TODO: update
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
+addSbtPlugin("org.scoverage"    % "sbt-scoverage"        % "1.5.1")
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2014,2015,2016 Commonwealth Bank of Australia
+# Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,20 @@ BASE_DIR="../../../../../../.."
 
 if [ ${DO_BUILD} = "true" ]
 then
+  grep '[a-z]\s*++\s*shadeSha' ${BASE_DIR}/build.sbt > /dev/null 2>&1
+  IS_SHADED=$?
+
+  if [ ${IS_SHADED} -eq 0 -a ${DO_LOCAL} = "true" ]
+  then
+    set +x
+    echo "!!                                           !!"
+    echo "!!                                           !!"
+    echo "!! Local and shaded don't work well together !!"
+    echo "!!                                           !!"
+    echo "!!                                           !!"
+    exit
+  fi
+
   rm -f ${JAR}
   cd ${BASE_DIR}; ./sbt clean assembly; cd -
   cp ${BASE_DIR}/grimlock-examples/target/scala-2.11/grimlock*.jar ${JAR}
@@ -48,26 +62,26 @@ then
       rm -rf demo.spark/*
     fi
 
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.BasicOperations $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Conditional $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.PipelineDataPreparation $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Scoring $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.DataAnalysis $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.LabelWeighting $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.InstanceCentricTfIdf $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.MutualInformation $JAR local ../data
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.DerivedData $JAR local ../data
     cp ../data/gbm.R ../data/rf.R ../data/lr.R .
-    $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local \
+    $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local \
       --class commbank.grimlock.spark.examples.Ensemble $JAR local ../data
 
     if [ -d "demo.spark.old" ]
@@ -93,7 +107,7 @@ then
 
     for i in $(seq 1 ${NUM_TEST})
     do
-      $BASE_DIR/../spark-2.1.0-bin-hadoop2.7/bin/spark-submit --master local --driver-class-path $JAR \
+      $BASE_DIR/../spark-2.3.2-bin-hadoop2.7/bin/spark-submit --master local --driver-class-path $JAR \
         --class commbank.grimlock.test.TestSpark${i} $JAR local .
     done
 
