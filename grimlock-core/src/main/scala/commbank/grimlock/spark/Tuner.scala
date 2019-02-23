@@ -1,4 +1,4 @@
-// Copyright 2017 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,7 +107,9 @@ private[spark] object SparkImplicits {
       filter: (K, V, V) => Boolean
     )(implicit
       ev: Ordering[K]
-    ): Context.U[(K, (V, V))] = rdd.tunedJoin(tuner, rdd).filter { case (k, (v, w)) => filter(k, v, w) }
+    ): Context.U[(K, (V, V))] = rdd
+      .tunedJoin(tuner, rdd)
+      .filter { case (k, (v, w)) => filter(k, v, w) }
 
     def tunedStream[Q](tuner: Tuner, f: (K, Iterator[V]) => TraversableOnce[Q]): Context.U[(K, Q)] = {
       val grouped = tuner.parameters match {
@@ -142,7 +144,9 @@ private[spark] object SparkImplicits {
     )(implicit
       ev1: ClassTag[T],
       ev2: ClassTag[X]
-    ): Context.U[(T, X)] = rdd.cartesian(smaller).filter { case (l, r) => filter(l, r) }
+    ): Context.U[(T, X)] = rdd
+      .cartesian(smaller)
+      .filter { case (l, r) => filter(l, r) }
 
     def tunedDistinct(tuner: Tuner)(implicit ev: Ordering[T]): Context.U[T] = tuner.parameters match {
       case Reducers(reducers) => rdd.distinct(reducers)(ev)

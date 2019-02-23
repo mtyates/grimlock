@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import commbank.grimlock.framework.environment.implicits._
 import commbank.grimlock.framework.metadata._
 
 class TestContent extends TestGrimlock {
-
   "A Continuous Double Content" should "return its string value" in {
     Content(ContinuousSchema[Double](), 3.14).toString shouldBe "Content(ContinuousType,DoubleValue(3.14,DoubleCodec))"
     Content(ContinuousSchema[Double](0, 10), 3.14).toString shouldBe

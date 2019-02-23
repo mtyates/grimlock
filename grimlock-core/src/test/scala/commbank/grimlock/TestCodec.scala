@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.metadata._
 
 class TestDateCodec extends TestGrimlock {
-
   val codec = DateCodec("yyyy-MM-dd hh:ss:mm")
 
   val dfmt = new SimpleDateFormat(codec.format)
@@ -66,7 +65,6 @@ class TestDateCodec extends TestGrimlock {
 }
 
 class TestStringCodec extends TestGrimlock {
-
   "A StringCodec" should "have a name" in {
     StringCodec.toShortString shouldBe "string"
   }
@@ -99,7 +97,6 @@ class TestStringCodec extends TestGrimlock {
 }
 
 class TestDecimalCodec extends TestGrimlock {
-
   val codec = DecimalCodec(5, 4)
 
   val bd1 = BigDecimal(3.1415)
@@ -143,7 +140,6 @@ class TestDecimalCodec extends TestGrimlock {
 }
 
 class TestDoubleCodec extends TestGrimlock {
-
   "A DoubleCodec" should "have a name" in {
     DoubleCodec.toShortString shouldBe "double"
   }
@@ -181,7 +177,6 @@ class TestDoubleCodec extends TestGrimlock {
 }
 
 class TestIntCodec extends TestGrimlock {
-
   "A IntCodec" should "have a name" in {
     IntCodec.toShortString shouldBe "int"
   }
@@ -219,7 +214,6 @@ class TestIntCodec extends TestGrimlock {
 }
 
 class TestLongCodec extends TestGrimlock {
-
   "A LongCodec" should "have a name" in {
     LongCodec.toShortString shouldBe "long"
   }
@@ -257,7 +251,6 @@ class TestLongCodec extends TestGrimlock {
 }
 
 class TestBooleanCodec extends TestGrimlock {
-
   "A BooleanCodec" should "have a name" in {
     BooleanCodec.toShortString shouldBe "boolean"
   }
@@ -296,7 +289,6 @@ class TestBooleanCodec extends TestGrimlock {
 }
 
 class TestTimestampCodec extends TestGrimlock {
-
   val dfmt = new SimpleDateFormat("yyyy-MM-dd hh:ss:mm")
 
   val date1 = new Timestamp(dfmt.parse("2001-01-01 01:01:01").getTime)
@@ -339,7 +331,6 @@ class TestTimestampCodec extends TestGrimlock {
 }
 
 class TestBinaryCodec extends TestGrimlock {
-
   val one = "1".getBytes.head
   val two = "2".getBytes.head
 
@@ -380,7 +371,6 @@ class TestBinaryCodec extends TestGrimlock {
 }
 
 class TestTypeCodec extends TestGrimlock {
-
   "A TypeCodec" should "have a name" in {
     TypeCodec.toShortString shouldBe "type"
   }

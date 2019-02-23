@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ trait TestTransformers extends TestGrimlock {
 }
 
 class TestIndicator extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("foo", "bar"), getDoubleContent(3.1415))
@@ -82,7 +81,6 @@ class TestIndicator extends TestTransformers {
 }
 
 class TestBinarise extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
   type Q = Value[String] :: Value[String] :: HNil
 
@@ -109,7 +107,6 @@ class TestBinarise extends TestTransformers {
 }
 
 class TestNormalise extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Map[Position[Value[String] :: HNil], Content]]
 
@@ -151,7 +148,6 @@ class TestNormalise extends TestTransformers {
 }
 
 class TestStandardise extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Map[Position[Value[String] :: HNil], Content]]
 
@@ -262,7 +258,6 @@ class TestStandardise extends TestTransformers {
 }
 
 class TestClamp extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Map[Position[Value[String] :: HNil], Content]]
 
@@ -319,7 +314,6 @@ class TestClamp extends TestTransformers {
 }
 
 class TestIdf extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -384,7 +378,6 @@ class TestIdf extends TestTransformers {
 }
 
 class TestBooleanTf extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("foo", "bar"), getLongContent(3))
@@ -408,7 +401,6 @@ class TestBooleanTf extends TestTransformers {
 }
 
 class TestLogarithmicTf extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("foo", "bar"), getLongContent(3))
@@ -446,7 +438,6 @@ class TestLogarithmicTf extends TestTransformers {
 }
 
 class TestAugmentedTf extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
   type W1 = Map[Position[Value[String] :: HNil], Content]
   type W2 = Map[Position[Value[String] :: HNil], Map[Position[Value[String] :: HNil], Content]]
@@ -488,7 +479,6 @@ class TestAugmentedTf extends TestTransformers {
 }
 
 class TestTfIdf extends TestTransformers {
-
   type P = Value[String] :: Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -545,7 +535,6 @@ class TestTfIdf extends TestTransformers {
 }
 
 class TestAdd extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -586,7 +575,6 @@ class TestAdd extends TestTransformers {
 }
 
 class TestSubtract extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -652,7 +640,6 @@ class TestSubtract extends TestTransformers {
 }
 
 class TestMultiply extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -696,7 +683,6 @@ class TestMultiply extends TestTransformers {
 }
 
 class TestFraction extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Content]
 
@@ -762,7 +748,6 @@ class TestFraction extends TestTransformers {
 }
 
 class TestPower extends TestTransformers {
-
   type P = Value[String] :: HNil
 
   val cell = Cell(Position("foo"), getDoubleContent(3.1415))
@@ -779,7 +764,6 @@ class TestPower extends TestTransformers {
 }
 
 class TestSquareRoot extends TestTransformers {
-
   type P = Value[String] :: HNil
 
   val cell = Cell(Position("foo"), getDoubleContent(3.1415))
@@ -796,7 +780,6 @@ class TestSquareRoot extends TestTransformers {
 }
 
 class TestCut extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], List[Double]]
 
@@ -871,7 +854,6 @@ class TestCut extends TestTransformers {
 }
 
 class TestCompare extends TestTransformers {
-
   type P = Value[String] :: HNil
 
   val cell = Cell(Position("foo"), getDoubleContent(3.1415))
@@ -897,8 +879,118 @@ class TestCompare extends TestTransformers {
   }
 }
 
-class TestScaldingCutRules extends TestTransformers {
+class TestScalaCutRules extends TestTransformers with TestScala {
+  import commbank.grimlock.scala.transform.CutRules
 
+  val stats = Map(
+    Position("foo") -> Map(Position("min") -> getDoubleContent(0),
+    Position("max") -> getDoubleContent(5), Position("count") -> getDoubleContent(25),
+    Position("sd") -> getDoubleContent(2), Position("skewness") -> getDoubleContent(2))
+  )
+
+  "A fixed" should "cut" in {
+    CutRules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+
+    ctx.library.rules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.fixed(stats, "not.there", "max", 5) shouldBe Map()
+    CutRules.fixed(stats, "min", "not.there", 5) shouldBe Map()
+  }
+
+  "A squareRootChoice" should "cut" in {
+    CutRules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
+      Position("foo") -> List[Double](-0.005,1,2,3,4,5)
+    )
+
+    ctx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
+      Position("foo") -> List[Double](-0.005,1,2,3,4,5)
+    )
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.squareRootChoice(stats, "not.there", "min", "max") shouldBe Map()
+    CutRules.squareRootChoice(stats, "count", "not.there", "max") shouldBe Map()
+    CutRules.squareRootChoice(stats, "count", "min", "not.there") shouldBe Map()
+  }
+
+  "A sturgesFormula" should "cut" in {
+    // math.ceil(log2(25) + 1) = 6
+    val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
+
+    CutRules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+
+    ctx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.sturgesFormula(stats, "not.there", "min", "max") shouldBe Map()
+    CutRules.sturgesFormula(stats, "count", "not.there", "max") shouldBe Map()
+    CutRules.sturgesFormula(stats, "count", "min", "not.there") shouldBe Map()
+  }
+
+  "A riceRule" should "cut" in {
+    // math.ceil(2 * math.pow(25, 1.0 / 3.0)) = 6
+    val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 6)).tail
+
+    CutRules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+
+    ctx.library.rules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.riceRule(stats, "not.there", "min", "max") shouldBe Map()
+    CutRules.riceRule(stats, "count", "not.there", "max") shouldBe Map()
+    CutRules.riceRule(stats, "count", "min", "not.there") shouldBe Map()
+  }
+
+  "A doanesFormula" should "cut" in {
+    // math.round(1 + log2(25) + log2(1 + math.abs(2) / math.sqrt((6.0 * 23.0) / (26.0 * 28.0)))) = 8
+    val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 8)).tail
+
+    CutRules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
+
+    ctx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.doanesFormula(stats, "not.there", "min", "max", "skewness") shouldBe Map()
+    CutRules.doanesFormula(stats, "count", "not.there", "max", "skewness") shouldBe Map()
+    CutRules.doanesFormula(stats, "count", "min", "not.there", "skewness") shouldBe Map()
+    CutRules.doanesFormula(stats, "count", "min", "max", "not.there") shouldBe Map()
+  }
+
+  "A scottsNormalReferenceRule" should "cut" in {
+    // math.ceil((5.0 - 0) / (3.5 * 2 / math.pow(25, 1.0 / 3.0))) = 3
+    val vals = -0.005 +: (0.0 to 5.0 by (5.0 / 3)).tail
+
+    CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(Position("foo") -> vals)
+
+    ctx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(
+      Position("foo") -> vals
+    )
+  }
+
+  it should "not cut with missing values" in {
+    CutRules.scottsNormalReferenceRule(stats, "not.there", "min", "max", "sd") shouldBe Map()
+    CutRules.scottsNormalReferenceRule(stats, "count", "not.there", "max", "sd") shouldBe Map()
+    CutRules.scottsNormalReferenceRule(stats, "count", "min", "not.there", "sd") shouldBe Map()
+    CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "not.there") shouldBe Map()
+  }
+
+  "A breaks" should "cut" in {
+    CutRules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
+      Position("foo") -> List[Double](0,1,2,3,4,5)
+    )
+
+    ctx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
+      Position("foo") -> List[Double](0,1,2,3,4,5)
+    )
+  }
+}
+
+class TestScaldingCutRules extends TestTransformers with TestScalding {
   import commbank.grimlock.scalding.transform.CutRules
 
   import com.twitter.scalding.typed.ValuePipe
@@ -914,7 +1006,7 @@ class TestScaldingCutRules extends TestTransformers {
   "A fixed" should "cut" in {
     CutRules.fixed(stats, "min", "max", 5) shouldBe ValuePipe(Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5)))
 
-    scaldingCtx.library.rules.fixed(stats, "min", "max", 5) shouldBe ValuePipe(
+    ctx.library.rules.fixed(stats, "min", "max", 5) shouldBe ValuePipe(
       Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
     )
   }
@@ -929,7 +1021,7 @@ class TestScaldingCutRules extends TestTransformers {
       Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
     )
 
-    scaldingCtx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe ValuePipe(
+    ctx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe ValuePipe(
       Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
     )
   }
@@ -946,7 +1038,7 @@ class TestScaldingCutRules extends TestTransformers {
 
     CutRules.sturgesFormula(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
 
-    scaldingCtx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe ValuePipe(
+    ctx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe ValuePipe(
       Map(Position("foo") -> vals)
     )
   }
@@ -963,7 +1055,7 @@ class TestScaldingCutRules extends TestTransformers {
 
     CutRules.riceRule(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
 
-    scaldingCtx.library.rules.riceRule(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
+    ctx.library.rules.riceRule(stats, "count", "min", "max") shouldBe ValuePipe(Map(Position("foo") -> vals))
   }
 
   it should "not cut with missing values" in {
@@ -978,7 +1070,7 @@ class TestScaldingCutRules extends TestTransformers {
 
     CutRules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe ValuePipe(Map(Position("foo") -> vals))
 
-    scaldingCtx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe ValuePipe(
+    ctx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe ValuePipe(
       Map(Position("foo") -> vals)
     )
   }
@@ -998,7 +1090,7 @@ class TestScaldingCutRules extends TestTransformers {
       Map(Position("foo") -> vals)
     )
 
-    scaldingCtx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe ValuePipe(
+    ctx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe ValuePipe(
       Map(Position("foo") -> vals)
     )
   }
@@ -1015,14 +1107,13 @@ class TestScaldingCutRules extends TestTransformers {
       Map(Position("foo") -> List[Double](0,1,2,3,4,5))
     )
 
-    scaldingCtx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe ValuePipe(
+    ctx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe ValuePipe(
       Map(Position("foo") -> List[Double](0,1,2,3,4,5))
     )
   }
 }
 
-class TestSparkCutRules extends TestTransformers {
-
+class TestSparkCutRules extends TestTransformers with TestSpark {
   import commbank.grimlock.spark.transform.CutRules
 
   val stats = Map(
@@ -1034,7 +1125,7 @@ class TestSparkCutRules extends TestTransformers {
   "A fixed" should "cut" in {
     CutRules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
 
-    sparkCtx.library.rules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
+    ctx.library.rules.fixed(stats, "min", "max", 5) shouldBe Map(Position("foo") -> List[Double](-0.005,1,2,3,4,5))
   }
 
   it should "not cut with missing values" in {
@@ -1047,7 +1138,7 @@ class TestSparkCutRules extends TestTransformers {
       Position("foo") -> List[Double](-0.005,1,2,3,4,5)
     )
 
-    sparkCtx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
+    ctx.library.rules.squareRootChoice(stats, "count", "min", "max") shouldBe Map(
       Position("foo") -> List[Double](-0.005,1,2,3,4,5)
     )
   }
@@ -1064,7 +1155,7 @@ class TestSparkCutRules extends TestTransformers {
 
     CutRules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
 
-    sparkCtx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+    ctx.library.rules.sturgesFormula(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1079,7 +1170,7 @@ class TestSparkCutRules extends TestTransformers {
 
     CutRules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
 
-    sparkCtx.library.rules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
+    ctx.library.rules.riceRule(stats, "count", "min", "max") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1094,7 +1185,7 @@ class TestSparkCutRules extends TestTransformers {
 
     CutRules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
 
-    sparkCtx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
+    ctx.library.rules.doanesFormula(stats, "count", "min", "max", "skewness") shouldBe Map(Position("foo") -> vals)
   }
 
   it should "not cut with missing values" in {
@@ -1110,7 +1201,7 @@ class TestSparkCutRules extends TestTransformers {
 
     CutRules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(Position("foo") -> vals)
 
-    sparkCtx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(
+    ctx.library.rules.scottsNormalReferenceRule(stats, "count", "min", "max", "sd") shouldBe Map(
       Position("foo") -> vals
     )
   }
@@ -1127,14 +1218,13 @@ class TestSparkCutRules extends TestTransformers {
       Position("foo") -> List[Double](0,1,2,3,4,5)
     )
 
-    sparkCtx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
+    ctx.library.rules.breaks(Map("foo" -> List[Double](0,1,2,3,4,5))) shouldBe Map(
       Position("foo") -> List[Double](0,1,2,3,4,5)
     )
   }
 }
 
 class TestAndThenTransformer extends TestTransformers {
-
   type P = Value[String] :: HNil
   type Q = Value[String] :: HNil
 
@@ -1149,7 +1239,6 @@ class TestAndThenTransformer extends TestTransformers {
 }
 
 class TestAndThenTransformerWithValue extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[Value[String] :: HNil], Map[Position[Value[String] :: HNil], Content]]
 
@@ -1170,7 +1259,6 @@ class TestAndThenTransformerWithValue extends TestTransformers {
 }
 
 class TestWithPrepareTransformer extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[P], Content]
 
@@ -1224,7 +1312,6 @@ class TestWithPrepareTransformer extends TestTransformers {
 }
 
 class TestAndThenMutateTransformer extends TestTransformers {
-
   type P = Value[String] :: HNil
   type W = Map[Position[P], Content]
 

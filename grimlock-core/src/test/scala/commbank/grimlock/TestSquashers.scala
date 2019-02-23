@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import shapeless.{ ::, HNil }
 import shapeless.nat.{ _0, _1, _2 }
 
 trait TestSquashers extends TestGrimlock {
-
   type P = Value[Int] :: Value[String] :: Value[Date] :: HNil
 
   implicit def toDate(date: Date): DateValue = DateValue(date)
@@ -42,7 +41,6 @@ trait TestSquashers extends TestGrimlock {
 }
 
 class TestPreservingMaximumPosition extends TestSquashers {
-
   "A PreservingMaximumPosition" should "return the second cell for the first dimension when greater" in {
     val squash = PreservingMaximumPosition[P]()
 
@@ -171,7 +169,6 @@ class TestPreservingMaximumPosition extends TestSquashers {
 }
 
 class TestPreservingMinimumPosition extends TestSquashers {
-
   "A PreservingMinimumPosition" should "return the first cell for the first dimension when less" in {
     val squash = PreservingMinimumPosition[P]()
 
@@ -300,7 +297,6 @@ class TestPreservingMinimumPosition extends TestSquashers {
 }
 
 class TestKeepSlice extends TestSquashers {
-
   "A KeepSlice" should "return the first cell for the first dimension when equal" in {
     val squash = KeepSlice[P](1)
 

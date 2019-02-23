@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ private[transform] object Transform {
 }
 
 /** Create indicator variables. */
-case class Indicator[P <: HList]()(implicit ev: Value.Box[Long])extends Transformer[P, P] {
+case class Indicator[P <: HList]()(implicit ev: Value.Box[Long]) extends Transformer[P, P] {
   def present(cell: Cell[P]): TraversableOnce[Cell[P]] = List(Cell(cell.position, Content(DiscreteSchema[Long](), 1L)))
 }
 
@@ -216,12 +216,10 @@ case class Idf[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    freq,
-    (df, n) => idf(df, n)
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, freq, (df, n) => idf(df, n))
 }
 
 /**
@@ -267,12 +265,10 @@ case class AugmentedTf[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    max,
-    (tf, m) => 0.5 + (0.5 * tf) / m
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, max, (tf, m) => 0.5 + (0.5 * tf) / m)
 }
 
 /**
@@ -292,12 +288,10 @@ case class TfIdf[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    idf,
-    (t, i) => t * i
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, idf, (t, i) => t * i)
 }
 
 /**
@@ -317,12 +311,10 @@ case class Add[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    value,
-    (l, r) => l + r
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, value, (l, r) => l + r)
 }
 
 /**
@@ -344,13 +336,10 @@ case class Subtract[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    value,
-    (l, r) => l - r,
-    inverse
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, value, (l, r) => l - r, inverse)
 }
 
 /**
@@ -370,12 +359,10 @@ case class Multiply[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    value,
-    (l, r) => l * r
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, value, (l, r) => l * r)
 }
 
 /**
@@ -397,13 +384,10 @@ case class Fraction[
 ) extends TransformerWithValue[P, P] {
   type V = W
 
-  def presentWithValue(cell: Cell[P], ext: V): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(
-    cell,
-    ext,
-    value,
-    (l, r) => l / r,
-    inverse
-  )
+  def presentWithValue(
+    cell: Cell[P],
+    ext: V
+  ): TraversableOnce[Cell[P]] = Transform.presentDoubleWithValue(cell, ext, value, (l, r) => l / r, inverse)
 }
 
 /**

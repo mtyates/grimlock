@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,17 +28,16 @@ import shapeless.{ ::, HList, HNil }
 import shapeless.nat._2
 
 trait TestOperators extends TestGrimlock {
+  type P = Value[String] :: Value[String] :: Value[String] :: HNil
+  type S = Value[String] :: Value[String] :: HNil
+  type R = Value[String] :: HNil
 
-   type P = Value[String] :: Value[String] :: Value[String] :: HNil
-   type S = Value[String] :: Value[String] :: HNil
-   type R = Value[String] :: HNil
-
-   val left = Cell(Position("left 1", "left 2", "reml"), Content(ContinuousSchema[Long](), 2L))
-   val right = Cell(Position("right 1", "right 2", "remr"), Content(ContinuousSchema[Long](), 4L))
-   val reml = Position("reml")
-   val remr = Position("remr")
-   val separator = "."
-   val pattern: String
+  val left = Cell(Position("left 1", "left 2", "reml"), Content(ContinuousSchema[Long](), 2L))
+  val right = Cell(Position("right 1", "right 2", "remr"), Content(ContinuousSchema[Long](), 4L))
+  val reml = Position("reml")
+  val remr = Position("remr")
+  val separator = "."
+  val pattern: String
 
   def getPosition(call: Int, swap: Boolean = false): Position[Value[String] :: Value[String] :: HNil] = {
     val (first, second) = call match {
@@ -51,11 +50,11 @@ trait TestOperators extends TestGrimlock {
 
     Position(pattern.format(first, second), third)
   }
+
   def getContent(value: Double): Content = Content(ContinuousSchema[Double](), value)
 }
 
 class TestComparer extends TestOperators {
-
   val pattern = "not.used"
 
   "All" should "keep all" in {
@@ -96,8 +95,7 @@ class TestComparer extends TestOperators {
 }
 
 class TestPlus extends TestOperators {
-
-   val pattern = "(%1$s plus %2$s)"
+  val pattern = "(%1$s plus %2$s)"
 
   "A Plus" should "compute" in {
     val obj = Plus(Locate.PrependPairwiseSelectedStringToRemainder[P, S, R](Along(_2), pattern, true, separator))
@@ -109,8 +107,7 @@ class TestPlus extends TestOperators {
 }
 
 class TestMinus extends TestOperators {
-
-   val pattern = "(%1$s minus %2$s)"
+  val pattern = "(%1$s minus %2$s)"
 
   "A Minus" should "compute" in {
     val obj = Minus(
@@ -133,8 +130,7 @@ class TestMinus extends TestOperators {
 }
 
 class TestTimes extends TestOperators {
-
-   val pattern = "(%1$s times %2$s)"
+  val pattern = "(%1$s times %2$s)"
 
   "A Times" should "compute" in {
     val obj = Times(Locate.PrependPairwiseSelectedStringToRemainder[P, S, R](Along(_2), pattern, true, separator))
@@ -146,8 +142,7 @@ class TestTimes extends TestOperators {
 }
 
 class TestDivide extends TestOperators {
-
-   val pattern = "(%1$s divide %2$s)"
+  val pattern = "(%1$s divide %2$s)"
 
   "A Divide" should "compute" in {
     val obj = Divide(
@@ -173,9 +168,8 @@ class TestDivide extends TestOperators {
 }
 
 class TestConcatenate extends TestOperators {
-
-   val pattern = "concat(%1$s,%2$s)"
-   val format = "%1$s+%2$s"
+  val pattern = "concat(%1$s,%2$s)"
+  val format = "%1$s+%2$s"
 
   "A Concatenate" should "compute" in {
     val obj = Concatenate(
@@ -194,7 +188,6 @@ class TestConcatenate extends TestOperators {
 }
 
 class TestCombinationOperator extends TestOperators {
-
   val pattern = "not.used"
 
   "A CombinationOperator" should "compute" in {
@@ -249,7 +242,6 @@ case class PlusWithValue[P <: HList, Q <: HList](pos: Locate.FromPairwiseCells[P
 }
 
 class TestWithPrepareOperator extends TestOperators {
-
   val pattern = "not.used"
 
   val str = Cell(Position("x"), getDoubleContent(2))
@@ -306,7 +298,6 @@ class TestWithPrepareOperator extends TestOperators {
 }
 
 class TestAndThenMutateOperator extends TestOperators {
-
   val pattern = "not.used"
 
   val str = Cell(Position("x"), getDoubleContent(2))

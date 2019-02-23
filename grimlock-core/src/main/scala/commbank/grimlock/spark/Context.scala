@@ -1,4 +1,4 @@
-// Copyright 2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ case class Context(session: SparkSession) extends FwContext[Context] {
     (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
 
-  val implicits = Implicits()
+  val implicits = Implicits
 
   val library = Library
 
@@ -107,13 +107,10 @@ object Context {
    * `DataFrameReader` to read parquet.
    */
   implicit def toSparkParquet[T : ClassTag](implicit ev: Encoder[T]) = new ParquetConfig[T, Context] {
-    def load(context: Context, file: String): Context.U[T] = context
-      .session
-      .sqlContext
-      .read
-      .parquet(file)
-      .as[T]
-      .rdd
+    def load(
+      context: Context,
+      file: String
+    ): Context.U[T] = context.session.sqlContext.read.parquet(file).as[T].rdd
   }
 }
 

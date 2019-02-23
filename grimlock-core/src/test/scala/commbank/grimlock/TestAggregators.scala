@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ trait TestAggregators extends TestGrimlock {
 }
 
 class TestCounts extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
 
@@ -75,7 +74,6 @@ class TestCounts extends TestAggregators {
 }
 
 class TestMean extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -299,7 +297,6 @@ class TestMean extends TestAggregators {
 }
 
 class TestStandardDeviation extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -523,7 +520,6 @@ class TestStandardDeviation extends TestAggregators {
 }
 
 class TestSkewness extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "three"), getDoubleContent(3))
@@ -808,7 +804,6 @@ class TestSkewness extends TestAggregators {
 }
 
 class TestKurtosis extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "three"), getDoubleContent(3))
@@ -1154,7 +1149,6 @@ class TestKurtosis extends TestAggregators {
 }
 
 class TestMin extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -1378,7 +1372,6 @@ class TestMin extends TestAggregators {
 }
 
 class TestMax extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -1602,7 +1595,6 @@ class TestMax extends TestAggregators {
 }
 
 class TestMaximumAbsolute extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(-2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -1826,7 +1818,6 @@ class TestMaximumAbsolute extends TestAggregators {
 }
 
 class TestSums extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(2))
   val cell3 = Cell(Position("foo", "bar"), getStringContent("bar"))
@@ -2050,7 +2041,6 @@ class TestSums extends TestAggregators {
 }
 
 class TestPredicateCounts extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "one"), getDoubleContent(-1))
   val cell2 = Cell(Position("foo", "two"), getDoubleContent(0))
   val cell3 = Cell(Position("foo", "three"), getDoubleContent(1))
@@ -2082,7 +2072,6 @@ class TestPredicateCounts extends TestAggregators {
 }
 
 class TestWeightedSums extends TestAggregators {
-
   type Q = Value[String] :: Value[Int] :: HNil
 
   val cell1 = Cell(Position("foo", 1), getDoubleContent(-1))
@@ -2501,7 +2490,6 @@ class TestWeightedSums extends TestAggregators {
 }
 
 class TestDistinctCounts extends TestAggregators {
-
   type Q = Value[String] :: Value[Int] :: HNil
 
   val cell1 = Cell(Position("foo", 1), getDoubleContent(1))
@@ -2593,7 +2581,6 @@ class TestDistinctCounts extends TestAggregators {
 }
 
 class TestEntropy extends TestAggregators {
-
   val cell1 = Cell(Position("foo", "abc"), getLongContent(1))
   val cell2 = Cell(Position("foo", "xyz"), getLongContent(2))
   val cell3 = Cell(Position("foo", "123"), getStringContent("456"))
@@ -3492,7 +3479,6 @@ class TestEntropy extends TestAggregators {
 }
 
 class TestWithPrepareAggregator extends TestAggregators {
-
   type X = Value[String] :: HNil
 
   val str = Cell(Position("x"), getStringContent("foo"))
@@ -3550,7 +3536,6 @@ class TestWithPrepareAggregator extends TestAggregators {
 }
 
 class TestAndThenMutateAggregator extends TestAggregators {
-
   type X = Value[String] :: HNil
 
   val x = Position("x")
@@ -3600,7 +3585,6 @@ class TestAndThenMutateAggregator extends TestAggregators {
 }
 
 class TestCountMapHistogram extends TestAggregators {
-
   type Q = Value[String] :: Value[String] :: HNil
 
   val cell1 = Cell(Position("foo", "one"), getStringContent("bar"))

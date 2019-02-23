@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import shapeless.{ ::, HNil }
 import shapeless.nat.{ _0, _1 }
 
 trait TestBatchMovingAverage extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[String] :: HNil
@@ -49,7 +48,6 @@ trait TestBatchMovingAverage extends TestGrimlock {
 }
 
 class TestSimpleMovingAverage extends TestBatchMovingAverage {
-
   "A SimpleMovingAverage" should "prepare correctly" in {
     SimpleMovingAverage(1, Locate.AppendRemainderDimension[S, R, _0, Value[String]](_0), false)
       .prepare(cell) shouldBe in
@@ -174,7 +172,6 @@ class TestSimpleMovingAverage extends TestBatchMovingAverage {
 }
 
 class TestCenteredMovingAverage extends TestBatchMovingAverage {
-
   "A CenteredMovingAverage" should "prepare correctly" in {
     CenteredMovingAverage(1, Locate.AppendRemainderDimension[S, R, _0, Value[String]](_0))
       .prepare(cell) shouldBe in
@@ -242,7 +239,6 @@ class TestCenteredMovingAverage extends TestBatchMovingAverage {
 }
 
 class TestWeightedMovingAverage extends TestBatchMovingAverage {
-
   "A WeightedMovingAverage" should "prepare correctly" in {
     WeightedMovingAverage(1, Locate.AppendRemainderDimension[S, R, _0, Value[String]](_0), false)
       .prepare(cell) shouldBe in
@@ -370,7 +366,6 @@ class TestWeightedMovingAverage extends TestBatchMovingAverage {
 }
 
 trait TestOnlineMovingAverage extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[String] :: HNil
@@ -388,7 +383,6 @@ trait TestOnlineMovingAverage extends TestGrimlock {
 }
 
 class TestCumulativeMovingAverage extends TestOnlineMovingAverage {
-
   "A CumulativeMovingAverage" should "prepare correctly" in {
     CumulativeMovingAverage(Locate.AppendRemainderDimension[S, R, _0, Value[String]](_0)).prepare(cell) shouldBe in
   }
@@ -428,7 +422,6 @@ class TestCumulativeMovingAverage extends TestOnlineMovingAverage {
 }
 
 class TestExponentialMovingAverage extends TestOnlineMovingAverage {
-
   "A ExponentialMovingAverage" should "prepare correctly" in {
     ExponentialMovingAverage(3, Locate.AppendRemainderDimension[S, R, _0, Value[String]](_0)).prepare(cell) shouldBe in
   }
@@ -475,7 +468,6 @@ class TestExponentialMovingAverage extends TestOnlineMovingAverage {
 }
 
 trait TestWindow extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[String] :: HNil
@@ -490,7 +482,6 @@ trait TestWindow extends TestGrimlock {
 }
 
 class TestCumulativeSum extends TestWindow {
-
   def createCell(value: Double) = List(Cell(Position("foo", "bar|baz"), Content(ContinuousSchema[Double](), value)))
 
   "A CumulativeSum" should "prepare correctly" in {
@@ -589,7 +580,6 @@ class TestCumulativeSum extends TestWindow {
 }
 
 class TestBinaryOperator extends TestWindow {
-
   def createCell(value: Double) = List(
     Cell(Position("foo", "p(bar|baz, bar|baz)"), Content(ContinuousSchema[Double](), value))
   )
@@ -703,7 +693,6 @@ class TestBinaryOperator extends TestWindow {
 }
 
 class TestCombinationWindow extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: HNil
@@ -844,7 +833,6 @@ case class DeltaWithValue() extends WindowWithValue[
 }
 
 class TestWithPrepareWindow extends TestGrimlock {
-
   val str = Cell(Position("x"), getStringContent("foo"))
   val dbl = Cell(Position("y"), getDoubleContent(3.14))
   val lng = Cell(Position("z"), getLongContent(42))
@@ -907,7 +895,6 @@ class TestWithPrepareWindow extends TestGrimlock {
 }
 
 class TestAndThenMutateWindow extends TestGrimlock {
-
   val str = Cell(Position("x"), getStringContent("foo"))
   val dbl = Cell(Position("y"), getDoubleContent(3.14))
   val lng = Cell(Position("z"), getLongContent(42))

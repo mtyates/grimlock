@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,6 @@ import commbank.grimlock.framework.position._
 
 import commbank.grimlock.library.partition._
 
-import commbank.grimlock.scalding.environment.implicits._
-
-import commbank.grimlock.spark.environment.implicits._
-
 import com.twitter.scalding.typed.TypedPipe
 
 import org.apache.spark.rdd.RDD
@@ -36,7 +32,6 @@ import shapeless.{ ::, HList, HNil }
 import shapeless.nat.{ _0, _1 }
 
 trait TestHashPartitioners extends TestGrimlock {
-
   // In scalding REPL:
   //
   // import commbank.grimlock.framework.encoding._
@@ -57,7 +52,6 @@ trait TestHashPartitioners extends TestGrimlock {
 }
 
 class TestBinaryHashSplit extends TestHashPartitioners {
-
   "A BinaryHashSplit" should "assign left on the first dimension" in {
     BinaryHashSplit[P, _0, String](_0, 9, "left", "right", 10).assign(cell1) shouldBe List("left")
   }
@@ -84,7 +78,6 @@ class TestBinaryHashSplit extends TestHashPartitioners {
 }
 
 class TestTernaryHashSplit extends TestHashPartitioners {
-
   "A TernaryHashSplit" should "assign left on the first dimension" in {
     TernaryHashSplit[P, _0, String](_0, 5, 8, "left", "middle", "right", 10).assign(cell2) shouldBe List("left")
   }
@@ -126,10 +119,7 @@ class TestTernaryHashSplit extends TestHashPartitioners {
   }
 }
 
-  // ->  List(8, 4, 7)
-  // ->  List(6, 8, 0)
 class TestHashSplit extends TestHashPartitioners {
-
   val map1 = Map("lower.left" -> ((0, 5)), "upper.left" -> ((1, 6)), "right" -> ((6, 7)))
   val map2 = Map("lower.left" -> ((1, 6)), "upper.left" -> ((2, 7)), "right" -> ((6, 10)))
 
@@ -159,7 +149,6 @@ class TestHashSplit extends TestHashPartitioners {
 }
 
 trait TestDatePartitioners extends TestGrimlock {
-
   type P = Value[Int] :: Value[java.util.Date] :: HNil
 
   implicit def toDate(date: java.util.Date): Value[java.util.Date] = DateValue(date, codec)
@@ -174,7 +163,6 @@ trait TestDatePartitioners extends TestGrimlock {
 }
 
 class TestBinaryDateSplit extends TestDatePartitioners {
-
   "A BinaryDateSplit" should "assign left on the second dimension" in {
     BinaryDateSplit[P, _1, String](_1, dfmt.parse("2005-01-01"), "left", "right", codec)
       .assign(cell1) shouldBe List("left")
@@ -192,7 +180,6 @@ class TestBinaryDateSplit extends TestDatePartitioners {
 }
 
 class TestTernaryDateSplit extends TestDatePartitioners {
-
   "A TernaryDateSplit" should "assign left on the second dimension" in {
     TernaryDateSplit[P, _1, String](
       _1,
@@ -255,7 +242,6 @@ class TestTernaryDateSplit extends TestDatePartitioners {
 }
 
 class TestDateSplit extends TestDatePartitioners {
-
   val map1 = Map(
     "lower.left" -> ((dfmt.parse("2003-01-01"), dfmt.parse("2005-01-01"))),
     "upper.left" -> ((dfmt.parse("2003-06-30"), dfmt.parse("2005-06-30"))),
@@ -276,7 +262,6 @@ class TestDateSplit extends TestDatePartitioners {
 }
 
 trait TestPartitions extends TestGrimlock {
-
   val data = List(
     ("train", Cell(Position("fid:A"), Content(ContinuousSchema[Long](), 1L))),
     ("train", Cell(Position("fid:B"), Content(ContinuousSchema[Long](), 2L))),
@@ -318,101 +303,149 @@ trait TestPartitions extends TestGrimlock {
 }
 
 object TestPartitions {
-
   def double[P <: HList](cell: Cell[P]): Option[Cell[P]] = cell.content.value.as[Long].map(v =>
     Cell(cell.position, Content(ContinuousSchema[Long](), 2 * v))
   )
 
+  def doubleS[P <: HList](key: String, list: List[Cell[P]]): List[Cell[P]] = list.flatMap(double(_))
   def doubleT[P <: HList](key: String, pipe: TypedPipe[Cell[P]]): TypedPipe[Cell[P]] = pipe.flatMap(double(_))
-  def doubleR[P <: HList](key: String, pipe: RDD[Cell[P]]): RDD[Cell[P]] = pipe.flatMap(double(_))
+  def doubleR[P <: HList](key: String, rdd: RDD[Cell[P]]): RDD[Cell[P]] = rdd.flatMap(double(_))
 }
 
-class TestScaldingPartitions extends TestPartitions {
+class TestScalaPartitions extends TestPartitions with TestScala {
+  import commbank.grimlock.scala.environment.implicits._
 
   "A Partitions" should "return its ids" in {
-    toPipe(data)
+    toU(data)
       .ids(Default())
       .toList.sorted shouldBe result1
   }
 
   it should "get a partition's data" in {
-    toPipe(data)
+    toU(data)
       .get("train")
       .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "add new data" in {
-    toPipe(data)
-      .add("xyz", toPipe(data2))
+    toU(data)
+      .add("xyz", toU(data2))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result3
   }
 
   it should "remove a partition's data" in {
-    toPipe(data)
+    toU(data)
       .remove("train")
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result4
   }
 
   it should "foreach should apply to selected partitions" in {
-    toPipe(data)
+    toU(data)
+      .forEach(List("test", "valid", "not.there"), TestPartitions.doubleS)
+      .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
+  }
+
+  it should "forall should apply to selected partitions" in {
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleS, List("train", "not.there"), Default())
+      .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
+  }
+
+  it should "forall should apply to selected partitions with reducers" in {
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleS, List("train", "not.there"), Default())
+      .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
+  }
+}
+
+class TestScaldingPartitions extends TestPartitions with TestScalding {
+  import commbank.grimlock.scalding.environment.implicits._
+
+  "A Partitions" should "return its ids" in {
+    toU(data)
+      .ids(Default())
+      .toList.sorted shouldBe result1
+  }
+
+  it should "get a partition's data" in {
+    toU(data)
+      .get("train")
+      .toList.sortBy(_.position) shouldBe result2
+  }
+
+  it should "add new data" in {
+    toU(data)
+      .add("xyz", toU(data2))
+      .toList.sortBy(_._2.content.value.toShortString) shouldBe result3
+  }
+
+  it should "remove a partition's data" in {
+    toU(data)
+      .remove("train")
+      .toList.sortBy(_._2.content.value.toShortString) shouldBe result4
+  }
+
+  it should "foreach should apply to selected partitions" in {
+    toU(data)
       .forEach(List("test", "valid", "not.there"), TestPartitions.doubleT)
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions" in {
-    toPipe(data)
-      .forAll(scaldingCtx, TestPartitions.doubleT, List("train", "not.there"), Default())
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleT, List("train", "not.there"), Default())
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions with reducers" in {
-    toPipe(data)
-      .forAll(scaldingCtx, TestPartitions.doubleT, List("train", "not.there"), Default(10))
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleT, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }
 
-class TestSparkPartitions extends TestPartitions {
+class TestSparkPartitions extends TestPartitions with TestSpark {
+  import commbank.grimlock.spark.environment.implicits._
 
   "A Partitions" should "return its ids" in {
-    toRDD(data)
+    toU(data)
       .ids(Default(12))
       .toList.sorted shouldBe result1
   }
 
   it should "get a partition's data" in {
-    toRDD(data)
+    toU(data)
       .get("train")
       .toList.sortBy(_.position) shouldBe result2
   }
 
   it should "add new data" in {
-    toRDD(data)
-      .add("xyz", toRDD(data2))
+    toU(data)
+      .add("xyz", toU(data2))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result3
   }
 
   it should "remove a partition's data" in {
-    toRDD(data)
+    toU(data)
       .remove("train")
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result4
   }
 
   it should "foreach should apply to selected partitions" in {
-    toRDD(data)
+    toU(data)
       .forEach(List("test", "valid", "not.there"), TestPartitions.doubleR)
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions" in {
-    toRDD(data)
-      .forAll(sparkCtx, TestPartitions.doubleR, List("train", "not.there"), Default())
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleR, List("train", "not.there"), Default())
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 
   it should "forall should apply to selected partitions with reducers" in {
-    toRDD(data)
-      .forAll(sparkCtx, TestPartitions.doubleR, List("train", "not.there"), Default(10))
+    toU(data)
+      .forAll(ctx, TestPartitions.doubleR, List("train", "not.there"), Default(10))
       .toList.sortBy(_._2.content.value.toShortString) shouldBe result5
   }
 }

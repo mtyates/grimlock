@@ -1,4 +1,4 @@
-// Copyright 2017,2018 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import commbank.grimlock.framework.Matrix.{
   GatherTuner,
   GetTuner,
   JoinTuner,
+  MeasureTuner,
   MutateTuner,
   PairTuner,
   SaveAsCSVTuner,
@@ -51,7 +52,6 @@ import commbank.grimlock.framework.Matrix.{
   ShapeTuner,
   SelectTuner,
   SetTuner,
-  SizeTuner,
   SlideTuner,
   SquashTuner,
   SummariseTuner,
@@ -412,6 +412,10 @@ package object implicits {
   implicit def pipeJoinTunerDrDr = new JoinTuner[Context.U, Binary[Default[Reducers], Default[Reducers]]] { }
   implicit def pipeJoinTunerDrUr = new JoinTuner[Context.U, Binary[Default[Reducers], Unbalanced[Reducers]]] { }
 
+  /** Implicits for checking tuners on a call to `measure`. */
+  implicit def pipeMeasureTunerDn = new MeasureTuner[Context.U, Default[NoParameters]] { }
+  implicit def pipeMeasureTunerDr = new MeasureTuner[Context.U, Default[Reducers]] { }
+
   /** Implicits for checking tuners on a call to `mutate`. */
   implicit def pipeMutateTunerIn = new MutateTuner[Context.U, InMemory[NoParameters]] { }
   implicit def pipeMutateTunerDn = new MutateTuner[Context.U, Default[NoParameters]] { }
@@ -486,10 +490,6 @@ package object implicits {
   /** Implicits for checking tuners on a call to `shape`. */
   implicit def pipeShapeTunerDn = new ShapeTuner[Context.U, Default[NoParameters]] { }
   implicit def pipeShapeTunerDr = new ShapeTuner[Context.U, Default[Reducers]] { }
-
-  /** Implicits for checking tuners on a call to `size`. */
-  implicit def pipeSizeTunerDn = new SizeTuner[Context.U, Default[NoParameters]] { }
-  implicit def pipeSizeTunerDr = new SizeTuner[Context.U, Default[Reducers]] { }
 
   /** Implicits for checking tuners on a call to `slide`. */
   implicit def pipeSlideTunerDn = new SlideTuner[Context.U, Default[NoParameters]] { }

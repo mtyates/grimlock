@@ -14,23 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-for file in $(ls demo.scalding)
+for file in $(ls demo.scala)
 do
-  cat demo.scalding/$file | sort > x
-  cat demo.spark/$file/* | sort > y
+  cat demo.scala/$file | sort > x
+  cat demo.scalding/$file | sort > y
+  cat demo.spark/$file/* | sort > z
 
-  echo "$file - $(wc -l x) | $(wc -l y)"
-  diff x y
+  echo "$file - $(wc -l x) | $(wc -l y) | $(wc -l z)"
+  diff3 x y z
 done
 
-for file in $(ls tmp.scalding)
+for file in $(ls tmp.scala)
 do
-  cat tmp.scalding/$file | sort > x
-  cat tmp.spark/$file/* | sort > y
+  cat tmp.scala/$file | sort > x
+  cat tmp.scalding/$file | sort > y
+  cat tmp.spark/$file/* | sort > z
 
-  echo "$file - $(wc -l x) | $(wc -l y)"
-  diff x y
+  echo "$file - $(wc -l x) | $(wc -l y) | $(wc -l z)"
+  diff3 x y z
 done
 
-rm x y
+rm x y z
 

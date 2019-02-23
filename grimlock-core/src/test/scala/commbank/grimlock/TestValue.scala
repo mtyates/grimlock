@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Date
 import scala.math.BigDecimal
 
 class TestDateValue extends TestGrimlock {
-
   val dfmt = new java.text.SimpleDateFormat("dd/MM/yyyy")
   val date2001 = dfmt.parse("01/01/2001")
   val date2002 = dfmt.parse("01/01/2002")
@@ -171,7 +170,6 @@ class TestDateValue extends TestGrimlock {
 }
 
 class TestStringValue extends TestGrimlock {
-
   val foo = "foo"
   val bar = "bar"
   val dvfoo = StringValue(foo)
@@ -311,7 +309,6 @@ class TestStringValue extends TestGrimlock {
 }
 
 class TestDecimalValue extends TestGrimlock {
-
   val cdc = DecimalCodec(3, 2)
   val one = BigDecimal(1.0)
   val pi = BigDecimal(3.14)
@@ -450,7 +447,6 @@ class TestDecimalValue extends TestGrimlock {
 }
 
 class TestDoubleValue extends TestGrimlock {
-
   val one = 1.0
   val pi = 3.14
   val dvone = DoubleValue(one)
@@ -589,7 +585,6 @@ class TestDoubleValue extends TestGrimlock {
 }
 
 class TestLongValue extends TestGrimlock {
-
   val one = 1
   val two = 2
   val dvone = LongValue(one)
@@ -730,7 +725,6 @@ class TestLongValue extends TestGrimlock {
 }
 
 class TestIntValue extends TestGrimlock {
-
   val one = 1
   val two = 2
   val dvone = IntValue(one)
@@ -871,7 +865,6 @@ class TestIntValue extends TestGrimlock {
 }
 
 class TestBooleanValue extends TestGrimlock {
-
   val pos = true
   val neg = false
   val dvpos = BooleanValue(pos)
@@ -1014,7 +1007,6 @@ class TestBooleanValue extends TestGrimlock {
 }
 
 class TestTimestampValue extends TestGrimlock {
-
   val dfmt = new java.text.SimpleDateFormat("dd/MM/yyyy")
   val date2001 = dfmt.parse("01/01/2001")
   val date2002 = dfmt.parse("01/01/2002")
@@ -1159,7 +1151,6 @@ class TestTimestampValue extends TestGrimlock {
 }
 
 class TestTypeValue extends TestGrimlock {
-
   val mix = MixedType
   val con = ContinuousType
   val dvmix = TypeValue(mix)
@@ -1298,7 +1289,6 @@ class TestTypeValue extends TestGrimlock {
 }
 
 class TestBinaryValue extends TestGrimlock {
-
   val one = "1".getBytes.head
 
   val dvone = BinaryValue(Array(one))

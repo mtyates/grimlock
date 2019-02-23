@@ -21,6 +21,7 @@ import commbank.grimlock.framework.Cell
 import commbank.grimlock.framework.content.Content
 import commbank.grimlock.framework.encoding.{ DateCodec, DateValue, DoubleCodec, LongCodec, StringCodec, Value }
 import commbank.grimlock.framework.environment.implicits._
+import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.metadata.{ ContinuousSchema, NominalSchema }
 import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
@@ -43,19 +44,18 @@ object TestScaldingReader {
         }
       }
 
-      val id: Value[String] = i
-      val name: Value[String] = f
-
-      content.map(c => Cell(Position(id, name, hashDate(v)), c))
+      content.map(c => Cell(Position(i, f, hashDate(v)), c))
     }
 
-  private def hashDate(v: String): Value[Date] = {
+  implicit def toDate(date: Date): Value[Date] = DateValue(date, DateCodec())
+
+  private def hashDate(v: String): Date = {
     val cal = java.util.Calendar.getInstance()
 
     cal.setTime((new java.text.SimpleDateFormat("yyyy-MM-dd")).parse("2014-05-14"))
     cal.add(java.util.Calendar.DATE, -(v.hashCode % 21)) // Generate 3 week window prior to date
 
-    DateValue(cal.getTime(), DateCodec())
+    cal.getTime()
   }
 }
 
@@ -274,7 +274,7 @@ class TestScalding32(args: Args) extends Job(args) {
 class TestScalding33(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test33(ctx, "scalding")
+  Shared.test33(ctx, "scalding", Redistribute(1))
 }
 
 class TestScalding34(args: Args) extends Job(args) {

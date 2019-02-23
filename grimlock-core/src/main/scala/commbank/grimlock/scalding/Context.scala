@@ -1,4 +1,4 @@
-// Copyright 2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
     (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
   }
 
-  val implicits = Implicits()
+  val implicits = Implicits
 
   val library = Library
 

@@ -1,4 +1,4 @@
-// Copyright 2017 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,36 +67,24 @@ import shapeless.{ ::, =:!=, HList, HNil }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8 }
 
 /** Implements all implicits. */
-case class Implicits() extends FwImplicits[Context] {
-  val cell = CellImplicits()
-  val content = ContentImplicits()
-  val environment = EnvironmentImplicits()
-  val matrix = MatrixImplicits()
-  val partition = PartitionImplicits()
-  val position = PositionImplicits()
+case object Implicits extends FwImplicits[Context] {
+  val cell = CellImplicits
+  val content = ContentImplicits
+  val environment = EnvironmentImplicits
+  val matrix = MatrixImplicits
+  val partition = PartitionImplicits
+  val position = PositionImplicits
 }
 
 /** Implements all cell implicits. */
-case class CellImplicits() extends FwCellImplicits[Context] {
-  implicit def cellToU[
-    P <: HList
-  ](
-    c: Cell[P]
-  )(implicit
-    ctx: Context
-  ): Context.U[Cell[P]] = IterablePipe(List(c))
+case object CellImplicits extends FwCellImplicits[Context] {
+  implicit def cellToU[P <: HList](c: Cell[P])(implicit ctx: Context): Context.U[Cell[P]] = IterablePipe(List(c))
 
-  implicit def listCellToU[
-    P <: HList
-  ](
-    l: List[Cell[P]]
-  )(implicit
-    ctx: Context
-  ): Context.U[Cell[P]] = IterablePipe(l)
+  implicit def listCellToU[P <: HList](l: List[Cell[P]])(implicit ctx: Context): Context.U[Cell[P]] = IterablePipe(l)
 }
 
 /** Implements all content implicits. */
-case class ContentImplicits() extends FwContentImplicits[Context] {
+case object ContentImplicits extends FwContentImplicits[Context] {
   implicit def toContents(data: Context.U[Content]): Contents = Contents(data)
 
   implicit def toIndexed[
@@ -107,24 +95,18 @@ case class ContentImplicits() extends FwContentImplicits[Context] {
 }
 
 /** Implements all environment implicits. */
-case class EnvironmentImplicits() extends FwEnvironmentImplicits[Context]  {
+case object EnvironmentImplicits extends FwEnvironmentImplicits[Context]  {
   implicit def saveStringsAsText(data: Context.U[String]): SaveStringsAsText = SaveStringsAsText(data)
 
   implicit def nativeFunctions[X](data: Context.U[X]): NativeOperations[X] = NativeOperations(data)
 
   implicit def valueFunctions[X](value: Context.E[X]): ValueOperations[X] = ValueOperations(value)
 
-  implicit def eToU[
-    X : ClassTag
-  ](
-    value: Context.E[X]
-  )(implicit
-    ctx: Context
-  ): Context.U[X] = value.toTypedPipe
+  implicit def eToU[X : ClassTag](value: Context.E[X])(implicit ctx: Context): Context.U[X] = value.toTypedPipe
 }
 
 /** Implements all matrix implicits. */
-case class MatrixImplicits() extends FwMatrixImplicits[Context] {
+case object MatrixImplicits extends FwMatrixImplicits[Context] {
   implicit def toMatrix[P <: HList](data: Context.U[Cell[P]]): Matrix[P] = Matrix(data)
 
   implicit def toMatrix1D[
@@ -896,7 +878,7 @@ case class MatrixImplicits() extends FwMatrixImplicits[Context] {
 }
 
 /** Implements all partition implicits. */
-case class PartitionImplicits() extends FwPartitionImplicits[Context] {
+case object PartitionImplicits extends FwPartitionImplicits[Context] {
   implicit def toPartitions[
     P <: HList,
     I : Ordering
@@ -906,7 +888,7 @@ case class PartitionImplicits() extends FwPartitionImplicits[Context] {
 }
 
 /** Implements all position implicits. */
-case class PositionImplicits() extends FwPositionImplicits[Context] {
+case object PositionImplicits extends FwPositionImplicits[Context] {
   implicit def tToU[
     T <% Value[T]
   ](

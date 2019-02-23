@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -378,11 +378,7 @@ private[grimlock] object QuantileImpl {
    *
    * @return List of `(index, gamma, probability)` tuples for each probability in `probs`.
    */
-  def boundaries(
-    probs: List[Double],
-    quantiser: Quantiles.Quantiser,
-    count: Long
-  ): List[(Long, Double, Double)] = probs
+  def boundaries(probs: List[Double], quantiser: Quantiles.Quantiser, count: Long): List[(Long, Double, Double)] = probs
     .sorted
     .map(p => (quantiser(p, count), p))
     .map { case ((j, g), p) => (j, g, p) }

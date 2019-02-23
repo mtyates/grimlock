@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package commbank.grimlock.test
 import commbank.grimlock.framework.utility._
 
 class TestQuote extends TestGrimlock {
-
   "A Quote" should "escape a special character" in {
     Quote(",").escape("foo,bar,baz") shouldBe "\"foo,bar,baz\""
   }
@@ -36,7 +35,6 @@ class TestQuote extends TestGrimlock {
 }
 
 class TestReplace extends TestGrimlock {
-
   "A Replace" should "escape a special character" in {
     Replace(",").escape("foo,bar,baz") shouldBe "foo\\,bar\\,baz"
   }

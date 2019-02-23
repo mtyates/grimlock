@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -124,18 +124,18 @@ trait Window[P <: HList, S <: HList, R <: HList, Q <: HList] extends WindowWithV
 
 /** Companion object for the `Window` trait. */
 object Window {
-  /** Converts a `List[Window[P, S, R, Q]]` to a single `Window[P, S, R, Q]`. */
-  implicit def listToWindow[
+  /** Converts a `Seq[Window[P, S, R, Q]]` to a single `Window[P, S, R, Q]`. */
+  implicit def seqToWindow[
     P <: HList,
     S <: HList,
     R <: HList,
     Q <: HList
   ](
-    windows: List[Window[P, S, R, Q]]
+    windows: Seq[Window[P, S, R, Q]]
   ) = new Window[P, S, R, Q] {
-    type I = List[Any]
-    type T = List[Any]
-    type O = List[TraversableOnce[Any]]
+    type I = Seq[Any]
+    type T = Seq[Any]
+    type O = Seq[TraversableOnce[Any]]
 
     def prepare(cell: Cell[P]): I = windows.map(_.prepare(cell))
 
@@ -144,7 +144,7 @@ object Window {
         .zipped
         .map { case (window, j) => window.initialise(rem, j.asInstanceOf[window.I]) }
 
-      (state.map(_._1), List(state.map(_._2)))
+      (state.map(_._1), Seq(state.map(_._2)))
     }
 
     def update(rem: Position[R], in: I, s: T): (T, TraversableOnce[O]) = {
@@ -152,7 +152,7 @@ object Window {
         .zipped
         .map { case (window, j, u) => window.update(rem, j.asInstanceOf[window.I], u.asInstanceOf[window.T]) }
 
-      (state.map(_._1), List(state.map(_._2)))
+      (state.map(_._1), Seq(state.map(_._2)))
     }
 
     def present(pos: Position[S], out: O): TraversableOnce[Cell[Q]] = (windows, out)
@@ -369,22 +369,22 @@ trait WindowWithValue[P <: HList, S <: HList, R <: HList, Q <: HList] extends ja
 /** Companion object for the `WindowWithValue` trait. */
 object WindowWithValue {
   /**
-   * Converts a `List[WindowWithValue[P, S, R, Q] { type V >: W }]` to a single
+   * Converts a `Seq[WindowWithValue[P, S, R, Q] { type V >: W }]` to a single
    * `WindowWithValue[P, S, R, Q] { type V >: W }`.
    */
-  implicit def listToWindowWithValue[
+  implicit def seqToWindowWithValue[
     P <: HList,
     S <: HList,
     R <: HList,
     W,
     Q <: HList
   ](
-    t: List[WindowWithValue[P, S, R, Q] { type V >: W }]
+    t: Seq[WindowWithValue[P, S, R, Q] { type V >: W }]
   ): WindowWithValue[P, S, R, Q] { type V >: W } = new WindowWithValue[P, S, R, Q] {
     type V = W
-    type I = List[Any]
-    type T = List[Any]
-    type O = List[TraversableOnce[Any]]
+    type I = Seq[Any]
+    type T = Seq[Any]
+    type O = Seq[TraversableOnce[Any]]
 
     def prepareWithValue(cell: Cell[P], ext: V): I = t.map(_.prepareWithValue(cell, ext))
 
@@ -393,7 +393,7 @@ object WindowWithValue {
         .zipped
         .map { case (window, j) => window.initialise(rem, j.asInstanceOf[window.I]) }
 
-      (state.map(_._1), List(state.map(_._2)))
+      (state.map(_._1), Seq(state.map(_._2)))
     }
 
     def update(rem: Position[R], in: I, s: T): (T, TraversableOnce[O]) = {
@@ -401,7 +401,7 @@ object WindowWithValue {
         .zipped
         .map { case (window, j, u) => window.update(rem, j.asInstanceOf[window.I], u.asInstanceOf[window.T]) }
 
-      (state.map(_._1), List(state.map(_._2)))
+      (state.map(_._1), Seq(state.map(_._2)))
     }
 
     def presentWithValue(pos: Position[S], out: O, ext: V): TraversableOnce[Cell[Q]] = (t, out)

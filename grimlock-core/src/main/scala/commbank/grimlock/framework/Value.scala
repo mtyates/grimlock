@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,13 +33,11 @@ trait Value[T] {
 
   /** Return value as `X` (if an appropriate converter exists), or `None` if the conversion is not supported. */
   def as[X : ClassTag]: Option[X] = {
-    def cast(v: Any): Option[X] = {
-      val ct = implicitly[ClassTag[X]]
+    val ct = implicitly[ClassTag[X]]
 
-      v match {
-        case ct(x) => Option(x)
-        case _ => None
-      }
+    def cast(v: Any): Option[X] = v match {
+      case ct(x) => Option(x)
+      case _ => None
     }
 
     codec

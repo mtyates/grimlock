@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import shapeless.HNil
 import shapeless.nat.{ _0, _1, _2 }
 
 class TestCell extends TestGrimlock {
-
   "A Cell" should "return its string" in {
     Cell(Position("foo", 123L), Content(ContinuousSchema[Double](), 3.14))
       .toString shouldBe "Cell(Position(StringValue(foo,StringCodec) :: LongValue(123,LongCodec) :: HNil),Content(ContinuousType,DoubleValue(3.14,DoubleCodec)))"

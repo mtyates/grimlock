@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -137,8 +137,8 @@ object Operator {
     func: (Cell[P], Cell[P]) => List[Cell[Q]]
   ) = new Operator[P, Q] { def compute(left: Cell[P], right: Cell[P]): TraversableOnce[Cell[Q]] = func(left, right) }
 
-  /** Converts a `List[Operator[P, Q]]` to a single `Operator[P, Q]`. */
-  implicit def listToOperator[P <: HList, Q <: HList](operators: List[Operator[P, Q]]) = new Operator[P, Q] {
+  /** Converts a `Seq[Operator[P, Q]]` to a single `Operator[P, Q]`. */
+  implicit def seqToOperator[P <: HList, Q <: HList](operators: Seq[Operator[P, Q]]) = new Operator[P, Q] {
     def compute(left: Cell[P], right: Cell[P]): TraversableOnce[Cell[Q]] = operators.flatMap(_.compute(left, right))
   }
 }
@@ -290,14 +290,14 @@ object OperatorWithValue {
   }
 
   /**
-   * Converts a `List[OperatorWithValue[P, Q] { type V >: W }]` to a single `OperatorWithValue[P, Q] { type V >: W }`.
+   * Converts a `Seq[OperatorWithValue[P, Q] { type V >: W }]` to a single `OperatorWithValue[P, Q] { type V >: W }`.
    */
-  implicit def listToOperatorWithValue[
+  implicit def seqToOperatorWithValue[
     P <: HList,
     W,
     Q <: HList
   ](
-    operators: List[OperatorWithValue[P, Q] { type V >: W }]
+    operators: Seq[OperatorWithValue[P, Q] { type V >: W }]
   ): OperatorWithValue[P, Q] { type V >: W } = new OperatorWithValue[P, Q] {
     type V = W
 

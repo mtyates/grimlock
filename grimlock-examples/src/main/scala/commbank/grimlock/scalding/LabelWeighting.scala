@@ -81,7 +81,7 @@ class LabelWeighting(args: Args) extends Job(args) {
 
   // Compute the total number of labels and gather result into a Map.
   val sum = labels
-    .size(_0)
+    .measure(_0)
     .gatherByPosition(Over(_0))
 
   // Define extract object to get data out of sum/min map.

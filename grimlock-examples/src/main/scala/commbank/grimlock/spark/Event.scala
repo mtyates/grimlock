@@ -206,7 +206,7 @@ object InstanceCentricTfIdf {
 
     // Get the number of instances (i.e. documents)
     val n = tf
-      .size(_0)
+      .measure(_0)
       .gatherByPosition(Over(_0))
 
     // Define extractor to get data out of map.

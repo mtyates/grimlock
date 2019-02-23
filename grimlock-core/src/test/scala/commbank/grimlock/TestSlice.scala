@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ trait TestSlicePosition1D extends TestSlice {
 }
 
 class TestOverPosition extends TestSlicePosition1D {
-
   "A Over[Position1D]" should "return a Position1D for the selected dimension" in {
     Over[P, _0, Value[Int], HNil](_0).selected(pos1) shouldBe Position(pos1(_0))
   }
@@ -52,7 +51,6 @@ class TestOverPosition extends TestSlicePosition1D {
 }
 
 class TestAlongPosition1D extends TestSlicePosition1D {
-
   "A Along[Position1D]" should "return a Position0D for the selected dimension" in {
     Along[P, _0, Value[Int], HNil](_0).selected(pos1) shouldBe pos1.remove(_0)
   }
@@ -70,7 +68,6 @@ trait TestSlicePosition2D extends TestSlice {
 }
 
 class TestOverPosition2D extends TestSlicePosition2D {
-
   "A Over[Position2D]" should "return a Position1D for the selected dimension" in {
     Over[P, _0, Value[Int], Value[String] :: HNil](_0).selected(pos1) shouldBe Position(pos1(_0))
     Over[P, _1, Value[String], Value[Int] :: HNil](_1).selected(pos1) shouldBe Position(pos1(_1))
@@ -83,7 +80,6 @@ class TestOverPosition2D extends TestSlicePosition2D {
 }
 
 class TestAlongPosition2D extends TestSlicePosition2D {
-
   "A Along[Position2D]" should "return a Position1D for the selected dimension" in {
     Along[P, _0, Value[Int], Value[String] :: HNil](_0).selected(pos1) shouldBe pos1.remove(_0)
     Along[P, _1, Value[String], Value[Int] :: HNil](_1).selected(pos1) shouldBe pos1.remove(_1)
@@ -103,7 +99,6 @@ trait TestSlicePosition3D extends TestSlice {
 }
 
 class TestOverPosition3D extends TestSlicePosition3D {
-
   "A Over[Position3D]" should "return a Position1D for the selected dimension" in {
     Over[P, _0, Value[Int], Value[String] :: Value[Date] :: HNil](_0).selected(pos1) shouldBe Position(pos1(_0))
     Over[P, _1, Value[String], Value[Int] :: Value[Date] :: HNil](_1).selected(pos1) shouldBe Position(pos1(_1))
@@ -118,7 +113,6 @@ class TestOverPosition3D extends TestSlicePosition3D {
 }
 
 class TestAlongPosition3D extends TestSlicePosition3D {
-
   "A Along[Position3D]" should "return a Position2D for the selected dimension" in {
     Along[P, _0, Value[Int], Value[String] :: Value[Date] :: HNil](_0).selected(pos1) shouldBe pos1.remove(_0)
     Along[P, _1, Value[String], Value[Int] :: Value[Date] :: HNil](_1).selected(pos1) shouldBe pos1.remove(_1)

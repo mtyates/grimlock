@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package commbank.grimlock.test
 import commbank.grimlock.framework.metadata._
 
 class TestMixedType extends TestGrimlock {
-
   "A Mixed" should "return its short name" in {
     MixedType.toShortString shouldBe "mixed"
   }
@@ -46,7 +45,6 @@ class TestMixedType extends TestGrimlock {
 }
 
 class TestNumericType extends TestGrimlock {
-
   "A Numeric" should "return its short name" in {
     NumericType.toShortString shouldBe "numeric"
   }
@@ -78,7 +76,6 @@ class TestNumericType extends TestGrimlock {
 }
 
 class TestContinuousType extends TestGrimlock {
-
   "A Continuous" should "return its short name" in {
     ContinuousType.toShortString shouldBe "continuous"
   }
@@ -111,7 +108,6 @@ class TestContinuousType extends TestGrimlock {
 }
 
 class TestDiscreteType extends TestGrimlock {
-
   "A Discrete" should "return its short name" in {
     DiscreteType.toShortString shouldBe "discrete"
   }
@@ -144,7 +140,6 @@ class TestDiscreteType extends TestGrimlock {
 }
 
 class TestCategoricalType extends TestGrimlock {
-
   "A Categorical" should "return its short name" in {
     CategoricalType.toShortString shouldBe "categorical"
   }
@@ -176,7 +171,6 @@ class TestCategoricalType extends TestGrimlock {
 }
 
 class TestNominalType extends TestGrimlock {
-
   "A Nominal" should "return its short name" in {
     NominalType.toShortString shouldBe "nominal"
   }
@@ -209,7 +203,6 @@ class TestNominalType extends TestGrimlock {
 }
 
 class TestOrdinalType extends TestGrimlock {
-
   "A Ordinal" should "return its short name" in {
     OrdinalType.toShortString shouldBe "ordinal"
   }
@@ -242,7 +235,6 @@ class TestOrdinalType extends TestGrimlock {
 }
 
 class TestDateType extends TestGrimlock {
-
   "A Date" should "return its short name" in {
     DateType.toShortString shouldBe "date"
   }

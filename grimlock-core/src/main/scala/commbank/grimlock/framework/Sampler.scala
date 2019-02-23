@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ object Sampler {
     def select(cell: Cell[P]): Boolean = func(cell)
   }
 
-  /** Converts a `List[Sampler[P]]` to a `Sampler[P]`. */
-  implicit def listToSamples[P <: HList](samplers: List[Sampler[P]]) = new Sampler[P] {
+  /** Converts a `Seq[Sampler[P]]` to a `Sampler[P]`. */
+  implicit def seqToSampler[P <: HList](samplers: Seq[Sampler[P]]) = new Sampler[P] {
     def select(cell: Cell[P]): Boolean = samplers.map(_.select(cell)).reduce(_ || _)
   }
 }
@@ -98,12 +98,12 @@ object SamplerWithValue {
     def selectWithValue(cell: Cell[P], ext: V): Boolean = func(cell, ext)
   }
 
-  /** Converts a `List[SamplerWithValue[P] { type V >: W }]` to a `SamplerWithValue[P] { type V >: W }`. */
-  implicit def listToSamplerWithValue[
+  /** Converts a `Seq[SamplerWithValue[P] { type V >: W }]` to a `SamplerWithValue[P] { type V >: W }`. */
+  implicit def seqToSamplerWithValue[
     P <: HList,
     W
   ](
-    samplers: List[SamplerWithValue[P] { type V >: W }]
+    samplers: Seq[SamplerWithValue[P] { type V >: W }]
   ): SamplerWithValue[P] { type V >: W } = new SamplerWithValue[P] {
     type V = W
 

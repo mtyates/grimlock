@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import shapeless.{ ::, HNil }
 import shapeless.nat.{ _0, _1 }
 
 class TestRenameDimension extends TestGrimlock {
-
   val cell = Cell(Position("foo"), Content(ContinuousSchema[Double](), 1.0))
 
   "A RenameDimension" should "extract" in {
@@ -36,7 +35,6 @@ class TestRenameDimension extends TestGrimlock {
 }
 
 class TestRenameDimensionWithContent extends TestGrimlock {
-
   val cell = Cell(Position("foo"), Content(ContinuousSchema[Double](), 1.0))
 
   "A RenameDimensionWithContent" should "extract" in {
@@ -50,7 +48,6 @@ class TestRenameDimensionWithContent extends TestGrimlock {
 }
 
 class TestAppendValue extends TestGrimlock {
-
   val cell = Cell(Position("foo"), Content(ContinuousSchema[Double](), 1.0))
 
   "A AppendValue" should "extract" in {
@@ -61,7 +58,6 @@ class TestAppendValue extends TestGrimlock {
 }
 
 class TestPrependPairwiseSelectedStringToRemainder extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: Value[Int] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[Int] :: HNil
@@ -87,7 +83,6 @@ class TestPrependPairwiseSelectedStringToRemainder extends TestGrimlock {
 }
 
 class TestAppendRemainderDimension extends TestGrimlock {
-
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[Int] :: HNil
 
@@ -104,7 +99,6 @@ class TestAppendRemainderDimension extends TestGrimlock {
 }
 
 class TestAppendRemainderString extends TestGrimlock {
-
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[Int] :: HNil
 
@@ -119,7 +113,6 @@ class TestAppendRemainderString extends TestGrimlock {
 }
 
 class TestAppendPairwiseString extends TestGrimlock {
-
   type S = Value[String] :: HNil
   type R = Value[String] :: Value[Int] :: HNil
 
@@ -135,7 +128,6 @@ class TestAppendPairwiseString extends TestGrimlock {
 }
 
 class TestAppendContentString extends TestGrimlock {
-
   val pos = Position("foo")
   val con = Content(DiscreteSchema[Long](), 42L)
 
@@ -147,7 +139,6 @@ class TestAppendContentString extends TestGrimlock {
 }
 
 class TestAppendDimensionAndContentString extends TestGrimlock {
-
   val pos = Position("foo")
   val con = Content(DiscreteSchema[Long](), 42L)
 

@@ -54,7 +54,7 @@ object Shared {
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
     ev2: Matrix.SetTuner[C#U, Default[NoParameters]],
-    ev3: Matrix.SelectTuner[C#U, InMemory[NoParameters]]
+    ev3: Matrix.SelectTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
@@ -76,7 +76,7 @@ object Shared {
         ),
         Default()
       )
-      .select(Over(_0), InMemory())(true, "iid:1548763")
+      .select(Over(_0), Default())(true, "iid:1548763")
       .saveAsText(ctx, s"./tmp.${tool}/dat2.out", (c) => List(c.toString), Default())
       .toUnit
 
@@ -99,8 +99,7 @@ object Shared {
     tool: String
   )(implicit
     ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
-    ev3: Matrix.SelectTuner[C#U, InMemory[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -1130,8 +1129,8 @@ object Shared {
     tool: String
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
-    ev2: Matrix.ShapeTuner[C#U, Default[NoParameters]],
-    ev3: Matrix.SizeTuner[C#U, Default[NoParameters]]
+    ev2: Matrix.MeasureTuner[C#U, Default[NoParameters]],
+    ev3: Matrix.ShapeTuner[C#U, Default[NoParameters]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1141,17 +1140,17 @@ object Shared {
       .toUnit
 
     data
-      .size(_0, tuner = Default())
+      .measure(_0, tuner = Default())
       .saveAsText(ctx, s"./tmp.${tool}/siz1.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     data
-      .size(_1, tuner = Default())
+      .measure(_1, tuner = Default())
       .saveAsText(ctx, s"./tmp.${tool}/siz2.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     data
-      .size(_2, tuner = Default())
+      .measure(_2, tuner = Default())
       .saveAsText(ctx, s"./tmp.${tool}/siz3.out", Cell.toShortString(true, "|"), Default())
       .toUnit
   }
@@ -1743,12 +1742,14 @@ object Shared {
   }
 
   def test33[
-    C <: Context[C]
+    C <: Context[C],
+    T <: Tuner
   ](
     ctx: C,
-    tool: String
+    tool: String,
+    tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuner[C#U, Redistribute]
+    ev: Persist.SaveAsTextTuner[C#U, T]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -1782,7 +1783,7 @@ object Shared {
 
     errors
       .map(_.getMessage)
-      .saveAsText(ctx, s"./tmp.${tool}/sbp.out", Redistribute(1))
+      .saveAsText(ctx, s"./tmp.${tool}/sbp.out", tuner)
       .toUnit
   }
 

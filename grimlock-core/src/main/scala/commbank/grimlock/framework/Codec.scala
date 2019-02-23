@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -189,11 +189,9 @@ case object BinaryCodec extends Codec[Array[Byte]] { self =>
 
   def box(value: Array[Byte]): Value[Array[Byte]] = BinaryValue(value, this)
 
-  def compare(x: Array[Byte], y: Array[Byte]): Int = {
-    x.size.compare(y.size) match {
-      case 0 => x.zip(y).collectFirst { case (l, r) if l.compare(r) != 0 => l.compare(r) }.getOrElse(0)
-      case z => z
-    }
+  def compare(x: Array[Byte], y: Array[Byte]): Int = x.size.compare(y.size) match {
+    case 0 => x.zip(y).collectFirst { case (l, r) if l.compare(r) != 0 => l.compare(r) }.getOrElse(0)
+    case z => z
   }
 
   def decode(str: String): Option[Array[Byte]] = Try(str.getBytes).toOption

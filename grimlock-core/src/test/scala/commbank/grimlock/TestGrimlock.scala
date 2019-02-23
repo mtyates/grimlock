@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,20 +33,26 @@ import scala.reflect.ClassTag
 import shapeless.HList
 
 trait TestGrimlock extends FlatSpec with Matchers {
+  implicit def positionOrdering[P <: HList] = Position.ordering[P]()
+}
 
+trait TestScala extends TestGrimlock {
+  implicit val ctx = commbank.grimlock.scala.environment.Context()
+
+  def toU[T](list: List[T]): List[T] = list
+
+  implicit def toList[T](list: List[T]): List[T] = list
+}
+
+trait TestScalding extends TestGrimlock {
   private implicit val flow = new FlowDef
   private implicit val mode = Local(true)
   private implicit val config = Config.defaultFrom(mode)
 
-  implicit val scaldingCtx = commbank.grimlock.scalding.environment.Context()
-  implicit val sparkCtx = commbank.grimlock.spark.environment.Context(TestGrimlock.session)
+  implicit val ctx = commbank.grimlock.scalding.environment.Context()
 
-  implicit def positionOrdering[P <: HList] = Position.ordering[P]()
+  def toU[T](list: List[T]): TypedPipe[T] = IterablePipe(list)
 
-  def toRDD[T](list: List[T])(implicit ev: ClassTag[T]): RDD[T] = TestGrimlock.session.sparkContext.parallelize(list)
-  def toPipe[T](list: List[T]): TypedPipe[T] = IterablePipe(list)
-
-  implicit def toList[T](rdd: RDD[T]): List[T] = rdd.toLocalIterator.toList
   implicit def toList[T](pipe: TypedPipe[T]): List[T] = pipe
     .toIterableExecution
     .waitFor(config, mode)
@@ -54,8 +60,15 @@ trait TestGrimlock extends FlatSpec with Matchers {
     .toList
 }
 
-object TestGrimlock {
+trait TestSpark extends TestGrimlock {
+  implicit val ctx = commbank.grimlock.spark.environment.Context(TestSpark.session)
 
+  def toU[T](list: List[T])(implicit ev: ClassTag[T]): RDD[T] = TestSpark.session.sparkContext.parallelize(list)
+
+  implicit def toList[T](rdd: RDD[T]): List[T] = rdd.toLocalIterator.toList
+}
+
+object TestSpark {
   val session = SparkSession.builder().master("local").appName("Test Spark").getOrCreate()
 
   Logger.getRootLogger().setLevel(Level.WARN);

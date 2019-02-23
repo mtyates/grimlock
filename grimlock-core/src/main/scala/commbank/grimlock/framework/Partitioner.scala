@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ object Partitioner {
     def assign(cell: Cell[P]): TraversableOnce[I] = func(cell)
   }
 
-  /** Converts a `List[Partitioner[P, I]]` to a single `Partitioner[P, I]`. */
-  implicit def listToPartitioner[P <: HList, I](partitioners: List[Partitioner[P, I]]) = new Partitioner[P, I] {
+  /** Converts a `Seq[Partitioner[P, I]]` to a single `Partitioner[P, I]`. */
+  implicit def seqToPartitioner[P <: HList, I](partitioners: Seq[Partitioner[P, I]]) = new Partitioner[P, I] {
     def assign(cell: Cell[P]): TraversableOnce[I] = partitioners.flatMap(_.assign(cell))
   }
 }
@@ -104,15 +104,15 @@ object PartitionerWithValue {
   }
 
   /**
-   * Converts a `List[PartitionerWithValue[P, I] { type V >: W }]` to a single
+   * Converts a `Seq[PartitionerWithValue[P, I] { type V >: W }]` to a single
    * `PartitionerWithValue[P, I] { type V >: W }`.
    */
-  implicit def listToPartitionerWithValue[
+  implicit def seqToPartitionerWithValue[
     P <: HList,
     W,
     I
   ](
-    partitioners: List[PartitionerWithValue[P, I] { type V >: W }]
+    partitioners: Seq[PartitionerWithValue[P, I] { type V >: W }]
   ): PartitionerWithValue[P, I] { type V >: W } = new PartitionerWithValue[P, I] {
     type V = W
 

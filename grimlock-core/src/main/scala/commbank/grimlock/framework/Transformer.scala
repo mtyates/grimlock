@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,12 +102,12 @@ object Transformer {
     def present(cell: Cell[P]): TraversableOnce[Cell[Q]] = func(cell)
   }
 
-  /** Converts a `List[Transformer[P, Q]]` to a single `Transformer[P, Q]`. */
-  implicit def listToTransformer[
+  /** Converts a `Seq[Transformer[P, Q]]` to a single `Transformer[P, Q]`. */
+  implicit def seqToTransformer[
     P <: HList,
     Q <: HList
   ](
-    transformers: List[Transformer[P, Q]]
+    transformers: Seq[Transformer[P, Q]]
   ) = new Transformer[P, Q] {
     def present(cell: Cell[P]): TraversableOnce[Cell[Q]] = transformers.flatMap(_.present(cell))
   }
@@ -277,15 +277,15 @@ object TransformerWithValue {
   }
 
   /**
-   * Converts a `List[TransformerWithValue[P, Q] { type V >: W }]` to a single
+   * Converts a `Seq[TransformerWithValue[P, Q] { type V >: W }]` to a single
    * `TransformerWithValue[P, Q] { type V >: W }`.
    */
-  implicit def listToTransformerWithValue[
+  implicit def seqToTransformerWithValue[
     P <: HList,
     W,
     Q <: HList
   ](
-    transformers: List[TransformerWithValue[P, Q] { type V >: W }]
+    transformers: Seq[TransformerWithValue[P, Q] { type V >: W }]
   ): TransformerWithValue[P, Q] { type V >: W } = new TransformerWithValue[P, Q] {
     type V = W
 

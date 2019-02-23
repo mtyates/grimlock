@@ -34,11 +34,17 @@ lazy val core = Project(
         exclude("com.google.code.findbugs",   "jsr305")                   // 1.3.9         -> 3.0.2   [spark-sql]
         exclude("com.google.guava",           "guava")                    // 11.0.2        -> 14.0.1  [scalding-core]
         exclude("commons-codec",              "commons-codec")            // 1.4, 1.11     -> 1.10    [spark-sql] !!
+        exclude("org.apache.avro",            "avro")                     // 1.7.7         -> 1.8.0   [parquet-avro]
+        exclude("org.apache.commons",         "commons-compress")         // 1.4.1         -> 1.8.1   [parquet-avro]
         exclude("org.apache.httpcomponents",  "httpclient")               // 4.2.4         -> 4.4.1   [spark-sql]
         ,
       "org.apache.spark" %% "spark-sql" % "2.3.2"
         exclude("com.fasterxml.jackson.core", "jackson-core")             // 2.7.9         -> 2.6.7.1 [spark-core] !!
         exclude("org.slf4j",                  "slf4j-api")                // 1.7.5, 1.7.25 -> 1.7.16  [spark-core] !!
+        ,
+      "org.apache.parquet" % "parquet-avro" % "1.8.3"
+        exclude("org.slf4j",                  "slf4j-api")                // 1.7.7         -> 1.7.16  [spark-core]
+        exclude("org.xerial.snappy",          "snappy-java")              // 1.1.1.3       -> 1.1.2.6 [spark-core]
         ,
       "com.typesafe.play" %% "play-json" % "2.6.10"
         exclude("com.fasterxml.jackson.core", "jackson-core")             // 2.8.11        -> 2.6.7   [spark-core] !!

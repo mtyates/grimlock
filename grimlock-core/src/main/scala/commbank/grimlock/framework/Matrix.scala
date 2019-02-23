@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -119,6 +119,30 @@ trait Matrix[
    * @note Avoid using this for very large matrices.
    */
   def materialise(context: C): List[Cell[P]]
+
+  /**
+   * Returns the size of the matrix in dimension `dim`.
+   *
+   * @param dim      The dimension for which to get the size.
+   * @param distinct Indicates if each coordinate in dimension `dim` occurs only once. If this is the case, then
+   *                 enabling this flag has better run-time performance.
+   * @param tuner    The tuner for the job.
+   *
+   * @return A `C#U[Cell[Coordinates1[Long]]]`. The position consists of a long value of the dimension
+   *         index. The content has the actual size in it as a discrete variable.
+   */
+  def measure[
+    D <: Nat : ToInt,
+    T <: Tuner
+  ](
+    dim: D,
+    distinct: Boolean = false,
+    tuner: T
+  )(implicit
+    ev1: Value.Box[Long],
+    ev2: Position.IndexConstraints[P, D],
+    ev3: Matrix.MeasureTuner[C#U, T]
+  ): C#U[Cell[Coordinates1[Long]]]
 
   /**
    * Mutate the contents of `positions` in a matrix.
@@ -388,30 +412,6 @@ trait Matrix[
   ): C#U[Cell[Coordinates1[Long]]]
 
   /**
-   * Returns the size of the matrix in dimension `dim`.
-   *
-   * @param dim      The dimension for which to get the size.
-   * @param distinct Indicates if each coordinate in dimension `dim` occurs only once. If this is the case, then
-   *                 enabling this flag has better run-time performance.
-   * @param tuner    The tuner for the job.
-   *
-   * @return A `C#U[Cell[Coordinates1[Long]]]`. The position consists of a long value of the dimension
-   *         index. The content has the actual size in it as a discrete variable.
-   */
-  def size[
-    D <: Nat : ToInt,
-    T <: Tuner
-  ](
-    dim: D,
-    distinct: Boolean = false,
-    tuner: T
-  )(implicit
-    ev1: Value.Box[Long],
-    ev2: Position.IndexConstraints[P, D],
-    ev3: Matrix.SizeTuner[C#U, T]
-  ): C#U[Cell[Coordinates1[Long]]]
-
-  /**
    * Create window based derived data.
    *
    * @param slice     Encapsulates the dimension(s) to slide over.
@@ -618,15 +618,6 @@ trait Matrix[
   def toText(writer: Persist.TextWriter[Cell[P]]): C#U[String]
 
   /**
-   * Merge all dimensions into a single.
-   *
-   * @param melt A function that melts the coordinates to a single valueable.
-   *
-   * @return A `C#U[Cell[Coordinates[T]]]` where all coordinates have been merged into a single position.
-   */
-  def toVector[T <% Value[T]](melt: (Position[P]) => T): C#U[Cell[Coordinates1[T]]]
-
-  /**
    * Transform the content of a matrix.
    *
    * @param transformers The transformer(s) to apply to the content.
@@ -715,6 +706,15 @@ trait Matrix[
   ): C#U[(Position[S], Content)]
 
   /**
+   * Merge all dimensions into a single.
+   *
+   * @param melt A function that melts the coordinates to a single value.
+   *
+   * @return A `C#U[Cell[Coordinates[T]]]` where all coordinates have been merged into a single position.
+   */
+  def vectorise[T <% Value[T]](melt: (Position[P]) => T): C#U[Cell[Coordinates1[T]]]
+
+  /**
    * Query the contents of a matrix and return the positions of those that match the predicate.
    *
    * @param predicate The predicate used to filter the contents.
@@ -775,6 +775,9 @@ object Matrix {
   /** Trait for tuners permitted on a call to `join`. */
   trait JoinTuner[U[_], T <: Tuner] extends java.io.Serializable
 
+  /** Trait for tuners permitted on a call to `measure`. */
+  trait MeasureTuner[U[_], T <: Tuner] extends java.io.Serializable
+
   /** Trait for tuners permitted on a call to `mutate`. */
   trait MutateTuner[U[_], T <: Tuner] extends java.io.Serializable
 
@@ -798,9 +801,6 @@ object Matrix {
 
   /** Trait for tuners permitted on a call to `set` functions. */
   trait SetTuner[U[_], T <: Tuner] extends java.io.Serializable
-
-  /** Trait for tuners permitted on a call to `shape`. */
-  trait SizeTuner[U[_], T <: Tuner] extends java.io.Serializable
 
   /** Trait for tuners permitted on a call to `slide` functions. */
   trait SlideTuner[U[_], T <: Tuner] extends java.io.Serializable

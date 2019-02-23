@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -737,32 +737,22 @@ object Position {
   }
 
   /** Converts a `List[T]` to a `List[Position[Coordinates1[T]]]` */
-  implicit def listTToListPosition[T <% Value[T]](l: List[T]): List[Position[Coordinates1[T]]] = l
-    .map(t => Position(t))
+  implicit def listTToListPosition[T <% Value[T]](l: List[T]): List[Position[Coordinates1[T]]] = l.map(t => Position(t))
 
   /** Converts a `List[V]` to a `List[Position[V :: HNil]]` */
-  implicit def listValueToListPosition[V <: Value[_]](l: List[V]): List[Position[V :: HNil]] = l
-    .map(v => Position(v))
+  implicit def listValueToListPosition[V <: Value[_]](l: List[V]): List[Position[V :: HNil]] = l.map(v => Position(v))
 
   /** Converts a `Position[P]` to a `List[Position[P]]` */
   implicit def positionToListPosition[P <: HList](p: Position[P]): List[Position[P]] = List(p)
 
   /** Converts a `T` to a `List[Position[Coordinates1[T]]]` */
-  implicit def tToListPosition[
-    T <% Value[T]
-  ](
-    t: T
-  ): List[Position[Coordinates1[T]]] = List(Position(t))
+  implicit def tToListPosition[T <% Value[T]]( t: T): List[Position[Coordinates1[T]]] = List(Position(t))
 
   /** Converts a `T` to a `Position[Coordinates1[T]]` */
   implicit def tToPosition[T <% Value[T]](t: T): Position[Coordinates1[T]] = Position(t)
 
   /** Converts a `V` to a `List[Position[V :: HNil]]` */
-  implicit def valueToListPosition[
-    V <: Value[_]
-  ](
-    v: V
-  ): List[Position[V :: HNil]] = List(Position(v))
+  implicit def valueToListPosition[V <: Value[_]](v: V): List[Position[V :: HNil]] = List(Position(v))
 
   /** Converts a `V` to a `Position[V :: HNil]` */
   implicit def valueToPosition[V <: Value[_]](v: V): Position[V :: HNil] = Position(v)
@@ -771,18 +761,10 @@ object Position {
   def apply(): Position[HNil] = Position(HNil)
 
   /** Constructor for 1 dimensional position using types `Ti`. */
-  def apply[
-    T1 <% Value[T1]
-  ](
-    first: T1
-  ): Position[Coordinates1[T1]] = Position(implicitly[Value[T1]](first))
+  def apply[T1 <% Value[T1]](first: T1): Position[Coordinates1[T1]] = Position(implicitly[Value[T1]](first))
 
   /** Constructor for 1 dimensional position using values `Vi`. */
-  def apply[
-    V1 <: Value[_]
-  ](
-    first: V1
-  ): Position[V1 :: HNil] = Position(first :: HNil)
+  def apply[V1 <: Value[_]](first: V1): Position[V1 :: HNil] = Position(first :: HNil)
 
   /** Constructor for 2 dimensional position using types `Ti`. */
   def apply[

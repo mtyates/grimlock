@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import shapeless.{ ::, HNil }
 import shapeless.nat.{ _0, _1 }
 
 class TestExtractWithDimension extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("abc", "def"), Content(ContinuousSchema[Double](), 1.0))
@@ -46,7 +45,6 @@ class TestExtractWithDimension extends TestGrimlock {
 }
 
 class TestExtractWithDimensionAndKey extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("abc", "def"), Content(ContinuousSchema[Double](), 1.0))
@@ -76,7 +74,6 @@ class TestExtractWithDimensionAndKey extends TestGrimlock {
 }
 
 class TestExtractWithKey extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell = Cell(Position("abc", "def"), Content(ContinuousSchema[Double](), 1.0))
@@ -96,7 +93,6 @@ class TestExtractWithKey extends TestGrimlock {
 }
 
 class TestExtractWithPosition extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell1 = Cell(Position("abc", "def"), Content(ContinuousSchema[Double](), 1.0))
@@ -117,7 +113,6 @@ class TestExtractWithPosition extends TestGrimlock {
 }
 
 class TestExtractWithPositionAndKey extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
 
   val cell1 = Cell(Position("abc", "def"), Content(ContinuousSchema[Double](), 1.0))
@@ -148,7 +143,6 @@ class TestExtractWithPositionAndKey extends TestGrimlock {
 }
 
 class TestExtractWithSelected extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: HNil
@@ -172,7 +166,6 @@ class TestExtractWithSelected extends TestGrimlock {
 }
 
 class TestExtractWithSelectedAndKey extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: HNil
@@ -204,7 +197,6 @@ class TestExtractWithSelectedAndKey extends TestGrimlock {
 }
 
 class TestExtractWithSlice extends TestGrimlock {
-
   type P = Value[String] :: Value[String] :: HNil
   type S = Value[String] :: HNil
   type R = Value[String] :: HNil

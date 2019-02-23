@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
 package commbank.grimlock.spark.content
 
 import commbank.grimlock.framework.{ Persist => FwPersist }
-import commbank.grimlock.framework.content.{
-  Contents => FwContents,
-  IndexedContents => FwIndexedContents,
-  Content
-}
+import commbank.grimlock.framework.content.{ Contents => FwContents, IndexedContents => FwIndexedContents, Content }
 import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 import commbank.grimlock.framework.position.Position
 

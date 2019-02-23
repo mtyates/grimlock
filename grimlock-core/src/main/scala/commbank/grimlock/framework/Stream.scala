@@ -1,4 +1,4 @@
-// Copyright 2016 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,12 +31,11 @@ private[grimlock] object Stream {
       val tmp = Files.createTempDirectory(s"grimlock-${key}-")
       tmp.toFile.deleteOnExit
 
-      contents.foreach {
-        case (file, content) =>
-          val path = Paths.get(tmp.toString, file)
+      contents.foreach { case (file, content) =>
+        val path = Paths.get(tmp.toString, file)
 
-          Files.write(path, content)
-          Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwxr-x---"))
+        Files.write(path, content)
+        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwxr-x---"))
       }
 
       val process = new ProcessBuilder(command.split(' ').toList.asJava).directory(tmp.toFile).start

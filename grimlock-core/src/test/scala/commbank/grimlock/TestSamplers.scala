@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,14 +30,12 @@ import shapeless.{ ::, HList, HNil }
 import shapeless.nat.{ _0, _1 }
 
 trait TestSample extends TestGrimlock {
-
   val con = Content(ContinuousSchema[Double](), 3.14)
 
   def toCell[P <: HList](pos: Position[P]): Cell[P] = Cell(pos, con)
 }
 
 class TestRandomSample extends TestSample {
-
   type P = Value[Int] :: HNil
 
   "A RandomSample" should "select 25% correctly" in {
@@ -60,7 +58,6 @@ class TestRandomSample extends TestSample {
 }
 
 class TestHashSample extends TestSample {
-
   type P = Value[Int] :: Value[Int] :: HNil
 
   "A HashSample" should "select 25% correctly" in {
@@ -83,7 +80,6 @@ class TestHashSample extends TestSample {
 }
 
 class TestHashSampleToSize extends TestSample {
-
   type P = Value[Int] :: Value[Int] :: HNil
 
   "A HashSampleToSize" should "select 25% correctly" in {
@@ -121,7 +117,6 @@ class TestHashSampleToSize extends TestSample {
 }
 
 class TestAndThenSampler extends TestSample {
-
   type P = Value[Int] :: Value[Int] :: HNil
 
   "A AndThenSampler" should "select correctly" in {
@@ -134,7 +129,6 @@ class TestAndThenSampler extends TestSample {
 }
 
 class TestAndThenSamplerWithValue extends TestSample {
-
   type P = Value[Int] :: Value[Int] :: HNil
 
   "A AndThenSamplerWithValue" should "select correctly" in {

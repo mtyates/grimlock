@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,9 @@ case class Partitions[
   )(implicit
     ev1: ClassTag[I],
     ev2: FwPartitions.IdsTuner[Context.U, T]
-  ): Context.U[I] = data.map { case (i, _) => i }.tunedDistinct(tuner)
+  ): Context.U[I] = data
+    .map { case (i, _) => i }
+    .tunedDistinct(tuner)
 
   def merge(ids: List[I]): Context.U[Cell[P]] = data.collect { case (i, c) if (ids.contains(i)) => c }
 

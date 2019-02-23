@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 class TestContinuousSchema extends TestGrimlock {
-
   "A ContinuousSchema" should "return its string representation" in {
     ContinuousSchema[Double]()
       .toShortString(DoubleCodec) shouldBe "continuous"
@@ -171,7 +170,6 @@ class TestContinuousSchema extends TestGrimlock {
 }
 
 class TestDiscreteSchema extends TestGrimlock {
-
   "A DiscreteSchema" should "return its string representation" in {
     DiscreteSchema[Long]().toShortString(LongCodec) shouldBe "discrete"
     DiscreteSchema[Long](1).toShortString(LongCodec) shouldBe "discrete(step=1)"
@@ -244,7 +242,6 @@ class TestDiscreteSchema extends TestGrimlock {
 }
 
 class TestNominalSchema extends TestGrimlock {
-
   "A NominalSchema" should "return its string representation" in {
     NominalSchema[Double]().toShortString(DoubleCodec) shouldBe "nominal"
     NominalSchema[Double](Set[Double](1,2,3)).toShortString(DoubleCodec) shouldBe "nominal(set={1.0,2.0,3.0})"
@@ -323,7 +320,6 @@ class TestNominalSchema extends TestGrimlock {
 }
 
 class TestOrdinalSchema extends TestGrimlock {
-
   "A OrdinalSchema" should "return its string representation" in {
     OrdinalSchema[Double]().toShortString(DoubleCodec) shouldBe "ordinal"
     OrdinalSchema[Double](Set[Double](3,2,1)).toShortString(DoubleCodec) shouldBe "ordinal(set={1.0,2.0,3.0})"
@@ -402,7 +398,6 @@ class TestOrdinalSchema extends TestGrimlock {
 }
 
 class TestDateSchema extends TestGrimlock {
-
   val dcodec = DateCodec()
   val tcodec = DateCodec("yyyy-MM-dd hh:mm:ss")
 

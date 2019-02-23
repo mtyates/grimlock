@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -211,17 +211,17 @@ object Aggregator {
     def check(aggregators: Seq[Aggregator[P, S, Q]]): Aggregator[P, S, Q] = Validate.check(aggregators)
   }
 
-  /** Implicit conversion from `List[Aggregator[P, S, Q]]` to a single `Aggregator[P, S, Q]`. */
-  implicit def listToAggregator[
+  /** Implicit conversion from `Seq[Aggregator[P, S, Q]]` to a single `Aggregator[P, S, Q]`. */
+  implicit def seqToAggregator[
     P <: HList,
     S <: HList,
     Q <: HList
   ](
-    aggregators: List[Aggregator[P, S, Q]]
+    aggregators: Seq[Aggregator[P, S, Q]]
   )(implicit
     ev: Position.GreaterThanConstraints[Q, S]
   ): Aggregator[P, S, Q] = new Aggregator[P, S, Q] {
-    type T = List[(Int, Any)]
+    type T = Seq[(Int, Any)]
     type O[A] = Multiple[A]
 
     val tTag = classTag[T]
@@ -245,8 +245,8 @@ object Aggregator {
       }
       .toList
 
-    def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(t
-      .flatMap { case (i, s) =>
+    def present(pos: Position[S], t: T): O[Cell[Q]] = Multiple(
+      t.flatMap { case (i, s) =>
         val a = aggregators(i)
 
         a.present(pos, s.asInstanceOf[a.T])
@@ -483,20 +483,20 @@ object AggregatorWithValue {
   }
 
   /**
-   * Implicit conversion from `List[AggregatorWithValue[P, S, Q] { type V >: W }]` to a single
+   * Implicit conversion from `Seq[AggregatorWithValue[P, S, Q] { type V >: W }]` to a single
    * `AggregatorWithValue[P, S, Q] { type V >: W }`
    */
-  implicit def listToAggregatorWithValue[
+  implicit def seqToAggregatorWithValue[
     P <: HList,
     S <: HList,
     W,
     Q <: HList
   ](
-    aggregators: List[AggregatorWithValue[P, S, Q] { type V >: W }]
+    aggregators: Seq[AggregatorWithValue[P, S, Q] { type V >: W }]
   )(implicit
     ev: Position.GreaterThanConstraints[Q, S]
   ): AggregatorWithValue[P, S, Q] { type V >: W } = new AggregatorWithValue[P, S, Q] {
-    type T = List[(Int, Any)]
+    type T = Seq[(Int, Any)]
     type V = W
     type O[A] = Multiple[A]
 
@@ -521,8 +521,8 @@ object AggregatorWithValue {
       }
       .toList
 
-    def presentWithValue(pos: Position[S], t: T, ext: V): O[Cell[Q]] = Multiple(t
-      .flatMap { case (i, s) =>
+    def presentWithValue(pos: Position[S], t: T, ext: V): O[Cell[Q]] = Multiple(
+      t.flatMap { case (i, s) =>
         val a = aggregators(i)
 
         a.presentWithValue(pos, s.asInstanceOf[a.T], ext)

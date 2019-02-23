@@ -42,7 +42,7 @@ object BasicOperations {
 
     // Get the number of rows.
     data
-      .size(_0)
+      .measure(_0)
       .saveAsText(ctx, s"./demo.${output}/row_size.out", Cell.toShortString(true, "|"))
       .toUnit
 
