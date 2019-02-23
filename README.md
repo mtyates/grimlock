@@ -33,7 +33,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.7.0"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.7.1"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
@@ -100,7 +100,7 @@ The basic data format used by grimlock (though others are supported) is a column
 In the example below the first field is a coordinate identifying an instance, the second field is a coordinate identifying a feature. The third and fourth columns are the codec and variable type respectively. The last column has the actual value.
 
 ```
-> head <path to>/grimlock/examples/src/main/scala/commbank/grimlock/data/exampleInput.txt
+> head <path to>/grimlock/grimlock-examples/src/main/scala/commbank/grimlock/data/exampleInput.txt
 iid:0064402|fid:B|string|nominal|H
 iid:0064402|fid:E|long|continuous|219
 iid:0064402|fid:H|string|nominal|C
@@ -285,7 +285,7 @@ scala> counts.summarise(Along(_0))(
 ).foreach(println)
 ```
 
-For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scala/Scoring.scala).
+For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scala/Scoring.scala).
 
 Usage - Scalding
 -----
@@ -296,10 +296,10 @@ The examples below are executed in the Scalding REPL. To use grimlock in the REP
 
 1. Install Scalding; follow [these](https://github.com/twitter/scalding/wiki/Getting-Started) instructions.
 2. Check out tag 0.17.x; `git checkout 0.17.x`.
-3. Update `build.sbt` of the scalding project. For the module `scaldingRepl`, add `grimlock` as a dependency under the `libraryDependencies`:
+3. Update `build.sbt` of the scalding project. To the module `scaldingRepl`, add `grimlock` as a dependency under the `libraryDependencies`:
     `"au.com.cba.omnia" %% "grimlock-core" % "<version-string>"`;
-4. Update `project/plugins.sbt` to add the 'commbank-ext' repository to the `resolvers`:
-    `"commbank-ext" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local-ivy"`
+4. Update `build.sbt` to add 'commbank-releases' to the `resolvers`:
+    `"commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"`
 5. Start REPL; `./sbt scalding-repl/console`.
 
 After the last command, the console should appear as follows:
@@ -437,7 +437,7 @@ scala> counts.summarise(Along(_0))(
 ).dump
 ```
 
-For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/scalding/Scoring.scala).
+For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/scalding/Scoring.scala).
 
 Usage - Spark
 -----
@@ -590,5 +590,5 @@ scala> counts.summarise(Along(_0))(
 ).foreach(println)
 ```
 
-For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/examples/src/main/scala/commbank/grimlock/spark/Scoring.scala).
+For more examples see [BasicOperations.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/BasicOperations.scala), [Conditional.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/Conditional.scala), [DataAnalysis.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/DataAnalysis.scala), [DerivedData.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/DerivedData.scala), [Ensemble.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/Ensemble.scala), [Event.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/Event.scala), [LabelWeighting.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/LabelWeighting.scala), [MutualInformation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/MutualInformation.scala), [PipelineDataPreparation.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/PipelineDataPreparation.scala) or [Scoring.scala](https://github.com/CommBank/grimlock/blob/master/grimlock-examples/src/main/scala/commbank/grimlock/spark/Scoring.scala).
 
