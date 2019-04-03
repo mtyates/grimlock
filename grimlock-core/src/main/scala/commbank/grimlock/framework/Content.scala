@@ -23,6 +23,7 @@ import commbank.grimlock.framework.encoding.{
   DateCodec,
   DecimalCodec,
   DoubleCodec,
+  FloatCodec,
   IntCodec,
   LongCodec,
   StringCodec,
@@ -141,6 +142,7 @@ object Content {
       implicit val atDateCodec = at[DateCodec](c => toDecoder(c))
       implicit val atDecimalCodec = at[DecimalCodec](c => toDecoder(c))
       implicit val atDoubleCodec = at[DoubleCodec.type](c => toDecoder(c))
+      implicit val atFloatCodec = at[FloatCodec.type](c => toDecoder(c))
       implicit val atIntCodec = at[IntCodec.type](c => toDecoder(c))
       implicit val atLongCodec = at[LongCodec.type](c => toDecoder(c))
       implicit val atStringCodec = at[StringCodec.type](c => toDecoder(c))
@@ -385,6 +387,7 @@ object Content {
       implicit val atDateCodec = at[DateCodec](c => toContent(c))
       implicit val atDecimalCodec = at[DecimalCodec](c => toContent(c))
       implicit val atDoubleCodec = at[DoubleCodec.type](c => toContent(c))
+      implicit val atFloatCodec = at[FloatCodec.type](c => toContent(c))
       implicit val atIntCodec = at[IntCodec.type](c => toContent(c))
       implicit val atLongCodec = at[LongCodec.type](c => toContent(c))
       implicit val atStringCodec = at[StringCodec.type](c => toContent(c))

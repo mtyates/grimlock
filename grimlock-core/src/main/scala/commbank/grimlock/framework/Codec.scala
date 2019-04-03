@@ -96,6 +96,7 @@ object Codec {
     DateCodec :+:
     DecimalCodec :+:
     DoubleCodec.type :+:
+    FloatCodec.type :+:
     IntCodec.type :+:
     LongCodec.type :+:
     StringCodec.type :+:
@@ -111,6 +112,7 @@ object Codec {
     implicit val asDate: Inject[C, DateCodec]
     implicit val asDecimal: Inject[C, DecimalCodec]
     implicit val asDouble: Inject[C, DoubleCodec.type]
+    implicit val asFloat: Inject[C, FloatCodec.type]
     implicit val asInt: Inject[C, IntCodec.type]
     implicit val asLong: Inject[C, LongCodec.type]
     implicit val asString: Inject[C, StringCodec.type]
@@ -128,11 +130,12 @@ object Codec {
     ev4: Inject[C, DateCodec],
     ev5: Inject[C, DecimalCodec],
     ev6: Inject[C, DoubleCodec.type],
-    ev7: Inject[C, IntCodec.type],
-    ev8: Inject[C, LongCodec.type],
-    ev9: Inject[C, StringCodec.type],
-    ev10: Inject[C, TimestampCodec.type],
-    ev11: Inject[C, TypeCodec.type]
+    ev7: Inject[C, FloatCodec.type],
+    ev8: Inject[C, IntCodec.type],
+    ev9: Inject[C, LongCodec.type],
+    ev10: Inject[C, StringCodec.type],
+    ev11: Inject[C, TimestampCodec.type],
+    ev12: Inject[C, TypeCodec.type]
   ): TextParseConstraints[C] = new TextParseConstraints[C] {
     implicit val asBinary = ev1
     implicit val asBoolean = ev2
@@ -140,11 +143,12 @@ object Codec {
     implicit val asDate = ev4
     implicit val asDecimal = ev5
     implicit val asDouble = ev6
-    implicit val asInt = ev7
-    implicit val asLong = ev8
-    implicit val asString = ev9
-    implicit val asTimestamp = ev10
-    implicit val asType = ev11
+    implicit val asFloat = ev7
+    implicit val asInt = ev8
+    implicit val asLong = ev9
+    implicit val asString = ev10
+    implicit val asTimestamp = ev11
+    implicit val asType = ev12
   }
 
   /**
@@ -164,6 +168,7 @@ object Codec {
       case DateCodec.Pattern(_) => DateCodec.fromShortString(str).map(Coproduct(_))
       case DecimalCodec.Pattern(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
       case DoubleCodec.Pattern() => DoubleCodec.fromShortString(str).map(Coproduct(_))
+      case FloatCodec.Pattern() => FloatCodec.fromShortString(str).map(Coproduct(_))
       case IntCodec.Pattern() => IntCodec.fromShortString(str).map(Coproduct(_))
       case LongCodec.Pattern() => LongCodec.fromShortString(str).map(Coproduct(_))
       case StringCodec.Pattern() => StringCodec.fromShortString(str).map(Coproduct(_))
@@ -215,7 +220,7 @@ case object BinaryCodec extends Codec[Array[Byte]] { self =>
 
 /** Codec for dealing with `Boolean`. */
 case object BooleanCodec extends Codec[Boolean] {
-  val converters: Set[Codec.Convert[Boolean]] = Set(BooleanAsDouble, BooleanAsInt, BooleanAsLong)
+  val converters: Set[Codec.Convert[Boolean]] = Set(BooleanAsDouble, BooleanAsFloat, BooleanAsInt, BooleanAsLong)
   val date: Option[Boolean => Date] = None
   val integral: Option[Integral[Boolean]] = None
   val numeric: Option[Numeric[Boolean]] = None
@@ -248,6 +253,10 @@ case object BooleanCodec extends Codec[Boolean] {
 
   private case object BooleanAsDouble extends (Boolean => Double) {
     def apply(b: Boolean): Double = if (b) 1 else 0
+  }
+
+  private case object BooleanAsFloat extends (Boolean => Float) {
+    def apply(b: Boolean): Float = if (b) 1 else 0
   }
 
   private case object BooleanAsInt extends (Boolean => Int) {
@@ -433,9 +442,47 @@ case object DoubleCodec extends Codec[Double] {
   def toShortString = Pattern.toString
 }
 
+/** Codec for dealing with `Float`. */
+case object FloatCodec extends Codec[Float] {
+  val converters: Set[Codec.Convert[Float]] = Set(FloatAsDouble)
+  val date: Option[Float => Date] = None
+  val integral: Option[Integral[Float]] = None
+  val numeric: Option[Numeric[Float]] = Option(Numeric.FloatIsFractional)
+  val ordering: Ordering[Float] = Ordering.Float
+
+  /** Pattern for parsing `FloatCodec` from string. */
+  val Pattern = "float".r
+
+  def box(value: Float): Value[Float] = FloatValue(value, this)
+
+  def compare(x: Float, y: Float): Int = x.compare(y)
+
+  def decode(str: String): Option[Float] = Try(str.toFloat).toOption
+
+  def encode(value: Float): String = value.toString
+
+  /**
+   * Parse a FloatCodec from a string.
+   *
+   * @param str String from which to parse the codec.
+   *
+   * @return A `Some[FloatCodec]` in case of success, `None` otherwise.
+   */
+  def fromShortString(str: String): Option[FloatCodec.type] = str match {
+    case Pattern() => Option(this)
+    case _ => None
+  }
+
+  def toShortString = Pattern.toString
+
+  private case object FloatAsDouble extends (Float => Double) {
+    def apply(f: Float): Double = f
+  }
+}
+
 /** Codec for dealing with `Int`. */
 case object IntCodec extends Codec[Int] {
-  val converters: Set[Codec.Convert[Int]] = Set(IntAsBigDecimal, IntAsDouble, IntAsLong)
+  val converters: Set[Codec.Convert[Int]] = Set(IntAsBigDecimal, IntAsDouble, IntAsFloat, IntAsLong)
   val date: Option[Int => Date] = None
   val integral: Option[Integral[Int]] = Option(Numeric.IntIsIntegral)
   val numeric: Option[Numeric[Int]] = Option(Numeric.IntIsIntegral)
@@ -474,6 +521,10 @@ case object IntCodec extends Codec[Int] {
     def apply(i: Int): Double = i.toDouble
   }
 
+  private case object IntAsFloat extends (Int => Float) {
+    def apply(i: Int): Float = i.toFloat
+  }
+
   private case object IntAsLong extends (Int => Long) {
     def apply(i: Int): Long = i.toLong
   }
@@ -481,7 +532,7 @@ case object IntCodec extends Codec[Int] {
 
 /** Codec for dealing with `Long`. */
 case object LongCodec extends Codec[Long] {
-  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble)
+  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble, LongAsFloat)
   val date: Option[Long => Date] = Option(l => new Date(l))
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
@@ -522,6 +573,10 @@ case object LongCodec extends Codec[Long] {
 
   private case object LongAsDouble extends (Long => Double) {
     def apply(l: Long): Double = l.toDouble
+  }
+
+  private case object LongAsFloat extends (Long => Float) {
+    def apply(l: Long): Float = l.toFloat
   }
 }
 

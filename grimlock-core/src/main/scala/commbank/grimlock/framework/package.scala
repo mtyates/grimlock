@@ -18,6 +18,7 @@ import commbank.grimlock.framework.encoding.{
   BinaryValue,
   BooleanValue,
   DoubleValue,
+  FloatValue,
   IntValue,
   LongValue,
   StringValue,
@@ -41,6 +42,9 @@ package environment {
 
     /** Converts a `Double` to a `Value`. */
     implicit def doubleToValue(t: Double): Value[Double] = DoubleValue(t)
+
+    /** Converts a `Float` to a `Value`. */
+    implicit def floatToValue(t: Float): Value[Float] = FloatValue(t)
 
     /** Converts a `Int` to a `Value`. */
     implicit def intToValue(t: Int): Value[Int] = IntValue(t)

@@ -176,6 +176,44 @@ class TestDoubleCodec extends TestGrimlock {
   }
 }
 
+class TestFloatCodec extends TestGrimlock {
+  "A FloatCodec" should "have a name" in {
+    FloatCodec.toShortString shouldBe "float"
+  }
+
+  it should "decode a correct value" in {
+    FloatCodec.decode("3.14") shouldBe Option(3.14f)
+    FloatCodec.decode("0.12345678901234") shouldBe Option(0.12345679f)
+  }
+
+  it should "not decode an incorrect value" in {
+    FloatCodec.decode("a") shouldBe None
+    FloatCodec.decode("2001-01-01") shouldBe None
+  }
+
+  it should "encode a correct value" in {
+    FloatCodec.encode(3.14f) shouldBe "3.14"
+  }
+
+  it should "compare a correct value" in {
+    FloatCodec.compare(3.14f, 4.14f) shouldBe -1
+    FloatCodec.compare(3.14f, 3.14f) shouldBe 0
+    FloatCodec.compare(4.14f, 3.14f) shouldBe 1
+  }
+
+  it should "box correctly" in {
+    FloatCodec.box(3.14f) shouldBe FloatValue(3.14f)
+  }
+
+  it should "return fields" in {
+    FloatCodec.converters.size shouldBe 1
+
+    FloatCodec.date.isEmpty shouldBe true
+    FloatCodec.integral.isEmpty shouldBe true
+    FloatCodec.numeric.isDefined shouldBe true
+  }
+}
+
 class TestIntCodec extends TestGrimlock {
   "A IntCodec" should "have a name" in {
     IntCodec.toShortString shouldBe "int"
@@ -205,7 +243,7 @@ class TestIntCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    IntCodec.converters.size shouldBe 3
+    IntCodec.converters.size shouldBe 4
 
     IntCodec.date.isEmpty shouldBe true
     IntCodec.integral.isDefined shouldBe true
@@ -242,7 +280,7 @@ class TestLongCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    LongCodec.converters.size shouldBe 3
+    LongCodec.converters.size shouldBe 4
 
     LongCodec.date.isDefined shouldBe true
     LongCodec.integral.isDefined shouldBe true
@@ -280,7 +318,7 @@ class TestBooleanCodec extends TestGrimlock {
   }
 
   it should "return fields" in {
-    BooleanCodec.converters.size shouldBe 3
+    BooleanCodec.converters.size shouldBe 4
 
     BooleanCodec.date.isEmpty shouldBe true
     BooleanCodec.integral.isEmpty shouldBe true

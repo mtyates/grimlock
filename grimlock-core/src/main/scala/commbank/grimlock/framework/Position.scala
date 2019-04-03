@@ -23,6 +23,7 @@ import commbank.grimlock.framework.encoding.{
   DateCodec,
   DecimalCodec,
   DoubleCodec,
+  FloatCodec,
   IntCodec,
   LongCodec,
   StringCodec,
@@ -1258,6 +1259,9 @@ object DecodeString extends Poly1 {
 
   /** Convenience implicit to parse double coordinate from string without having to cast it to a Codec. */
   implicit def goDouble = at[(DoubleCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
+
+  /** Convenience implicit to parse float coordinate from string without having to cast it to a Codec. */
+  implicit def goFloat = at[(FloatCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }
 
   /** Convenience implicit to parse int coordinate from string without having to cast it to a Codec. */
   implicit def goInt = at[(IntCodec.type, String)] { case (c, s) => Value.fromShortString(s, c) }

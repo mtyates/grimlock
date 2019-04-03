@@ -261,6 +261,22 @@ object DoubleValue {
 }
 
 /**
+ * Value for when the data is of type `Float`.
+ *
+ * @param value A `Float`.
+ * @param codec The codec used for encoding/decoding `value`.
+ */
+case class FloatValue(value: Float, codec: Codec[Float] = FloatCodec) extends Value[Float] {
+  def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Float].map(d => cmp(d))
+}
+
+/** Companion object to `FloatValue` case class. */
+object FloatValue {
+  /** `unapply` method for pattern matching. */
+  def unapply(value: Value[_]): Option[Float] = ClassTag.Float.unapply(value.value)
+}
+
+/**
  * Value for when the data is of type `Int`.
  *
  * @param value A `Int`.

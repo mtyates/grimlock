@@ -47,6 +47,10 @@ class TestDateValue extends TestGrimlock {
     dv2001.as[Double] shouldBe None
   }
 
+  it should "not return a float" in {
+    dv2001.as[Float] shouldBe None
+  }
+
   it should "return a long" in {
     dv2001.as[Long] shouldBe Option(date2001.getTime)
   }
@@ -192,6 +196,10 @@ class TestStringValue extends TestGrimlock {
     dvfoo.as[Double] shouldBe None
   }
 
+  it should "not return a float" in {
+    dvfoo.as[Float] shouldBe None
+  }
+
   it should "not return a long" in {
     dvfoo.as[Long] shouldBe None
   }
@@ -329,6 +337,10 @@ class TestDecimalValue extends TestGrimlock {
 
   it should "return a double" in {
     dvone.as[Double] shouldBe None
+  }
+
+  it should "return a float" in {
+    dvone.as[Float] shouldBe None
   }
 
   it should "not return a long" in {
@@ -469,6 +481,10 @@ class TestDoubleValue extends TestGrimlock {
     dvone.as[Double] shouldBe Option(1.0)
   }
 
+  it should "not return a float" in {
+    dvone.as[Float] shouldBe None
+  }
+
   it should "not return a long" in {
     dvone.as[Long] shouldBe None
   }
@@ -584,6 +600,149 @@ class TestDoubleValue extends TestGrimlock {
   }
 }
 
+class TestFloatValue extends TestGrimlock {
+  val one = 1.0f
+  val pi = 3.14f
+  val fvone = FloatValue(one)
+  val fvpi = FloatValue(pi)
+
+  "A FloatValue" should "return its short string" in {
+    fvone.toShortString shouldBe "1.0"
+  }
+
+  it should "not return a date" in {
+    fvone.as[Date] shouldBe None
+  }
+
+  it should "not return a string" in {
+    fvone.as[String] shouldBe None
+  }
+
+  it should "return a double" in {
+    fvone.as[Double] shouldBe Option(one)
+    fvone.as[Double] shouldBe Option(1f)
+  }
+
+  it should "return a float" in {
+    fvone.as[Float] shouldBe Option(one)
+    fvone.as[Float] shouldBe Option(1f)
+  }
+
+  it should "not return a long" in {
+    fvone.as[Long] shouldBe None
+  }
+
+  it should "not return a int" in {
+    fvone.as[Int] shouldBe None
+  }
+
+  it should "not return a boolean" in {
+    fvone.as[Boolean] shouldBe None
+  }
+
+  it should "not return a type" in {
+    fvone.as[Type] shouldBe None
+  }
+
+  it should "not return a timestamp" in {
+    fvone.as[Timestamp] shouldBe None
+  }
+
+  it should "not return a byte array" in {
+    fvone.as[Array[Byte]] shouldBe None
+  }
+
+  it should "return a decimal" in {
+    fvone.as[BigDecimal] shouldBe None
+  }
+
+  it should "equal itself" in {
+    fvone.equ(fvone) shouldBe true
+    fvone.equ(FloatValue(one)) shouldBe true
+  }
+
+  it should "not equal another float" in {
+    fvone.equ(fvpi) shouldBe false
+  }
+
+  it should "not equal another value" in {
+    fvone.equ("a") shouldBe false
+    fvone.equ(false) shouldBe false
+  }
+
+  it should "match a matching pattern" in {
+    fvone.like("..0$".r) shouldBe true
+  }
+
+  it should "not match a non-existing pattern" in {
+    fvone.like("^3...".r) shouldBe false
+  }
+
+  it should "identify a smaller value calling lss" in {
+    fvone.lss(fvpi) shouldBe true
+  }
+
+  it should "not identify an equal value calling lss" in {
+    fvone.lss(fvone) shouldBe false
+  }
+
+  it should "not identify a greater value calling lss" in {
+    fvpi.lss(fvone) shouldBe false
+  }
+
+  it should "not identify another value calling lss" in {
+    fvone.lss("a") shouldBe false
+  }
+
+  it should "identify a smaller value calling leq" in {
+    fvone.leq(fvpi) shouldBe true
+  }
+
+  it should "identify an equal value calling leq" in {
+    fvone.leq(fvone) shouldBe true
+  }
+
+  it should "not identify a greater value calling leq" in {
+    fvpi.leq(fvone) shouldBe false
+  }
+
+  it should "not identify another value calling leq" in {
+    fvone.leq("a") shouldBe false
+  }
+
+  it should "not identify a smaller value calling gtr" in {
+    fvone.gtr(fvpi) shouldBe false
+  }
+
+  it should "not identify an equal value calling gtr" in {
+    fvone.gtr(fvpi) shouldBe false
+  }
+
+  it should "identify a greater value calling gtr" in {
+    fvpi.gtr(fvone) shouldBe true
+  }
+
+  it should "not identify another value calling gtr" in {
+    fvone.gtr("a") shouldBe false
+  }
+
+  it should "not identify a smaller value calling geq" in {
+    fvone.geq(fvpi) shouldBe false
+  }
+
+  it should "identify an equal value calling geq" in {
+    fvone.geq(fvone) shouldBe true
+  }
+
+  it should "identify a greater value calling geq" in {
+    fvpi.geq(fvone) shouldBe true
+  }
+
+  it should "not identify another value calling geq" in {
+    fvone.geq("a") shouldBe false
+  }
+}
+
 class TestLongValue extends TestGrimlock {
   val one = 1
   val two = 2
@@ -605,6 +764,11 @@ class TestLongValue extends TestGrimlock {
   it should "return a double" in {
     dvone.as[Double] shouldBe Option(one)
     dvone.as[Double] shouldBe Option(1.0)
+  }
+
+  it should "return a float" in {
+    dvone.as[Float] shouldBe Option(one)
+    dvone.as[Float] shouldBe Option(1f)
   }
 
   it should "return a long" in {
@@ -747,6 +911,11 @@ class TestIntValue extends TestGrimlock {
     dvone.as[Double] shouldBe Option(1.0)
   }
 
+  it should "return a float" in {
+    dvone.as[Float] shouldBe Option(one)
+    dvone.as[Float] shouldBe Option(1f)
+  }
+
   it should "return a long" in {
     dvone.as[Long] shouldBe Option(one)
     dvone.as[Long] shouldBe Option(1)
@@ -885,6 +1054,11 @@ class TestBooleanValue extends TestGrimlock {
   it should "return a double" in {
     dvpos.as[Double] shouldBe Option(1.0)
     dvneg.as[Double] shouldBe Option(0.0)
+  }
+
+  it should "return a float" in {
+    dvpos.as[Float] shouldBe Option(1f)
+    dvneg.as[Float] shouldBe Option(0f)
   }
 
   it should "return a long" in {
@@ -1027,6 +1201,10 @@ class TestTimestampValue extends TestGrimlock {
 
   it should "not return a double" in {
     dv2001.as[Double] shouldBe None
+  }
+
+  it should "not return a float" in {
+    dv2001.as[Float] shouldBe None
   }
 
   it should "return a long" in {
@@ -1172,6 +1350,10 @@ class TestTypeValue extends TestGrimlock {
     dvmix.as[Double] shouldBe None
   }
 
+  it should "not return a float" in {
+    dvmix.as[Float] shouldBe None
+  }
+
   it should "not return a long" in {
     dvmix.as[Long] shouldBe None
   }
@@ -1308,6 +1490,10 @@ class TestBinaryValue extends TestGrimlock {
 
   it should "not return a double" in {
     dvone.as[Double] shouldBe None
+  }
+
+  it should "not return a float" in {
+    dvone.as[Float] shouldBe None
   }
 
   it should "not return a long" in {

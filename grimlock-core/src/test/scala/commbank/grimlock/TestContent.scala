@@ -41,6 +41,27 @@ class TestContent extends TestGrimlock {
     Content.fromShortString("doulbe|continuous|3.14", "|") shouldBe None
   }
 
+  "A Continuous Float Content" should "return its string value" in {
+    Content(ContinuousSchema[Float](), 3.14f).toString shouldBe "Content(ContinuousType,FloatValue(3.14,FloatCodec))"
+    Content(ContinuousSchema[Float](0, 10), 3.14f).toString shouldBe
+      "Content(ContinuousType,FloatValue(3.14,FloatCodec))"
+  }
+
+  it should "return its short string value" in {
+    Content(ContinuousSchema[Float](), 3.14f).toShortString("|") shouldBe "float|continuous|3.14"
+    Content(ContinuousSchema[Float](0, 10), 3.14f).toShortString("|") shouldBe "float|continuous|3.14"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("float|continuous|3.14", "|") shouldBe Option(Content(ContinuousSchema[Float](), 3.14f))
+    Content.fromShortString("float|continuous(min=0.0,max=10.0)|3.14", "|") shouldBe
+      Option(Content(ContinuousSchema[Float](), 3.14f))
+    Content.fromShortString("string|continuous|3.14", "|") shouldBe None
+    Content.fromShortString("float|continuous|abc", "|") shouldBe None
+    Content.fromShortString("float|continuouz|3.14", "|") shouldBe None
+    Content.fromShortString("flota|continuous|3.14", "|") shouldBe None
+  }
+
   "A Continuous Long Content" should "return its string value" in {
     Content(ContinuousSchema[Long](), 42L).toString shouldBe "Content(ContinuousType,LongValue(42,LongCodec))"
     Content(ContinuousSchema[Long](0, 100), 42L).toString shouldBe
@@ -122,6 +143,26 @@ class TestContent extends TestGrimlock {
     Content.fromShortString("doubel|nominal|1.0", "|") shouldBe None
   }
 
+  "A Nominal Float Content" should "return its string value" in {
+    Content(NominalSchema[Float](), 1.0f).toString shouldBe "Content(NominalType,FloatValue(1.0,FloatCodec))"
+    Content(NominalSchema[Float](Set[Float](1, 2, 3)), 1.0f).toString shouldBe
+      "Content(NominalType,FloatValue(1.0,FloatCodec))"
+  }
+
+  it should "return its short string value" in {
+    Content(NominalSchema[Float](), 1.0f).toShortString("|") shouldBe "float|nominal|1.0"
+    Content(NominalSchema[Float](Set[Float](1, 2, 3)), 1.0f).toShortString("|") shouldBe "float|nominal|1.0"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("float|nominal|1.0", "|") shouldBe Option(Content(NominalSchema[Float](), 1.0f))
+    Content.fromShortString("float|nominal(set={1.0,2.0,3.0})|1.0", "|") shouldBe
+      Option(Content(NominalSchema[Float](), 1.0f))
+    Content.fromShortString("float|nominal|abc", "|") shouldBe None
+    Content.fromShortString("float|nominas|1.0", "|") shouldBe None
+    Content.fromShortString("flota|nominal|1.0", "|") shouldBe None
+  }
+
   "A Nominal Long Content" should "return its string value" in {
     Content(NominalSchema[Long](), 1L).toString shouldBe "Content(NominalType,LongValue(1,LongCodec))"
     Content(NominalSchema[Long](Set[Long](1, 2, 3)), 1L).toString shouldBe
@@ -177,6 +218,26 @@ class TestContent extends TestGrimlock {
     Content.fromShortString("double|ordinal|abc", "|") shouldBe None
     Content.fromShortString("double|ordinas|1.0", "|") shouldBe None
     Content.fromShortString("doubel|ordinal|1.0", "|") shouldBe None
+  }
+
+  "A Ordinal Float Content" should "return its string value" in {
+    Content(OrdinalSchema[Float](), 1.0f).toString shouldBe "Content(OrdinalType,FloatValue(1.0,FloatCodec))"
+    Content(OrdinalSchema[Float](Set[Float](1, 2, 3)), 1.0f).toString shouldBe
+      "Content(OrdinalType,FloatValue(1.0,FloatCodec))"
+  }
+
+  it should "return its short string value" in {
+    Content(OrdinalSchema[Float](), 1.0f).toShortString("|") shouldBe "float|ordinal|1.0"
+    Content(OrdinalSchema[Float](Set[Float](1, 2, 3)), 1.0f).toShortString("|") shouldBe "float|ordinal|1.0"
+  }
+
+  it should "parse from string" in {
+    Content.fromShortString("float|ordinal|1.0", "|") shouldBe Option(Content(OrdinalSchema[Float](), 1.0f))
+    Content.fromShortString("float|ordinal(set={1.0,2.0,3.0})|1.0", "|") shouldBe
+      Option(Content(OrdinalSchema[Float](), 1.0f))
+    Content.fromShortString("float|ordinal|abc", "|") shouldBe None
+    Content.fromShortString("float|ordinas|1.0", "|") shouldBe None
+    Content.fromShortString("flota|ordinal|1.0", "|") shouldBe None
   }
 
   "A Ordinal Long Content" should "return its string value" in {
