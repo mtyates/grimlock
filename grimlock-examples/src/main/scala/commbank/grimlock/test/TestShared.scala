@@ -1,4 +1,4 @@
-// Copyright 2017,2018 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1808,7 +1808,7 @@ object Shared {
     )
 
     ctx
-      .loadParquet[ParquetSample, Coordinates1[String]](path + "/test.parquet", dummyParser)
+      .loadParquet[ParquetSample, Cell[Coordinates1[String]]](path + "/test.parquet", dummyParser)
       .data
       .saveAsText(ctx, s"./tmp.${tool}/prq.out", Cell.toShortString(true, "|"), Default())
       .toUnit

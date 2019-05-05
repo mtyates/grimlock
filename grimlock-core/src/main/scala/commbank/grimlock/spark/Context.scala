@@ -14,7 +14,7 @@
 
 package commbank.grimlock.spark.environment
 
-import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
+import commbank.grimlock.framework.{ ParquetConfig, Persist }
 import commbank.grimlock.framework.environment.{ Context => FwContext }
 
 import org.apache.hadoop.io.Writable
@@ -25,24 +25,22 @@ import org.apache.spark.sql.{ Encoder, Row, SparkSession }
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-import shapeless.HList
-
 /**
  * Spark operating context state.
  *
  * @param session The Spark session.
  */
 case class Context(session: SparkSession) extends FwContext[Context] {
-  type E[A] = Context.E[A]
+  type E[T] = Context.E[T]
 
-  type U[A] = Context.U[A]
+  type U[T] = Context.U[T]
 
   def loadText[
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.TextParser[Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    parser: Persist.TextParser[T]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val rdd = session.sparkContext.textFile(file).flatMap { case s => parser(s) }
 
     (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
@@ -51,25 +49,25 @@ case class Context(session: SparkSession) extends FwContext[Context] {
   def loadSequence[
     K <: Writable : Manifest,
     V <: Writable : Manifest,
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    parser: Persist.SequenceParser[K, V, T]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val rdd = session.sparkContext.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
 
     (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
 
   def loadParquet[
-    T,
-    P <: HList
+    X,
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.ParquetParser[T, Cell[P]]
+    parser: Persist.ParquetParser[X, T]
   )(implicit
-    cfg: ParquetConfig[T, Context]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    cfg: ParquetConfig[X, Context]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val rdd = cfg.load(this, file).flatMap(v => parser(v))
 
     (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
@@ -89,10 +87,10 @@ case class Context(session: SparkSession) extends FwContext[Context] {
 /** Companion object to `Context` with additional constructors and implicits. */
 object Context {
   /** Type for user defined data. */
-  type E[A] = A
+  type E[T] = T
 
   /** Type for distributed data. */
-  type U[A] = RDD[A]
+  type U[T] = RDD[T]
 
   /**
    * Implicit function that provides spark parquet reader implementation. The method uses

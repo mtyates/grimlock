@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ lazy val assemblySettings = Seq(
     case "META-INF/LICENSE.txt" => MergeStrategy.rename
     case "META-INF/MANIFEST.MF" => MergeStrategy.discard
     case "application.conf" => MergeStrategy.concat
-    case "reference.conf"   => MergeStrategy.concat
+    case "reference.conf" => MergeStrategy.concat
     case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".dsa") => MergeStrategy.discard
     case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".rsa") => MergeStrategy.discard
     case PathList("META-INF", xs) if xs.toLowerCase.endsWith(".sf") => MergeStrategy.discard

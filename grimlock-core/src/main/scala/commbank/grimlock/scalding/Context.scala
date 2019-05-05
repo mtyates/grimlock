@@ -26,7 +26,7 @@ import com.twitter.scalding.typed.{ TypedPipe, ValuePipe }
 
 import com.twitter.scrooge.ThriftStruct
 
-import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
+import commbank.grimlock.framework.{ ParquetConfig, Persist }
 import commbank.grimlock.framework.environment.{ Context => FwContext }
 
 import org.apache.hadoop.io.Writable
@@ -34,7 +34,7 @@ import org.apache.hadoop.io.Writable
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-import shapeless.{ <:!<, HList }
+import shapeless.<:!<
 
 /**
  * Scalding operating context state.
@@ -44,16 +44,16 @@ import shapeless.{ <:!<, HList }
  * @param config The job `Config`.
  */
 case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[Context] {
-  type E[A] = Context.E[A]
+  type E[T] = Context.E[T]
 
-  type U[A] = Context.U[A]
+  type U[T] = Context.U[T]
 
   def loadText[
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.TextParser[Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    parser: Persist.TextParser[T]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val pipe = TypedPipe.from(TextLine(file)).flatMap { parser(_) }
 
     (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
@@ -62,25 +62,25 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
   def loadSequence[
     K <: Writable : Manifest,
     V <: Writable : Manifest,
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    parser: Persist.SequenceParser[K, V, T]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val pipe = TypedPipe.from(WritableSequenceFile[K, V](file)).flatMap { case (k, v) => parser(k, v) }
 
     (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
   }
 
   def loadParquet[
-    T,
-    P <: HList
+    X,
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.ParquetParser[T, Cell[P]]
+    parser: Persist.ParquetParser[X, T]
    )(implicit
-     cfg: ParquetConfig[T, Context]
-   ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+     cfg: ParquetConfig[X, Context]
+   ): (Context.U[T], Context.U[Throwable]) = {
     val pipe = cfg.load(this, file).flatMap(parser)
 
     (pipe.collect { case Success(c) => c }, pipe.collect { case Failure(e) => e })
@@ -104,10 +104,10 @@ case class Context(flow: FlowDef, mode: Mode, config: Config) extends FwContext[
 /** Companion object to `Context` with additional constructors and implicits. */
 object Context {
   /** Type for user defined data. */
-  type E[A] = ValuePipe[A]
+  type E[T] = ValuePipe[T]
 
   /** Type for distributed data. */
-  type U[A] = TypedPipe[A]
+  type U[T] = TypedPipe[T]
 
   /**
    * Implicit function that provides a `TypedParquet` implementation, which uses case class for the

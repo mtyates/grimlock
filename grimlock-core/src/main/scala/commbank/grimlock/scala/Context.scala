@@ -14,7 +14,7 @@
 
 package commbank.grimlock.scala.environment
 
-import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
+import commbank.grimlock.framework.{ ParquetConfig, Persist }
 import commbank.grimlock.framework.environment.{ Context => FwContext }
 
 import org.apache.avro.generic.GenericRecord
@@ -27,20 +27,18 @@ import scala.io.Source
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-import shapeless.HList
-
 /** Scala operating context state. */
 case class Context() extends FwContext[Context] {
-  type E[A] = Context.E[A]
+  type E[T] = Context.E[T]
 
-  type U[A] = Context.U[A]
+  type U[T] = Context.U[T]
 
   def loadText[
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.TextParser[Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+    parser: Persist.TextParser[T]
+  ): (Context.U[T], Context.U[Throwable]) = {
     val src = Source.fromFile(file)
     val list = src.getLines.toList.flatMap { case s => parser(s) }
 
@@ -52,11 +50,11 @@ case class Context() extends FwContext[Context] {
   def loadSequence[
     K <: Writable : Manifest,
     V <: Writable : Manifest,
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (Context.U[Cell[P]], Context.U[Throwable]) = { // TODO: test this
+    parser: Persist.SequenceParser[K, V, T]
+  ): (Context.U[T], Context.U[Throwable]) = { // TODO: test this
     val key = implicitly[Manifest[K]].runtimeClass.newInstance.asInstanceOf[K]
     val value = implicitly[Manifest[V]].runtimeClass.newInstance.asInstanceOf[V]
     val reader = new SequenceFile.Reader(new Configuration(), SequenceFile.Reader.file(new Path(file)))
@@ -76,14 +74,14 @@ case class Context() extends FwContext[Context] {
   }
 
   def loadParquet[
-    T,
-    P <: HList
+    X,
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.ParquetParser[T, Cell[P]]
+    parser: Persist.ParquetParser[X, T]
    )(implicit
-     cfg: ParquetConfig[T, Context]
-   ): (Context.U[Cell[P]], Context.U[Throwable]) = {
+     cfg: ParquetConfig[X, Context]
+   ): (Context.U[T], Context.U[Throwable]) = {
     val list = cfg.load(this, file).flatMap(v => parser(v))
 
     (list.collect { case Success(c) => c }, list.collect { case Failure(e) => e })
@@ -103,10 +101,10 @@ case class Context() extends FwContext[Context] {
 /** Companion object to `Context` with additional constructors and implicits. */
 object Context {
   /** Type for user defined data. */
-  type E[A] = A
+  type E[T] = T
 
   /** Type for distributed data. */
-  type U[A] = List[A]
+  type U[T] = List[T]
 
   /**
    * Implicit function that provides scala parquet reader implementation. The method uses

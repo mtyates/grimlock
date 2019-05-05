@@ -14,60 +14,64 @@
 
 package commbank.grimlock.framework.environment
 
-import commbank.grimlock.framework.{ Cell, ParquetConfig, Persist }
+import commbank.grimlock.framework.{ ParquetConfig, Persist }
 
 import org.apache.hadoop.io.Writable
 
 import scala.reflect.ClassTag
 
-import shapeless.HList
-
 /** Trait for capturing all operating context related state. */
 trait Context[C <: Context[C]] {
   /** Type for user defined data. */
-  type E[X]
+  type E[T]
 
   /** Type for distributed data. */
-  type U[X]
+  type U[T]
 
   /**
-   * Read column oriented, pipe separated matrix text data into a `U[Cell[P]]`.
+   * Load text data.
    *
    * @param file   The text file to read from.
    * @param parser The parser that converts a single line to a cell.
+   *
+   * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
    */
-  def loadText[P <: HList](file: String, parser: Persist.TextParser[Cell[P]]): (U[Cell[P]], U[Throwable])
+  def loadText[T : ClassTag](file: String, parser: Persist.TextParser[T]): (U[T], U[Throwable])
 
   /**
-   * Read binary key-value (sequence) matrix data into a `U[Cell[P]]`.
+   * Load sequence (binary key-value) data.
    *
    * @param file   The text file to read from.
    * @param parser The parser that converts a single key-value to a cell.
+   *
+   * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
    */
   def loadSequence[
     K <: Writable : Manifest,
     V <: Writable : Manifest,
-    P <: HList
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.SequenceParser[K, V, Cell[P]]
-  ): (U[Cell[P]], U[Throwable])
+    parser: Persist.SequenceParser[K, V, T]
+  ): (U[T], U[Throwable])
 
   /**
    * Load Parquet data.
    *
    * @param file   File path.
    * @param parser Parser that convers single Parquet structure to cells.
+   *
+   * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
    */
   def loadParquet[
-    T,
-    P <: HList
+    X,
+    T : ClassTag
   ](
     file: String,
-    parser: Persist.ParquetParser[T, Cell[P]]
+    parser: Persist.ParquetParser[X, T]
   )(implicit
-    cfg: ParquetConfig[T, C]
-  ): (U[Cell[P]], U[Throwable])
+    cfg: ParquetConfig[X, C]
+  ): (U[T], U[Throwable])
 
   /** All implicits for this context. */
   val implicits: Implicits[C]

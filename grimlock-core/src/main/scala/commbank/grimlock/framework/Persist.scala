@@ -48,7 +48,7 @@ trait Persist[T, C <: Context[C]] extends java.io.Serializable {
 /** Companion object to `Persist` with various types, implicits, etc. */
 object Persist {
   /** Type for parsing Parquet data. */
-  type ParquetParser[S, T] = (S) => TraversableOnce[Try[T]]
+  type ParquetParser[X, T] = (X) => TraversableOnce[Try[T]]
 
   /** Type for parsing a key value tuple into either a `Cell[P]` or an error message. */
   type SequenceParser[K <: Writable, V <: Writable, T] = (K, V) => TraversableOnce[Try[T]]
