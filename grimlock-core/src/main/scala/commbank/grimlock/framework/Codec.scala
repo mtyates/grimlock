@@ -166,7 +166,9 @@ object Codec {
       case BooleanCodec.Pattern() => BooleanCodec.fromShortString(str).map(Coproduct(_))
       case BoundedStringCodec.Pattern(_, _) => BoundedStringCodec.fromShortString(str).map(Coproduct(_))
       case DateCodec.Pattern(_) => DateCodec.fromShortString(str).map(Coproduct(_))
-      case DecimalCodec.Pattern(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.patternGeneric => DecimalCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.patternWithoutScale(_) => DecimalCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.patternWithScale(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
       case DoubleCodec.Pattern() => DoubleCodec.fromShortString(str).map(Coproduct(_))
       case FloatCodec.Pattern() => FloatCodec.fromShortString(str).map(Coproduct(_))
       case IntCodec.Pattern() => IntCodec.fromShortString(str).map(Coproduct(_))
@@ -290,7 +292,7 @@ case class BoundedStringCodec(min: Int, max: Int) extends Codec[String] {
 /** Companion object to BoundedStringCodec. */
 object BoundedStringCodec {
   /** Pattern for parsing `BoundedStringCodec` from string. */
-  val Pattern = "boundedString\\((\\d+),(\\d+)\\)".r
+  val Pattern = "boundedString\\((\\d+),\\s*(\\d+)\\)".r
 
   /** Create a fixed size BoundedStringCodec. */
   def apply(size: Int): BoundedStringCodec = BoundedStringCodec(size, size)
@@ -389,7 +391,9 @@ case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
 /** Companion object to DecimalCodec. */
 object DecimalCodec {
   /** Pattern for parsing `DecimalCodec` from string. */
-  val Pattern = "decimal\\((\\d+),(\\d+)\\)".r
+  val patternWithScale = "decimal\\((\\d+)\\,\\s*(\\d+)\\)".r
+  val patternWithoutScale = "decimal\\((\\d+)\\)".r
+  val patternGeneric = "decimal"
 
   /**
    * Parse a DecimalCodec from a string.
@@ -399,7 +403,9 @@ object DecimalCodec {
    * @return A `Some[DecimalCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[DecimalCodec] = str match {
-    case Pattern(precision, scale) =>
+    case `patternGeneric` => {for { p <- IntCodec.decode("38") } yield DecimalCodec(p, 0)}
+    case patternWithoutScale(precision) => { for { p <- IntCodec.decode(precision) } yield DecimalCodec(p, 0) }
+    case patternWithScale(precision, scale) =>
       for {
         p <- IntCodec.decode(precision)
         s <- IntCodec.decode(scale)
