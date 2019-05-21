@@ -98,8 +98,8 @@ class TestStringCodec extends TestGrimlock {
 
 class TestDecimalCodec extends TestGrimlock {
   val codec = DecimalCodec(5, 4)
-  val plainCodec = DecimalCodec.fromShortString("decimal")
   val codecWithoutScale = DecimalCodec.fromShortString("decimal(10)")
+  val codecWithScale = DecimalCodec.fromShortString("decimal(10,3)")
 
   val bd1 = BigDecimal(3.1415)
   val bd2 = BigDecimal(42)
@@ -140,12 +140,12 @@ class TestDecimalCodec extends TestGrimlock {
     codec.numeric.isDefined shouldBe true
   }
 
-  "A DecimalCodec without precision and scale" should "have a name" in {
-    plainCodec shouldBe Some(DecimalCodec(38, 0))
+  "A DecimalCodec without scale" should "have a type" in {
+    codecWithoutScale shouldBe Some(DecimalCodec(10, 0))
   }
 
-  "A DecimalCodec without scale" should "have a name" in {
-    codecWithoutScale shouldBe Some(DecimalCodec(10, 0))
+  "A DecimalCodec with scale" should "have a type" in {
+    codecWithScale shouldBe Some(DecimalCodec(10, 3))
   }
 }
 

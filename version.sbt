@@ -13,4 +13,3 @@
 // limitations under the License.
 
 version in ThisBuild := "0.7.5"
-
