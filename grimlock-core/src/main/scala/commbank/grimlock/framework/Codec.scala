@@ -166,8 +166,8 @@ object Codec {
       case BooleanCodec.Pattern() => BooleanCodec.fromShortString(str).map(Coproduct(_))
       case BoundedStringCodec.Pattern(_, _) => BoundedStringCodec.fromShortString(str).map(Coproduct(_))
       case DateCodec.Pattern(_) => DateCodec.fromShortString(str).map(Coproduct(_))
-      case DecimalCodec.patternWithoutScale(_) => DecimalCodec.fromShortString(str).map(Coproduct(_))
-      case DecimalCodec.patternWithScale(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.Pattern(_, _) => DecimalCodec.fromShortString(str).map(Coproduct(_))
+      case DecimalCodec.PatternNoScale(_) => DecimalCodec.fromShortString(str).map(Coproduct(_))
       case DoubleCodec.Pattern() => DoubleCodec.fromShortString(str).map(Coproduct(_))
       case FloatCodec.Pattern() => FloatCodec.fromShortString(str).map(Coproduct(_))
       case IntCodec.Pattern() => IntCodec.fromShortString(str).map(Coproduct(_))
@@ -390,8 +390,8 @@ case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
 /** Companion object to DecimalCodec. */
 object DecimalCodec {
   /** Pattern for parsing `DecimalCodec` from string. */
-  val patternWithScale = "decimal\\((\\d+)\\,\\s*(\\d+)\\)".r
-  val patternWithoutScale = "decimal\\((\\d+)\\)".r
+  val Pattern = "decimal\\((\\d+)\\,\\s*(\\d+)\\)".r
+  val PatternNoScale = "decimal\\((\\d+)\\)".r
 
   /**
    * Parse a DecimalCodec from a string.
@@ -401,12 +401,12 @@ object DecimalCodec {
    * @return A `Some[DecimalCodec]` in case of success, `None` otherwise.
    */
   def fromShortString(str: String): Option[DecimalCodec] = str match {
-    case patternWithoutScale(precision) => { for { p <- IntCodec.decode(precision) } yield DecimalCodec(p, 0) }
-    case patternWithScale(precision, scale) =>
+    case Pattern(precision, scale) =>
       for {
         p <- IntCodec.decode(precision)
         s <- IntCodec.decode(scale)
       } yield DecimalCodec(p, s)
+    case PatternNoScale(precision) => { for {p <- IntCodec.decode(precision) } yield DecimalCodec(p, 0) }
     case _ => None
   }
 }

@@ -98,8 +98,6 @@ class TestStringCodec extends TestGrimlock {
 
 class TestDecimalCodec extends TestGrimlock {
   val codec = DecimalCodec(5, 4)
-  val codecWithoutScale = DecimalCodec.fromShortString("decimal(10)")
-  val codecWithScale = DecimalCodec.fromShortString("decimal(10,3)")
 
   val bd1 = BigDecimal(3.1415)
   val bd2 = BigDecimal(42)
@@ -141,11 +139,11 @@ class TestDecimalCodec extends TestGrimlock {
   }
 
   "A DecimalCodec without scale" should "have a type" in {
-    codecWithoutScale shouldBe Some(DecimalCodec(10, 0))
+    DecimalCodec.fromShortString("decimal(10)") shouldBe Some(DecimalCodec(10, 0))
   }
 
   "A DecimalCodec with scale" should "have a type" in {
-    codecWithScale shouldBe Some(DecimalCodec(10, 3))
+    DecimalCodec.fromShortString("decimal(10,3)") shouldBe Some(DecimalCodec(10, 3))
   }
 }
 
