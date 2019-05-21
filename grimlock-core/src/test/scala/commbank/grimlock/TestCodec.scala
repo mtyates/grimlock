@@ -137,6 +137,14 @@ class TestDecimalCodec extends TestGrimlock {
     codec.integral.isEmpty shouldBe true
     codec.numeric.isDefined shouldBe true
   }
+
+  "A DecimalCodec without scale" should "have a type" in {
+    DecimalCodec.fromShortString("decimal(10)") shouldBe Some(DecimalCodec(10, 0))
+  }
+
+  "A DecimalCodec with scale" should "have a type" in {
+    DecimalCodec.fromShortString("decimal(10,3)") shouldBe Some(DecimalCodec(10, 3))
+  }
 }
 
 class TestDoubleCodec extends TestGrimlock {
