@@ -817,7 +817,7 @@ object Shared {
       P <: HList
     ](
     )(implicit
-      ev: Position.IndexConstraints[P, _0]
+      ev: Position.IndexConstraints[P, _0] { type V <: Value[_] }
     ) extends Sampler[P] {
       def select(cell: Cell[P]): Boolean = {
         val c = cell.position(_0).toShortString
@@ -1041,7 +1041,7 @@ object Shared {
       left: String,
       right: String
     )(implicit
-      ev: Position.IndexConstraints[P, D]
+      ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
     ) extends Partitioner[P, String] {
       def assign(cell: Cell[P]): TraversableOnce[String] = {
         val c = cell.position(dim).toShortString
@@ -1235,8 +1235,8 @@ object Shared {
     ](
     )(implicit
       ev1: Value.Box[String],
-      ev2: Position.IndexConstraints[P, _0],
-      ev3: Position.IndexConstraints[P, _1],
+      ev2: Position.IndexConstraints[P, _0] { type V <: Value[_] },
+      ev3: Position.IndexConstraints[P, _1] { type V <: Value[_] },
       ev4: Position.RemoveConstraints.Aux[P, _1, X],
       ev5: Position.AppendConstraints.Aux[X, Value[String], Q]
     ) extends Operator[P, Q] {

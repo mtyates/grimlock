@@ -16,6 +16,7 @@ package commbank.grimlock.framework.squash
 
 import commbank.grimlock.framework.Cell
 import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.position.Position
 
 import scala.reflect.ClassTag
@@ -33,8 +34,9 @@ trait Squasher[P <: HList] extends SquasherWithValue[P] {
     dim: D,
     ext: V
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Option[T] = prepare(cell, dim)
+
   def presentWithValue(t: T, ext: V): Option[Content] = present(t)
 
   /**
@@ -45,7 +47,14 @@ trait Squasher[P <: HList] extends SquasherWithValue[P] {
    *
    * @return State to reduce.
    */
-  def prepare[D <: Nat](cell: Cell[P], dim: D)(implicit ev: Position.IndexConstraints[P, D]): Option[T]
+  def prepare[
+    D <: Nat
+  ](
+    cell: Cell[P],
+    dim: D
+  )(implicit
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
+  ): Option[T]
 
   /**
    * Present the squashed content.
@@ -77,7 +86,15 @@ trait SquasherWithValue[P <: HList] extends java.io.Serializable {
    *
    * @return State to reduce.
    */
-  def prepareWithValue[D <: Nat](cell: Cell[P], dim: D, ext: V)(implicit ev: Position.IndexConstraints[P, D]): Option[T]
+  def prepareWithValue[
+    D <: Nat
+  ](
+    cell: Cell[P],
+    dim: D,
+    ext: V
+  )(implicit
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
+  ): Option[T]
 
   /**
    * Standard reduce method.

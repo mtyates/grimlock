@@ -79,7 +79,7 @@ object ExtractWithDimension {
     D <: Nat,
     T
   ](implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Witness.Aux[D]
   ): ExtractWithDimension[P, D, ev1.V, T] = ExtractWithDimension(ev2.value)(ev1)
 }
@@ -127,7 +127,7 @@ object ExtractWithDimensionAndKey {
   ](
     key: K
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Witness.Aux[D]
   ): ExtractWithDimensionAndKey[P, D, ev1.V, K, T] = {
     implicit val aux = Position.IndexConstraints[P, D]

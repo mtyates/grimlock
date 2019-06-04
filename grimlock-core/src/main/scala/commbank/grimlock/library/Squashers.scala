@@ -36,7 +36,7 @@ private[squash] object PreservingPosition {
     cell: Cell[P],
     dim: D
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Option[T] = Option((cell.position(dim), cell.content))
 
   def reduce(maximum: Boolean)(lt: T, rt: T): T = {
@@ -60,7 +60,7 @@ case class PreservingMaximumPosition[P <: HList]() extends Squasher[P] {
     cell: Cell[P],
     dim: D
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Option[T] = PreservingPosition.prepare(cell, dim)
 
   def reduce(lt: T, rt: T): T = PreservingPosition.reduce(true)(lt, rt)
@@ -80,7 +80,7 @@ case class PreservingMinimumPosition[P <: HList]() extends Squasher[P] {
     cell: Cell[P],
     dim: D
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Option[T] = PreservingPosition.prepare(cell, dim)
 
   def reduce(lt: T, rt: T): T = PreservingPosition.reduce(false)(lt, rt)
@@ -100,7 +100,7 @@ case class KeepSlice[P <: HList](keep: Value[_]) extends Squasher[P] { // TODO: 
     cell: Cell[P],
     dim: D
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Option[T] = if (cell.position(dim) equ keep) Option(cell.content) else None
 
   def reduce(lt: T, rt: T): T = lt

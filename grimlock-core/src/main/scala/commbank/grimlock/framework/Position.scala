@@ -49,6 +49,7 @@ import shapeless.{
   =:!=,
   HList,
   HNil,
+  Lazy,
   LUBConstraint,
   Poly1,
   Poly2,
@@ -76,7 +77,7 @@ import shapeless.nat._1
  *
  * @param coordinates List of coordinates of the position.
  */
-case class Position[P <: HList](coordinates: P)(implicit ev: Position.ValueConstraints[P]) {
+case class Position[P <: HList](coordinates: P)(implicit v: Position.ValueConstraints[P]) {
   /**
    * Append a coordinate to the position.
    *
@@ -108,16 +109,18 @@ case class Position[P <: HList](coordinates: P)(implicit ev: Position.ValueConst
   ): Position[ev.Q] = ev.append(coordinates, value)
 
   /**
-   * Return the coordinate at dimension (index) `dim`.
+   * Return the coordinate(s) at the provided indice(s). Dimension can either be of type
+   * `shapeless.Nat` or a `shapeless.HList` containing only `shapeless.Nat`s. The former case
+   * returns a single result type while the latter case returns a `shapeless.HList`.
    *
-   * @param dimension Dimension of the coordinate to get.
+   * @param dimension Dimension(s) of the coordinate(s) to get.
    */
   def apply[
-    D <: Nat
+    I
   ](
-    dimension: D
+    dimension: I
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, I]
   ): ev.V = ev.index(coordinates, dimension)
 
   /** Converts this position to a list of `Value`. */
@@ -228,18 +231,19 @@ case class Position[P <: HList](coordinates: P)(implicit ev: Position.ValueConst
   ): Position[ev.Q] = ev.prepend(coordinates, value)
 
   /**
-   * Remove the coordinate at dimension `dimension`.
+   * Remove the coordinate(s) at dimension(s) `dimension`(s). Dimension can either be of type
+   * `shapeless.Nat` or a `shapeless.HList` containing only `shapeless.Nat`s.
    *
-   * @param dimension The dimension to remove.
+   * @param dimension The dimension(s) to remove.
    *
-   * @return A new position with `dimension` removed.
+   * @return A new position with `dimension`(s) removed.
    */
   def remove[
-    D <: Nat
+    I
   ](
-    dimension: D
+    dimension: I
   )(implicit
-    ev: Position.RemoveConstraints[P, D]
+    ev: Position.RemoveConstraints[P, I]
   ): Position[ev.Q] = ev.remove(coordinates, dimension)
 
   /**
@@ -384,38 +388,81 @@ object Position {
     ): GreaterThanConstraints[Q, P] = new GreaterThanConstraints[Q, P] { }
   }
 
-  /** Type that captures all constraints for indexing a position. */
-  trait IndexConstraints[P <: HList, D <: Nat] extends java.io.Serializable {
-    type V <: Value[_]
+  /**
+   * Type that captures all constraints for indexing a position at one or more indices. The implicits on the companion
+   * object ensure that the type parameter `P` always satisfies `ValueConstraints[P]`.
+   */
+  trait IndexConstraints[P <: HList, I] extends java.io.Serializable {
+    /** Output type after selecting coordinates at the given dimension. */
+    type V
 
     implicit val vTag: ClassTag[V]
 
-    def index(coordinates: P, dimension: D): V
+    def index(coordinates: P, dimension: I): V
   }
 
   /** Companion object with convenience types and constructors. */
   object IndexConstraints {
-    /** Auxilary type that exposes the type of the value at the index. */
-    type Aux[P <: HList, D <: Nat, OUT <: Value[_]] = IndexConstraints[P, D] { type V = OUT }
+    /** Auxilary type that exposes the type of the value(s) at the indice(s). */
+    type Aux[P <: HList, I, OUT] = IndexConstraints[P, I] { type V = OUT }
 
-    /** Implicit with all constraints for indexing coordinates in a position. */
-    implicit def indexConstraints[
+    /** Implicit with all constraints for indexing a position at a singleton HList of indices. */
+    implicit def indexSingleton[
+      P <: HList,
+      D <: Nat,
+      OUT <: Value[_]
+    ](implicit
+      ev: Aux[P, D, OUT] // use the instance for the single Nat (`indexNat`)
+    ): Aux[P, D :: HNil, OUT :: HNil] = new IndexConstraints[P, D :: HNil] {
+      type V = OUT :: HNil
+
+      implicit val vTag: ClassTag[V] = implicitly[ClassTag[V]]
+
+      def index(coordinates: P, dimension: D :: HNil): V = ev.index(coordinates, dimension.head) :: HNil
+    }
+
+    /** Implicit with all constraints for indexing a position at a HList of indices of length 2 or higher. */
+    implicit def index2OrMore[
+      P <: HList,
+      D <: Nat,
+      E <: Nat,
+      OH <: Value[_],
+      OHT <: Value[_],
+      W <: HList,
+      I <: HList
+    ](implicit
+      ev1: Aux[P, D, OH], // use the instance for the single Nat (`indexNat`)
+      ev2: Lazy[Aux[P, E :: I, OHT :: W]],
+      ev3: GT[E, D] // indices must be in ascending order
+    ): Aux[P, D :: E :: I, OH :: OHT :: W] = new IndexConstraints[P, D :: E :: I] {
+      type V = OH :: OHT :: W
+
+      implicit val vTag: ClassTag[V] = implicitly[ClassTag[V]]
+
+      def index(
+        coordinates: P,
+        dimension: D :: E :: I
+      ): V = ev1.index(coordinates, dimension.head) :: ev2.value.index(coordinates, dimension.tail)
+    }
+
+    /** Implicit with all constraints for indexing a position at a single `shapeless.Nat`. */
+    implicit def indexNat[
       P <: HList,
       D <: Nat,
       OUT <: Value[_]
     ](implicit
       ev1: At.Aux[P, D, OUT],
-      ev2: ClassTag[OUT]
+      ev2: ClassTag[OUT],
+      ev3: ValueConstraints[P]
     ): Aux[P, D, OUT] = new IndexConstraints[P, D] {
       type V = OUT
 
-      implicit val vTag = ev2
+      implicit val vTag: ClassTag[V] = ev2
 
       def index(coordinates: P, dimension: D): V = coordinates.at[D]
     }
 
-    /** Constructore that returns an auxillary index constraints. */
-    def apply[P <: HList, D <: Nat](implicit ev: IndexConstraints[P, D]): Aux[P, D, ev.V] = ev
+    def apply[P <: HList, I](implicit ev: IndexConstraints[P, I]): Aux[P, I, ev.V] = ev
   }
 
   /** Type that captures all constraints for inserting coordinates into a position. */
@@ -600,20 +647,55 @@ object Position {
     def apply[P <: HList, V <: Value[_]](implicit ev: PrependConstraints[P, V]): Aux[P, V, ev.Q] = ev
   }
 
-  /** Type that captures all constraints for removing coordinates from a position. */
-  trait RemoveConstraints[P <: HList, D <: Nat] extends java.io.Serializable {
+  /** Type that captures all constraints for removing coordinate(s) from a position. */
+  trait RemoveConstraints[P <: HList, I] extends java.io.Serializable {
+    /** Coordinate type after removing values at the given indice(s). */
     type Q <: HList
 
-    def remove(coordinates: P, dimension: D): Position[Q]
+    def remove(coordinates: P, dimension: I): Position[Q]
   }
 
   /** Companion object with convenience types and constructors. */
   object RemoveConstraints {
-    /** Auxilary type that exposes the type with the removed value. */
-    type Aux[P <: HList, D <: Nat, OUT <: HList] = RemoveConstraints[P, D] { type Q = OUT }
+    /** Auxilary type that exposes the type with the removed value(s). */
+    type Aux[P <: HList, I, OUT <: HList] = RemoveConstraints[P, I] { type Q = OUT }
 
-    /** Implicit with all constraints for removing coordinates of a position. */
-    implicit def removeConstraints[
+    /** Implicit with all constraints for removing a singleton HList of coordinates. */
+    implicit def removeSingleton[
+      P <: HList,
+      D <: Nat,
+      OUT <: HList
+    ](implicit
+      ev: Aux[P, D, OUT] // use the instance for the single Nat case (`removeNat`)
+    ): Aux[P, D :: HNil, OUT] = new RemoveConstraints[P, D :: HNil] {
+      type Q = OUT
+
+      def remove(coordinates: P, dimension: D :: HNil): Position[Q] = ev.remove(coordinates, dimension.head)
+    }
+
+    /** Implicit with all constraints for removing a HList of coordinates with 2 or more elements. */
+    implicit def remove2OrMore[
+      P <: HList,
+      D <: Nat,
+      E <: Nat,
+      R <: HList,
+      OUT <: HList,
+      I <: HList
+    ](implicit
+      ev1: Lazy[Aux[P, E :: I, R]], // remove the indices in the tail first
+      ev2: Aux[R, D, OUT], // use the instance for the single Nat case (`removeNat`)
+      ev3: GT[E, D] // indices should be in ascending order
+    ): Aux[P, D :: E :: I, OUT] = new RemoveConstraints[P, D :: E :: I] {
+      type Q = OUT
+
+      def remove(
+        coordinates: P,
+        dimension: D :: E :: I
+      ): Position[Q] = ev2.remove(ev1.value.remove(coordinates, dimension.tail).coordinates, dimension.head)
+    }
+
+    /** Implicit with all constraints for removing a single coordinate of a position. */
+    implicit def removeNat[
       P <: HList,
       D <: Nat,
       OUT <: HList,
@@ -635,8 +717,7 @@ object Position {
       }
     }
 
-    /** Constructore that returns an auxillary remove constraints. */
-    def apply[P <: HList, D <: Nat](implicit ev: RemoveConstraints[P, D]): Aux[P, D, ev.Q] = ev
+    def apply[P <: HList, I](implicit ev: RemoveConstraints[P, I]): Aux[P, I, ev.Q] = ev
   }
 
   /** Type that captures all constraints for parsing positions from string. */
@@ -727,9 +808,27 @@ object Position {
   /** Type that captures all constraints for the type of the coordinates in a position. */
   trait ValueConstraints[P <: HList] extends java.io.Serializable { }
 
+  /**
+   * Trait containing methods to resolve instancs of `ValueConstraints[P]` that should only be used by the compiler if
+   * it cannot resolve `ValueConstraints[P]` using the methods on the `ValueConstraints` companion object.
+   */
+  trait ValueConstraintsLowPriority extends java.io.Serializable {
+    /**
+     * Given `IndexConstraints.Aux[P, I, S]` (which implies `ValueConstraints[P]`) we know that any indexing of `P` will
+     * also satisfy `ValueConstraints`.
+     */
+    implicit def valueConstraintsIndex[
+      P <: HList,
+      I <: HList,
+      S <: HList
+    ](implicit
+      ev: IndexConstraints.Aux[P, I, S]
+    ): ValueConstraints[S] = new ValueConstraints[S] { }
+  }
+
   /** Companion object with convenience types and constructors. */
-  object ValueConstraints {
-    /** Implicit with all constraints for the type of the coordinates of a position. */
+  object ValueConstraints extends ValueConstraintsLowPriority {
+    /** Any `HList` composed only of `Value[_]`s satisfies `ValueConstraints`. */
     implicit def valueConstraints[
       P <: HList
     ](implicit
@@ -1359,7 +1458,7 @@ trait Positions[P <: HList, C <: Context[C]] extends Persist[Position[P], C] {
     dim: D,
     regex: Regex
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): C#U[Position[P]] = select(keep, p => regex.pattern.matcher(p(dim).toShortString).matches)
 
   /**

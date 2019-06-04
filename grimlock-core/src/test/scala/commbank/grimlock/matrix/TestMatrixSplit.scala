@@ -15,6 +15,7 @@
 package commbank.grimlock.test
 
 import commbank.grimlock.framework._
+import commbank.grimlock.framework.encoding.Value
 import commbank.grimlock.framework.partition._
 import commbank.grimlock.framework.position._
 
@@ -60,7 +61,7 @@ object TestMatrixSplit {
   ](
     dim: D
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ) extends Partitioner[P, String] {
     def assign(cell: Cell[P]): TraversableOnce[String] = List(cell.position(dim).toShortString)
   }
@@ -69,7 +70,7 @@ object TestMatrixSplit {
     P <: HList,
     D <: Nat
   ](implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ) extends PartitionerWithValue[P, String] {
     type V = D
     def assignWithValue(cell: Cell[P], ext: V): TraversableOnce[String] = List(cell.position(ext).toShortString)

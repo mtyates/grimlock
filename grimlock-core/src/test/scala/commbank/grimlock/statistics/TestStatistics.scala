@@ -53,5 +53,18 @@ trait TestStatistics extends TestGrimlock {
     Cell(Position("bar", 3, "xyz"), Content(ContinuousSchema[Double](), 18.84)),
     Cell(Position("foo", 4, "xyz"), Content(ContinuousSchema[Double](), 12.56))
   )
+
+  val num4 = List(
+    Cell(Position("foo", 1, "xyz", true), Content(ContinuousSchema[Double](), 3.14)),
+    Cell(Position("bar", 1, "xyz", false), Content(ContinuousSchema[Double](), 6.28)),
+    Cell(Position("baz", 1, "xyz", true), Content(ContinuousSchema[Double](), 9.42)),
+    Cell(Position("qux", 1, "xyz", true), Content(ContinuousSchema[Double](), 12.56)),
+    Cell(Position("foo", 2, "xyz", false), Content(ContinuousSchema[Double](), 6.28)),
+    Cell(Position("bar", 2, "xyz", true), Content(ContinuousSchema[Double](), 12.56)),
+    Cell(Position("baz", 2, "xyz", false), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position("foo", 3, "xyz", false), Content(ContinuousSchema[Double](), 9.42)),
+    Cell(Position("bar", 3, "xyz", false), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position("foo", 4, "xyz", true), Content(ContinuousSchema[Double](), 12.56))
+  )
 }
 

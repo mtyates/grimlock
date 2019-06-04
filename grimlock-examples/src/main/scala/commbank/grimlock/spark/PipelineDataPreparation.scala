@@ -45,7 +45,7 @@ case class CustomPartition[
   left: String,
   right: String
 )(implicit
-  ev: Position.IndexConstraints[P, D]
+  ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
 ) extends Partitioner[P, String] {
   def assign(cell: Cell[P]): TraversableOnce[String] = {
     val pos = cell.position(dim).toShortString

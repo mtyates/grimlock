@@ -125,7 +125,7 @@ case class Matrix[
     tuner: T = Default()
   )(implicit
     ev1: Value.Box[Long],
-    ev2: Position.IndexConstraints[P, D],
+    ev2: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev3: FwMatrix.MeasureTuner[Context.U, T]
   ): Context.U[Cell[Coordinates1[Long]]] = {
     val coords = data.map { case c => c.position(dim) }
@@ -724,8 +724,8 @@ case class Matrix2D[
     writeRowId: Boolean,
     rowId: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: FwMatrix.SaveAsCSVTuner[Context.U, T]
   ): Context.U[Cell[V1 :: V2 :: HNil]] = {
     val (pt, rt) = tuner match {
@@ -792,8 +792,8 @@ case class Matrix2D[
     dictionary: String,
     separator: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: FwMatrix.SaveAsVWTuner[Context.U, T]
   ): Context.U[Cell[V1 :: V2 :: HNil]] = saveVW(slice, tuner)(context, file, None, None, tag, dictionary, separator)
 
@@ -812,8 +812,8 @@ case class Matrix2D[
     dictionary: String,
     separator: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: FwMatrix.SaveAsVWTuner[Context.U, T]
   ): Context.U[Cell[V1 :: V2 :: HNil]] = saveVW(
     slice,
@@ -843,8 +843,8 @@ case class Matrix2D[
     dictionary: String,
     separator: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: FwMatrix.SaveAsVWTuner[Context.U, T]
   ): Context.U[Cell[V1 :: V2 :: HNil]] = saveVW(
     slice,
@@ -875,8 +875,8 @@ case class Matrix2D[
     dictionary: String,
     separator: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: FwMatrix.SaveAsVWTuner[Context.U, T]
   ): Context.U[Cell[V1 :: V2 :: HNil]] = saveVW(
     slice,
@@ -907,8 +907,8 @@ case class Matrix2D[
     dictionary: String,
     separator: String
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0]
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] }
   ): Context.U[Cell[V1 :: V2 :: HNil]] = {
     val (pt, jt, rt) = tuner match {
       case _ => (Default(), Default(), Default())
@@ -1771,7 +1771,7 @@ trait MatrixXD[P <: HList] extends Persist[Cell[P]] {
     dim: D,
     tuner: Tuner
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Context.U[ev.V] = data
     .map { case c => c.position(dim) }
     .tunedDistinct(tuner)(Value.ordering())
@@ -1792,7 +1792,7 @@ trait MatrixXD[P <: HList] extends Persist[Cell[P]] {
     separator: String,
     tuner: Tuner
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ): Context.U[(Position[ev.V :: HNil], Long)] = {
     val numbered = coordinates(dim, tuner)
       .zipWithIndex
@@ -1897,7 +1897,7 @@ case class MultiDimensionMatrix[
     squasher: Squasher[P],
     tuner: T = Default()
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.RemoveConstraints.Aux[P, D, Q],
     ev3: FwMatrix.SquashTuner[Context.U, T]
   ): Context.U[Cell[Q]] = data
@@ -1916,7 +1916,7 @@ case class MultiDimensionMatrix[
     squasher: SquasherWithValue[P] { type V >: W },
     tuner: T = Default()
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.RemoveConstraints.Aux[P, D, Q],
     ev3: FwMatrix.SquashTuner[Context.U, T]
   ): Context.U[Cell[Q]] = data

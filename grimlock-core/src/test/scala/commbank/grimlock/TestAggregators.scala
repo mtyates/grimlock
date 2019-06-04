@@ -2100,7 +2100,7 @@ class TestWeightedSums extends TestAggregators {
     dim: D,
     name: String
   )(implicit
-    ev: Position.IndexConstraints[Q, D]
+    ev: Position.IndexConstraints[Q, D] { type V <: Value[_] }
   ) extends Extract[Q, W, Double] {
     def extract(cell: Cell[Q], ext: W): Option[Double] = ext
       .get(Position(name.format(cell.position(dim).toShortString)))

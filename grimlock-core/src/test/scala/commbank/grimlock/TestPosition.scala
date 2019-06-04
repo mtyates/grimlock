@@ -19,10 +19,18 @@ import commbank.grimlock.framework.environment.implicits._
 import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.position._
 
-import shapeless.nat.{ _0, _1, _2, _3, _4 }
+import shapeless.{ ::, HNil }
+import shapeless.nat.{ _0, _1, _2, _3, _4, _5 }
+import shapeless.test.illTyped
 
 trait TestPosition extends TestGrimlock {
   def merge[VI <: Value[_], VD <: Value[_]](i: VI, d: VD): String = i.toShortString + "|" + d.toShortString
+
+  final val indexConsTypeError =
+    "could not find implicit value for parameter ev: commbank.grimlock.framework.position.Position.IndexConstraints.*"
+
+  final val removeConsTypeError =
+    "could not find implicit value for parameter ev: commbank.grimlock.framework.position.Position.RemoveConstraints.*"
 }
 
 class TestPosition0D extends TestPosition {
@@ -62,7 +70,10 @@ class TestPosition1D extends TestPosition {
 
   it should "return its coordinates" in {
     pos(_0) shouldBe StringValue("foo")
+    pos(_0 :: HNil) shouldBe pos(_0) :: HNil
   }
+
+  it should "be ill typed if indices are out of bounds" in illTyped("pos(_1)", indexConsTypeError)  
 
   it should "compare" in {
     pos.compare(Position("abc")) should be > 0
@@ -85,6 +96,9 @@ class TestPosition1D extends TestPosition {
   it should "append" in {
     pos.append(123) shouldBe Position("foo", 123)
   }
+
+  "Position.IndexConstraints" should "be ill typed if P does not satisfy ValueConstraints[P]" in
+    illTyped("Position.IndexConstraints[Int :: HNil, _0]", indexConsTypeError)
 }
 
 class TestPosition2D extends TestPosition {
@@ -101,7 +115,18 @@ class TestPosition2D extends TestPosition {
   it should "return its coordinates" in {
     pos(_0) shouldBe StringValue("foo")
     pos(_1) shouldBe IntValue(123)
+    pos(_0 :: _1 :: HNil) shouldBe pos.coordinates
   }
+
+  it should "be ill typed if indices are not in ascending order" in
+    illTyped("pos(_1 :: _0 :: HNil)", indexConsTypeError)
+
+  it should "be ill typed if indices are out of bounds" in {
+    illTyped("pos(_2)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are repeated" in illTyped("pos(_0 :: _0 :: HNil)", indexConsTypeError)
 
   it should "compare" in {
     pos.compare(Position("abc", 456)) should be > 0
@@ -119,7 +144,14 @@ class TestPosition2D extends TestPosition {
   it should "remove" in {
     pos.remove(_0) shouldBe Position(123)
     pos.remove(_1) shouldBe Position("foo")
+    pos.remove(_1 :: HNil) shouldBe pos.remove(_1)
   }
+
+  it should "have ill typed remove if indices are not ascending" in
+    illTyped("pos.remove(_1 :: _0 :: HNil)", removeConsTypeError)
+
+  it should "have ill typed remove if indices are repeated" in
+    illTyped("pos.remove(_0 :: _0 :: HNil)", removeConsTypeError)
 
   it should "melt" in {
     pos.melt(_0, _1, merge[Value[Int], Value[String]]) shouldBe Position("123|foo")
@@ -133,6 +165,9 @@ class TestPosition2D extends TestPosition {
   it should "append" in {
     pos.append(123) shouldBe Position("foo", 123, 123)
   }
+
+  "Position.IndexConstraints" should "be ill typed if P does not satisfy ValueConstraints[P]" in
+    illTyped("Position.IndexConstraints[Int :: Value[String] :: HNil, _1]", indexConsTypeError)
 }
 
 class TestPosition3D extends TestPosition {
@@ -150,7 +185,22 @@ class TestPosition3D extends TestPosition {
     pos(_0) shouldBe StringValue("foo")
     pos(_1) shouldBe IntValue(123)
     pos(_2) shouldBe StringValue("bar")
+    pos(_0 :: _1 :: HNil) shouldBe pos(_0) :: pos(_1) :: HNil
+    pos(_0 :: _2 :: HNil) shouldBe pos(_0) :: pos(_2) :: HNil
+    pos(_0 :: _1 :: _2 :: HNil) shouldBe pos.coordinates
   }
+
+  it should "be ill typed if indices are not in ascending order" in {
+    illTyped("pos(_1 :: _0 :: HNil)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _1 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are out of bounds" in {
+    illTyped("pos(_3)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _3 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are repeated" in illTyped("pos(_0 :: _0 :: HNil)", indexConsTypeError) 
 
   it should "compare" in {
     pos.compare(Position("abc", 456, "xyz")) should be > 0
@@ -172,7 +222,15 @@ class TestPosition3D extends TestPosition {
     pos.remove(_0) shouldBe Position(123, "bar")
     pos.remove(_1) shouldBe Position("foo", "bar")
     pos.remove(_2) shouldBe Position("foo", 123)
+    pos.remove(_0 :: _1 :: HNil) shouldBe Position(pos(_2))
+    pos.remove(_0 :: _1 :: _2 :: HNil) shouldBe Position()
   }
+
+  it should "have ill typed remove if indices are not ascending" in
+    illTyped("pos.remove(_0 :: _2 :: _1 :: HNil)", removeConsTypeError)
+
+  it should "have ill typed remove if indices are repeated" in
+    illTyped("pos.remove(_2 :: _2 :: HNil)", removeConsTypeError)
 
   it should "melt" in {
     pos.melt(_0, _1, merge[Value[Int], Value[String]]) shouldBe Position("123|foo", "bar")
@@ -192,6 +250,9 @@ class TestPosition3D extends TestPosition {
   it should "append" in {
     pos.append(123) shouldBe Position("foo", 123, "bar", 123)
   }
+
+  "Position.IndexConstraints" should "be ill typed if P does not satisfy ValueConstraints[P]" in
+    illTyped("Position.IndexConstraints[Int :: Double :: Value[Int] :: HNil, _0]", indexConsTypeError)
 }
 
 class TestPosition4D extends TestPosition {
@@ -210,7 +271,22 @@ class TestPosition4D extends TestPosition {
     pos(_1) shouldBe IntValue(123)
     pos(_2) shouldBe StringValue("bar")
     pos(_3) shouldBe IntValue(456)
+    pos(_0 :: _1 :: HNil) shouldBe pos(_0) :: pos(_1) :: HNil
+    pos(_1 :: _3 :: HNil) shouldBe pos(_1) :: pos(_3) :: HNil
   }
+
+  it should "be ill typed if indices are not in ascending order" in {
+    illTyped("pos(_1 :: _0 :: HNil)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _1 :: HNil)", indexConsTypeError)
+    illTyped("pos(_0 :: _1 :: _3 :: _2 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are out of bounds" in {
+    illTyped("pos(_4)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _4 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are repeated" in illTyped("pos(_0 :: _0 :: HNil)", indexConsTypeError)
 
   it should "compare" in {
     pos.compare(Position("abc", 456, "xyz", 789)) should be > 0
@@ -236,7 +312,15 @@ class TestPosition4D extends TestPosition {
     pos.remove(_1) shouldBe Position("foo", "bar", 456)
     pos.remove(_2) shouldBe Position("foo", 123, 456)
     pos.remove(_3) shouldBe Position("foo", 123, "bar")
+    pos.remove(_0 :: _2 :: _3 :: HNil) shouldBe Position(pos(_1))
+    pos.remove(_0 :: _1 :: _2 :: _3 :: HNil) shouldBe Position()
   }
+
+  it should "have ill typed remove if indices are not ascending" in
+    illTyped("pos.remove(_3 :: _1 :: _2 :: HNil)", removeConsTypeError)
+
+  it should "have ill typed remove if indices are repeated" in
+    illTyped("pos.remove(_1 :: _1 :: _2 :: HNil)", removeConsTypeError)
 
   it should "melt" in {
     pos.melt(_0, _1, merge[Value[Int], Value[String]]) shouldBe Position("123|foo", "bar", 456)
@@ -263,6 +347,11 @@ class TestPosition4D extends TestPosition {
   it should "append" in {
     pos.append(123) shouldBe Position("foo", 123, "bar", 456, 123)
   }
+
+  "Position.IndexConstraints" should "be ill typed if P does not satisfy ValueConstraints[P]" in illTyped(
+    "Position.IndexConstraints[Value[Int] :: Double :: Value[String] :: Value[Boolean] :: HNil, _1 :: _2 :: HNil]",
+    indexConsTypeError
+  )
 }
 
 class TestPosition5D extends TestPosition {
@@ -282,7 +371,22 @@ class TestPosition5D extends TestPosition {
     pos(_2) shouldBe StringValue("bar")
     pos(_3) shouldBe IntValue(456)
     pos(_4) shouldBe StringValue("baz")
+    pos(_0 :: _1 :: _3 :: HNil) shouldBe pos(_0) :: pos(_1) :: pos(_3) :: HNil
+    pos(_2 :: _4 :: HNil) shouldBe pos(_2) :: pos(_4) :: HNil
   }
+
+  it should "be ill typed if indices are not in ascending order" in {
+    illTyped("pos(_1 :: _0 :: HNil)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _1 :: HNil)", indexConsTypeError)
+    illTyped("pos(_0 :: _1 :: _4 :: _2 :: _3 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are out of bounds" in {
+    illTyped("pos(_5)", indexConsTypeError)
+    illTyped("pos(_0 :: _2 :: _4 :: _5 :: HNil)", indexConsTypeError)
+  }
+
+  it should "be ill typed if indices are repeated" in illTyped("pos(_0 :: _0 :: HNil)", indexConsTypeError)
 
   it should "compare" in {
     pos.compare(Position("abc", 456, "xyz", 789, "xyz")) should be > 0
@@ -312,7 +416,15 @@ class TestPosition5D extends TestPosition {
     pos.remove(_2) shouldBe Position("foo", 123, 456, "baz")
     pos.remove(_3) shouldBe Position("foo", 123, "bar", "baz")
     pos.remove(_4) shouldBe Position("foo", 123, "bar", 456)
+    pos.remove(_0 :: _1 :: _3 :: HNil) shouldBe Position(pos(_2) :: pos(_4) :: HNil)
+    pos.remove(_0 :: _1 :: _2 :: _3 :: _4 :: HNil) shouldBe Position()
   }
+
+  it should "have ill typed remove if indices are not ascending" in
+    illTyped("pos.remove(_2 :: _4 :: _2 :: HNil)", removeConsTypeError)
+
+  it should "have ill typed remove if indices are repeated" in
+    illTyped("pos.remove(_0 :: _1 :: _3 :: _3 :: _4 :: HNil)", removeConsTypeError)
 
   it should "melt" in {
     pos.melt(_0, _1, merge[Value[Int], Value[String]]) shouldBe Position("123|foo", "bar", 456, "baz")
@@ -340,6 +452,11 @@ class TestPosition5D extends TestPosition {
     pos.melt(_4, _2, merge[Value[String], Value[String]]) shouldBe Position("foo", 123, "bar|baz", 456)
     pos.melt(_4, _3, merge[Value[Int], Value[String]]) shouldBe Position("foo", 123, "bar", "456|baz")
   }
+
+  "Position.IndexConstraints" should "be ill typed if P does not satisfy ValueConstraints[P]" in illTyped(
+    "Position.IndexConstraints[Value[Int] :: Value[Double] :: Value[Int] :: Value[Int] :: Int :: HNil, _1 :: _2 :: _3 :: HNil]",
+    "diverging implicit expansion for type commbank.grimlock.framework.position.Position.IndexConstraints.Aux.*"
+  )
 }
 
 trait TestPositions extends TestGrimlock {

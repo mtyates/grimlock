@@ -191,7 +191,7 @@ object TestMatrixSquash {
       dim: D,
       ext: V
     )(implicit
-      ev: Position.IndexConstraints[P, D]
+      ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
     ): Option[T] = squasher.prepare(cell, dim)
 
     def reduce(lt: T, rt: T): T = squasher.reduce(lt, rt)

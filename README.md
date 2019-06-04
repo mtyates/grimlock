@@ -33,7 +33,7 @@ Getting Started
 Simply add the following lines to your build file:
 
 ```
-libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.7.5"
+libraryDependencies += "au.com.cba.omnia" %% "grimlock-core" % "0.7.6"
 resolvers += "commbank-releases" at "http://commbank.artifactoryonline.com/commbank/ext-releases-local"
 ```
 
@@ -77,7 +77,7 @@ Lastly, a __Codec__ can be used to parse, write and compare the data types used 
 
 ### Working with dimensions
 
-Performing operations along any of the dimensions of the matrix is supported through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with a single dimension (__shapeless.Nat__, where \_0 indexes the first dimension), but differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is grouped by all dimensions *except* the dimension used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
+Performing operations along any of the dimensions of the matrix is supported through a __Slice__. There are two realisations of Slice: __Along__ and __Over__. Both are constructed with one or more dimensions, specified as natural numbers (__shapeless.Nat__)  where \_0 indexes the first dimension. However they differ in how the dimension is interpreted. When using Over, all data in the matrix is grouped by the dimension(s) and operations, such as aggregation, are applied to the resulting groups. When using Along, the data is grouped by all dimensions *except* the dimension(s) used when constructing the Slice. The differences between Over and Along are graphically presented below for a three dimensional matrix. Note that in 2 dimensions, Along and Over are each other's inverse.
 
 ```
         Over(_1)          Along(_2)

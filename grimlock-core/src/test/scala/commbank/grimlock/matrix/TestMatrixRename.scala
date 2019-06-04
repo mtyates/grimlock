@@ -241,7 +241,7 @@ object TestMatrixRename {
   ](
     dim: D
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.UpdateConstraints[P, D, Value[String]]
   ) = (cell: Cell[P]) => cell.position.update(dim, cell.position(dim).toShortString + ".new").toOption
 
@@ -251,7 +251,7 @@ object TestMatrixRename {
   ](
     dim: D
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.UpdateConstraints[P, D, Value[String]]
   ) = (cell: Cell[P], ext: String) => cell.position.update(dim, cell.position(dim).toShortString + ext).toOption
 }

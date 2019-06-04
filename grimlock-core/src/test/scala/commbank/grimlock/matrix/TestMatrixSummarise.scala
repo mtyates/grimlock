@@ -29,7 +29,7 @@ import commbank.grimlock.library.aggregate._
 import com.twitter.scalding.typed.ValuePipe
 
 import shapeless.{ ::, HList, HNil, Nat }
-import shapeless.nat.{ _0, _1, _2 }
+import shapeless.nat.{ _0, _1, _2, _3 }
 
 trait TestMatrixSummarise extends TestMatrix {
   val ext1 = Map(
@@ -419,6 +419,20 @@ trait TestMatrixSummarise extends TestMatrix {
     Cell(Position("foo", 4, "sum"), Content(ContinuousSchema[Double](), 12.56 / 3.14)),
     Cell(Position("qux", 1, "sum"), Content(ContinuousSchema[Double](), 12.56 / 3.14))
   )
+
+  val result45 = List(
+    Cell(Position(1, "xyz"), Content(ContinuousSchema[Double](), 12.56)),
+    Cell(Position(2, "xyz"), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position(3, "xyz"), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position(4, "xyz"), Content(ContinuousSchema[Double](), 12.56))
+  )
+
+  val result46 = List(
+    Cell(Position("bar", "xyz"), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position("baz", "xyz"), Content(ContinuousSchema[Double](), 18.84)),
+    Cell(Position("foo", "xyz"), Content(ContinuousSchema[Double](), 12.56)),
+    Cell(Position("qux", "xyz"), Content(ContinuousSchema[Double](), 12.56))
+  )
 }
 
 object TestMatrixSummarise {
@@ -429,7 +443,7 @@ object TestMatrixSummarise {
     dim: D,
     name: String
   )(implicit
-    ev: Position.IndexConstraints[P, D]
+    ev: Position.IndexConstraints[P, D] { type V <: Value[_] }
   ) extends Extract[P, Map[Position[Value[String] :: HNil], Double], Double] {
     def extract(cell: Cell[P], ext: Map[Position[Value[String] :: HNil], Double]): Option[Double] = ext
       .get(Position(name.format(cell.position(dim).toShortString)))
@@ -509,6 +523,30 @@ class TestScalaMatrixSummarise extends TestMatrixSummarise with TestScala {
     toU(num3)
       .summarise(Along(_2), Default())(Minimum())
       .toList.sortBy(_.position) shouldBe result10
+  }
+
+  it should "return its third over 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Over(_0, _1), Default())(Minimum())
+      .toList.sortBy(_.position) shouldBe result10
+  }
+
+  it should "return its second along 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Along(_0, _1), Default())(Maximum())
+      .toList.sortBy(_.position) shouldBe result9
+  }
+
+  it should "return its max over 2D aggregates in 4D" in {
+    toU(num4)
+      .summarise(Over(_1, _2), Default())(Maximum())
+      .toList.sortBy(_.position) shouldBe result45
+  }
+
+  it should "returns its max along 2D aggregates in 4D" in {
+    toU(num4)
+      .summarise(Along(_1, _3), Default())(Maximum())
+      .toList.sortBy(_.position) shouldBe result46
   }
 
   it should "throw an exception for too many single" in {
@@ -905,6 +943,24 @@ class TestScaldingMatrixSummarise extends TestMatrixSummarise with TestScalding 
       .toList.sortBy(_.position) shouldBe result10
   }
 
+  it should "return its third over 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Over(_0, _1), Default())(Minimum())
+      .toList.sortBy(_.position) shouldBe result10
+  }
+
+  it should "return its second along 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Along(_0, _1), Default(12))(Maximum())
+      .toList.sortBy(_.position) shouldBe result9
+  }
+
+  it should "returns its max along 2D aggregates in 4D" in {
+    toU(num4)
+      .summarise(Along(_1, _3), Default(12))(Maximum())
+      .toList.sortBy(_.position) shouldBe result46
+  }
+
   it should "throw an exception for too many single" in {
     a [Exception] shouldBe thrownBy { toU(num2).summarise(Over(_0))(Minimum(), Maximum()) }
   }
@@ -1297,6 +1353,24 @@ class TestSparkMatrixSummarise extends TestMatrixSummarise with TestSpark {
     toU(num3)
       .summarise(Along(_2), Default(12))(Minimum())
       .toList.sortBy(_.position) shouldBe result10
+  }
+
+  it should "return its third over 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Over(_0, _1), Default())(Minimum())
+      .toList.sortBy(_.position) shouldBe result10
+  }
+
+  it should "return its second along 2D aggregates in 3D" in {
+    toU(num3)
+      .summarise(Along(_0, _1), Default(12))(Maximum())
+      .toList.sortBy(_.position) shouldBe result9
+  }
+
+  it should "returns its max along 2D aggregates in 4D" in {
+    toU(num4)
+      .summarise(Along(_1, _3), Default(12))(Maximum())
+      .toList.sortBy(_.position) shouldBe result46
   }
 
   it should "throw an exception for too many single" in {

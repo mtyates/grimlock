@@ -28,6 +28,7 @@ class TestScalaStatisticsCounts extends TestStatistics with TestScala {
   val data1 = toU(num1)
   val data2 = toU(num2)
   val data3 = toU(num3)
+  val data4 = toU(num4)
 
   "A counts" should "return its correct statistic" in {
     data1
@@ -77,6 +78,22 @@ class TestScalaStatisticsCounts extends TestStatistics with TestScala {
     data3
       .counts(Along(_2), Default())
       .toList.sortBy(_.position) shouldBe data3.summarise(Along(_2))(Counts()).toList.sortBy(_.position)
+
+    data3
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Along(_0), Default()).toList.sortBy(_.position)
+
+    data3
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Over(_0), Default()).toList.sortBy(_.position)
+
+    data4
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Over(_1, _2))(Counts()).toList.sortBy(_.position)
+
+    data4
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Along(_1, _2))(Counts()).toList.sortBy(_.position)
   }
 }
 
@@ -86,6 +103,7 @@ class TestScaldingStatisticsCounts extends TestStatistics with TestScalding {
   val data1 = toU(num1)
   val data2 = toU(num2)
   val data3 = toU(num3)
+  val data4 = toU(num4)
 
   "A counts" should "return its correct statistic" in {
     data1
@@ -135,6 +153,30 @@ class TestScaldingStatisticsCounts extends TestStatistics with TestScalding {
     data3
       .counts(Along(_2), Default(12))
       .toList.sortBy(_.position) shouldBe data3.summarise(Along(_2))(Counts()).toList.sortBy(_.position)
+
+    data3
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Along(_0), Default()).toList.sortBy(_.position)
+
+    data3
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Over(_0), Default()).toList.sortBy(_.position)
+
+    data3
+      .counts(Along(_1, _2), Default(12))
+      .toList.sortBy(_.position) shouldBe data3.counts(Over(_0), Default()).toList.sortBy(_.position)
+
+    data4
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Over(_1, _2))(Counts()).toList.sortBy(_.position)
+
+    data4
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Along(_1, _2))(Counts()).toList.sortBy(_.position)
+
+    data4
+      .counts(Along(_1, _2), Default(12))
+      .toList.sortBy(_.position) shouldBe data4.summarise(Along(_1, _2))(Counts()).toList.sortBy(_.position)
   }
 }
 
@@ -144,6 +186,7 @@ class TestSparkStatisticsCounts extends TestStatistics with TestSpark {
   val data1 = toU(num1)
   val data2 = toU(num2)
   val data3 = toU(num3)
+  val data4 = toU(num4)
 
   "A counts" should "return its correct statistic" in {
     data1
@@ -193,6 +236,30 @@ class TestSparkStatisticsCounts extends TestStatistics with TestSpark {
     data3
       .counts(Along(_2), Default(12))
       .toList.sortBy(_.position) shouldBe data3.summarise(Along(_2))(Counts()).toList.sortBy(_.position)
+
+    data3
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Along(_0), Default()).toList.sortBy(_.position)
+
+    data3
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data3.counts(Over(_0), Default()).toList.sortBy(_.position)
+
+    data3
+      .counts(Along(_1, _2), Default(12))
+      .toList.sortBy(_.position) shouldBe data3.counts(Over(_0), Default()).toList.sortBy(_.position)
+
+    data4
+      .counts(Over(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Over(_1, _2))(Counts()).toList.sortBy(_.position)
+
+    data4
+      .counts(Along(_1, _2), Default())
+      .toList.sortBy(_.position) shouldBe data4.summarise(Along(_1, _2))(Counts()).toList.sortBy(_.position)
+
+    data4
+      .counts(Along(_1, _2), Default(12))
+      .toList.sortBy(_.position) shouldBe data4.summarise(Along(_1, _2))(Counts()).toList.sortBy(_.position)
   }
 }
 

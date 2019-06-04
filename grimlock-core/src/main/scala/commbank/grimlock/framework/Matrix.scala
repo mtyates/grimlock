@@ -140,7 +140,7 @@ trait Matrix[
     tuner: T
   )(implicit
     ev1: Value.Box[Long],
-    ev2: Position.IndexConstraints[P, D],
+    ev2: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev3: Matrix.MeasureTuner[C#U, T]
   ): C#U[Cell[Coordinates1[Long]]]
 
@@ -981,7 +981,7 @@ trait MultiDimensionMatrix[P <: HList, C <: Context[C]] extends PairwiseDistance
     squasher: Squasher[P],
     tuner: T
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.RemoveConstraints.Aux[P, D, Q],
     ev3: Matrix.SquashTuner[C#U, T]
   ): C#U[Cell[Q]]
@@ -1007,7 +1007,7 @@ trait MultiDimensionMatrix[P <: HList, C <: Context[C]] extends PairwiseDistance
     squasher: SquasherWithValue[P] { type V >: W },
     tuner: T
   )(implicit
-    ev1: Position.IndexConstraints[P, D],
+    ev1: Position.IndexConstraints[P, D] { type V <: Value[_] },
     ev2: Position.RemoveConstraints.Aux[P, D, Q],
     ev3: Matrix.SquashTuner[C#U, T]
   ): C#U[Cell[Q]]
@@ -1147,8 +1147,8 @@ trait Matrix2D[V1 <: Value[_], V2 <: Value[_], C <: Context[C]] extends SetDimen
     writeRowId: Boolean = true,
     rowId: String = "id"
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: Matrix.SaveAsCSVTuner[C#U, T]
   ): C#U[Cell[V1 :: V2 :: HNil]]
 
@@ -1179,8 +1179,8 @@ trait Matrix2D[V1 <: Value[_], V2 <: Value[_], C <: Context[C]] extends SetDimen
     dictionary: String = "%s.dict",
     separator: String = "|"
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: Matrix.SaveAsVWTuner[C#U, T]
   ): C#U[Cell[V1 :: V2 :: HNil]]
 
@@ -1215,8 +1215,8 @@ trait Matrix2D[V1 <: Value[_], V2 <: Value[_], C <: Context[C]] extends SetDimen
     dictionary: String = "%s.dict",
     separator: String = "|"
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: Matrix.SaveAsVWTuner[C#U, T]
   ): C#U[Cell[V1 :: V2 :: HNil]]
 
@@ -1251,8 +1251,8 @@ trait Matrix2D[V1 <: Value[_], V2 <: Value[_], C <: Context[C]] extends SetDimen
     dictionary: String = "%s.dict",
     separator: String = "|"
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: Matrix.SaveAsVWTuner[C#U, T]
   ): C#U[Cell[V1 :: V2 :: HNil]]
 
@@ -1290,8 +1290,8 @@ trait Matrix2D[V1 <: Value[_], V2 <: Value[_], C <: Context[C]] extends SetDimen
     dictionary: String = "%s.dict",
     separator: String = "|"
   )(implicit
-    ev1: Position.IndexConstraints[S, _0],
-    ev2: Position.IndexConstraints[R, _0],
+    ev1: Position.IndexConstraints[S, _0] { type V <: Value[_] },
+    ev2: Position.IndexConstraints[R, _0] { type V <: Value[_] },
     ev3: Matrix.SaveAsVWTuner[C#U, T]
   ): C#U[Cell[V1 :: V2 :: HNil]]
 }
