@@ -66,8 +66,9 @@ object Over {
   ](
     dimension: D
   )(implicit
-    ev1: Position.IndexConstraints.Aux[P, D :: HNil, V :: HNil],
-    ev2: Position.RemoveConstraints.Aux[P, D :: HNil, R]
+    // different parameter order to case class needed to prevent duplicate symbols compile error
+    ev1: Position.RemoveConstraints.Aux[P, D, R],
+    ev2: Position.IndexConstraints.Aux[P, D, V]
   ): Over[P, D :: HNil, V :: HNil, R] = Over(dimension :: HNil)
 
   /**
@@ -98,7 +99,10 @@ object Over {
     ev1: Position.IndexConstraints[P, D :: HNil] { type V <: HList },
     ev2: Position.RemoveConstraints[P, D :: HNil],
     ev3: Witness.Aux[D]
-  ): Over[P, D :: HNil, ev1.V, ev2.Q] = Over(ev3.value :: HNil)(ev1, ev2)
+  ): Over[P, D :: HNil, ev1.V, ev2.Q] =
+    // implicits must be passed explicitly to case class constructor so the compiler knows which constructor is
+    // being called. Same behaviour for the other apply methods which use types
+    Over(ev3.value :: HNil)(ev1, ev2)
 
   /** Construct an `Over` for 2 dimensions using types. */
   def apply[
@@ -152,8 +156,9 @@ object Along {
   ](
     dimension: D
   )(implicit
-    ev1: Position.IndexConstraints.Aux[P, D :: HNil, V :: HNil],
-    ev2: Position.RemoveConstraints.Aux[P, D :: HNil, S]
+    // different parameter order to case class needed to prevent duplicate symbols compile error
+    ev1: Position.RemoveConstraints.Aux[P, D, S],
+    ev2: Position.IndexConstraints.Aux[P, D, V]
   ): Along[P, D :: HNil, V :: HNil, S] = Along(dimension :: HNil)
 
   /**

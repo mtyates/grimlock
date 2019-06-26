@@ -34,6 +34,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 import scala.collection.immutable.StringOps
+import scala.reflect.runtime.universe.typeTag
 
 import shapeless.{ HList, Nat }
 import shapeless.nat.{ _0, _1 }
@@ -77,12 +78,14 @@ case class ExampleEventValue(value: ExampleEvent) extends Value[ExampleEvent] {
   val codec = ExampleEventCodec
 
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[ExampleEvent].map(e => cmp(e))
+
+  protected val ttag = typeTag[ExampleEvent]
 }
 
 // Define a codec for dealing with the example event. Note that comparison, for this example, is simply comparison
 // on the event id.
 case object ExampleEventCodec extends Codec[ExampleEvent] { self =>
-  val converters = Set.empty[Codec.Convert[ExampleEvent]]
+  val converters = Set.empty[Codec.Converter[ExampleEvent, Any]]
   val date = None
   val numeric = None
   val integral = None

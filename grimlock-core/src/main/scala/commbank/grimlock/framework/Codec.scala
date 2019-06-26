@@ -21,6 +21,7 @@ import java.text.{ ParsePosition, SimpleDateFormat }
 import java.util.Date
 
 import scala.math.BigDecimal
+import scala.reflect.runtime.universe.{ Type => RuntimeType, typeOf, TypeTag }
 import scala.util.{ Success, Try }
 
 import shapeless.{ :+:, CNil, Coproduct }
@@ -29,7 +30,7 @@ import shapeless.ops.coproduct.Inject
 /** Trait for encoding/decoding (basic) data types. */
 trait Codec[T] {
   /** Custom convertors (i.e. other than identity) for converting `T` to another type. */
-  def converters: Set[Codec.Convert[T]]
+  def converters: Set[Codec.Converter[T, Any]]
 
   /** An optional date type class for this data type. */
   def date: Option[T => Date]
@@ -82,12 +83,18 @@ trait Codec[T] {
 
   /** Return a consise (terse) string representation of a codec. */
   def toShortString: String
+
+  /** Return a conversion wrapped with its type in a tuple. */
+  protected def convert[X : TypeTag](v: X): Codec.Conversion[X] = (v, typeOf[X])
 }
 
 /** Companion object to the `Codec` trait. */
 object Codec {
-  /** Type for converting a T to any other type. */
-  type Convert[T] = (T) => Any
+  /** Type to be return by a Convert function. */
+  type Conversion[X] = (X, RuntimeType)
+
+  /** Type for converting a T to a specific other type. */
+  type Converter[T, X] = (T) => Conversion[X]
 
   /** Type for a default Codec co-product when parsing Codecs from string. */
   type DefaultCodecs = BinaryCodec.type :+:
@@ -182,7 +189,7 @@ object Codec {
 
 /** Codec for dealing with `Array[Byte]`. */
 case object BinaryCodec extends Codec[Array[Byte]] { self =>
-  val converters: Set[Codec.Convert[Array[Byte]]] = Set.empty
+  val converters: Set[Codec.Converter[Array[Byte], Any]] = Set.empty
   val date: Option[Array[Byte] => Date] = None
   val integral: Option[Integral[Array[Byte]]] = None
   val numeric: Option[Numeric[Array[Byte]]] = None
@@ -221,7 +228,7 @@ case object BinaryCodec extends Codec[Array[Byte]] { self =>
 
 /** Codec for dealing with `Boolean`. */
 case object BooleanCodec extends Codec[Boolean] {
-  val converters: Set[Codec.Convert[Boolean]] = Set(BooleanAsDouble, BooleanAsFloat, BooleanAsInt, BooleanAsLong)
+  val converters: Set[Codec.Converter[Boolean, Any]] = Set(BooleanAsDouble, BooleanAsFloat, BooleanAsInt, BooleanAsLong)
   val date: Option[Boolean => Date] = None
   val integral: Option[Integral[Boolean]] = None
   val numeric: Option[Numeric[Boolean]] = None
@@ -252,26 +259,26 @@ case object BooleanCodec extends Codec[Boolean] {
 
   def toShortString = Pattern.toString
 
-  private case object BooleanAsDouble extends (Boolean => Double) {
-    def apply(b: Boolean): Double = if (b) 1 else 0
+  private case object BooleanAsDouble extends Codec.Converter[Boolean, Double] {
+    def apply(b: Boolean): Codec.Conversion[Double] = convert(if (b) 1 else 0)
   }
 
-  private case object BooleanAsFloat extends (Boolean => Float) {
-    def apply(b: Boolean): Float = if (b) 1 else 0
+  private case object BooleanAsFloat extends Codec.Converter[Boolean, Float] {
+    def apply(b: Boolean): Codec.Conversion[Float] = convert(if (b) 1 else 0)
   }
 
-  private case object BooleanAsInt extends (Boolean => Int) {
-    def apply(b: Boolean): Int = if (b) 1 else 0
+  private case object BooleanAsInt extends Codec.Converter[Boolean, Int] {
+    def apply(b: Boolean): Codec.Conversion[Int] = convert(if (b) 1 else 0)
   }
 
-  private case object BooleanAsLong extends (Boolean => Long) {
-    def apply(b: Boolean): Long = if (b) 1 else 0
+  private case object BooleanAsLong extends Codec.Converter[Boolean, Long] {
+    def apply(b: Boolean): Codec.Conversion[Long] = convert(if (b) 1 else 0)
   }
 }
 
 /** Codec for dealing with bounded `String`. */
 case class BoundedStringCodec(min: Int, max: Int) extends Codec[String] {
-  val converters: Set[Codec.Convert[String]] = Set.empty
+  val converters: Set[Codec.Converter[String, Any]] = Set.empty
   val date: Option[String => Date] = None
   val integral: Option[Integral[String]] = None
   val numeric: Option[Numeric[String]] = None
@@ -315,7 +322,7 @@ object BoundedStringCodec {
 
 /** Codec for dealing with `java.util.Date`. */
 case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =>
-  val converters: Set[Codec.Convert[Date]] = Set(DateAsLong)
+  val converters: Set[Codec.Converter[Date, Any]] = Set(DateAsLong)
   val date: Option[Date => Date] = Option(identity)
   val integral: Option[Integral[Date]] = None
   val numeric: Option[Numeric[Date]] = None
@@ -343,8 +350,8 @@ case class DateCodec(format: String = "yyyy-MM-dd") extends Codec[Date] { self =
 
   private def df: SimpleDateFormat = new SimpleDateFormat(format)
 
-  private case object DateAsLong extends (Date => Long) {
-    def apply(d: Date): Long = d.getTime
+  private case object DateAsLong extends Codec.Converter[Date, Long] {
+    def apply(d: Date): Codec.Conversion[Long] = convert(d.getTime)
   }
 }
 
@@ -368,7 +375,7 @@ object DateCodec {
 
 /** Codec for dealing with `BigDecimal`. */
 case class DecimalCodec(precision: Int, scale: Int) extends Codec[BigDecimal] {
-  val converters: Set[Codec.Convert[BigDecimal]] = Set.empty
+  val converters: Set[Codec.Converter[BigDecimal, Any]] = Set.empty
   val date: Option[BigDecimal => Date] = None
   val integral: Option[Integral[BigDecimal]] = None
   val numeric: Option[Numeric[BigDecimal]] = Option(Numeric.BigDecimalIsFractional)
@@ -413,7 +420,7 @@ object DecimalCodec {
 
 /** Codec for dealing with `Double`. */
 case object DoubleCodec extends Codec[Double] {
-  val converters: Set[Codec.Convert[Double]] = Set.empty
+  val converters: Set[Codec.Converter[Double, Any]] = Set.empty
   val date: Option[Double => Date] = None
   val integral: Option[Integral[Double]] = None
   val numeric: Option[Numeric[Double]] = Option(Numeric.DoubleIsFractional)
@@ -447,7 +454,7 @@ case object DoubleCodec extends Codec[Double] {
 
 /** Codec for dealing with `Float`. */
 case object FloatCodec extends Codec[Float] {
-  val converters: Set[Codec.Convert[Float]] = Set(FloatAsDouble)
+  val converters: Set[Codec.Converter[Float, Any]] = Set(FloatAsDouble)
   val date: Option[Float => Date] = None
   val integral: Option[Integral[Float]] = None
   val numeric: Option[Numeric[Float]] = Option(Numeric.FloatIsFractional)
@@ -478,14 +485,14 @@ case object FloatCodec extends Codec[Float] {
 
   def toShortString = Pattern.toString
 
-  private case object FloatAsDouble extends (Float => Double) {
-    def apply(f: Float): Double = f
+  private case object FloatAsDouble extends Codec.Converter[Float, Double] {
+    def apply(f: Float): Codec.Conversion[Double] = convert(f)
   }
 }
 
 /** Codec for dealing with `Int`. */
 case object IntCodec extends Codec[Int] {
-  val converters: Set[Codec.Convert[Int]] = Set(IntAsBigDecimal, IntAsDouble, IntAsFloat, IntAsLong)
+  val converters: Set[Codec.Converter[Int, Any]] = Set(IntAsBigDecimal, IntAsDouble, IntAsFloat, IntAsLong)
   val date: Option[Int => Date] = None
   val integral: Option[Integral[Int]] = Option(Numeric.IntIsIntegral)
   val numeric: Option[Numeric[Int]] = Option(Numeric.IntIsIntegral)
@@ -516,26 +523,26 @@ case object IntCodec extends Codec[Int] {
 
   def toShortString = Pattern.toString
 
-  private case object IntAsBigDecimal extends (Int => BigDecimal) {
-    def apply(i: Int): BigDecimal = BigDecimal(i)
+  private case object IntAsBigDecimal extends Codec.Converter[Int, BigDecimal] {
+    def apply(i: Int): Codec.Conversion[BigDecimal] = convert(BigDecimal(i))
   }
 
-  private case object IntAsDouble extends (Int => Double) {
-    def apply(i: Int): Double = i.toDouble
+  private case object IntAsDouble extends Codec.Converter[Int, Double] {
+    def apply(i: Int): Codec.Conversion[Double] = convert(i.toDouble)
   }
 
-  private case object IntAsFloat extends (Int => Float) {
-    def apply(i: Int): Float = i.toFloat
+  private case object IntAsFloat extends Codec.Converter[Int, Float] {
+    def apply(i: Int): Codec.Conversion[Float] = convert(i.toFloat)
   }
 
-  private case object IntAsLong extends (Int => Long) {
-    def apply(i: Int): Long = i.toLong
+  private case object IntAsLong extends Codec.Converter[Int, Long] {
+    def apply(i: Int): Codec.Conversion[Long] = convert(i.toLong)
   }
 }
 
 /** Codec for dealing with `Long`. */
 case object LongCodec extends Codec[Long] {
-  val converters: Set[Codec.Convert[Long]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble, LongAsFloat)
+  val converters: Set[Codec.Converter[Long, Any]] = Set(LongAsBigDecimal, LongAsDate, LongAsDouble, LongAsFloat)
   val date: Option[Long => Date] = Option(l => new Date(l))
   val integral: Option[Integral[Long]] = Option(Numeric.LongIsIntegral)
   val numeric: Option[Numeric[Long]] = Option(Numeric.LongIsIntegral)
@@ -566,26 +573,26 @@ case object LongCodec extends Codec[Long] {
 
   def toShortString = Pattern.toString
 
-  private case object LongAsBigDecimal extends (Long => BigDecimal) {
-    def apply(l: Long): BigDecimal = BigDecimal(l)
+  private case object LongAsBigDecimal extends Codec.Converter[Long, BigDecimal] {
+    def apply(l: Long): Codec.Conversion[BigDecimal] = convert(BigDecimal(l))
   }
 
-  private case object LongAsDate extends (Long => Date) {
-    def apply(l: Long): Date = new Date(l)
+  private case object LongAsDate extends Codec.Converter[Long, Date] {
+    def apply(l: Long): Codec.Conversion[Date] = convert(new Date(l))
   }
 
-  private case object LongAsDouble extends (Long => Double) {
-    def apply(l: Long): Double = l.toDouble
+  private case object LongAsDouble extends Codec.Converter[Long, Double] {
+    def apply(l: Long): Codec.Conversion[Double] = convert(l.toDouble)
   }
 
-  private case object LongAsFloat extends (Long => Float) {
-    def apply(l: Long): Float = l.toFloat
+  private case object LongAsFloat extends Codec.Converter[Long, Float] {
+    def apply(l: Long): Codec.Conversion[Float] = convert(l.toFloat)
   }
 }
 
 /** Codec for dealing with `String`. */
 case object StringCodec extends Codec[String] {
-  val converters: Set[Codec.Convert[String]] = Set.empty
+  val converters: Set[Codec.Converter[String, Any]] = Set.empty
   val date: Option[String => Date] = None
   val integral: Option[Integral[String]] = None
   val numeric: Option[Numeric[String]] = None
@@ -619,7 +626,7 @@ case object StringCodec extends Codec[String] {
 
 /** Codec for dealing with `java.sql.Timestamp`. */
 case object TimestampCodec extends Codec[Timestamp] { self =>
-  val converters: Set[Codec.Convert[Timestamp]] = Set(TimestampAsDate)
+  val converters: Set[Codec.Converter[Timestamp, Any]] = Set(TimestampAsDate)
   val date: Option[Timestamp => Date] = Option(t => toDate(t))
   val integral: Option[Integral[Timestamp]] = None
   val numeric: Option[Numeric[Timestamp]] = None
@@ -654,14 +661,14 @@ case object TimestampCodec extends Codec[Timestamp] { self =>
 
   private def toDate(t: Timestamp): Date = new Date(t.getTime() + (t.getNanos() / 1000000))
 
-  private case object TimestampAsDate extends (Timestamp => Date) {
-    def apply(t: Timestamp): Date = toDate(t)
+  private case object TimestampAsDate extends Codec.Converter[Timestamp, Date] {
+    def apply(t: Timestamp): Codec.Conversion[Date] = convert(toDate(t))
   }
 }
 
 /** Codec for dealing with `Type`. */
 case object TypeCodec extends Codec[Type] { self =>
-  val converters: Set[Codec.Convert[Type]] = Set.empty
+  val converters: Set[Codec.Converter[Type, Any]] = Set.empty
   val date: Option[Type => Date] = None
   val integral: Option[Integral[Type]] = None
   val numeric: Option[Numeric[Type]] = None
