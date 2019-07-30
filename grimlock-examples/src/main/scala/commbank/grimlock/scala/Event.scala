@@ -76,7 +76,7 @@ case class ExampleEventValue(value: ExampleEvent) extends Value[ExampleEvent] {
 
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[ExampleEvent].map(e => cmp(e))
 
-  protected val ttag = typeTag[ExampleEvent]
+  protected def ttag = typeTag[ExampleEvent]
 }
 
 // Define a codec for dealing with the example event. Note that comparison, for this example, is simply comparison

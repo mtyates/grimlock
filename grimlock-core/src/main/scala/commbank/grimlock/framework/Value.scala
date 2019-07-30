@@ -134,7 +134,7 @@ trait Value[T] {
   def toShortString: String = codec.encode(value)
 
   /** TypeTag of `T`. */
-  protected val ttag: TypeTag[T]
+  protected def ttag: TypeTag[T]
 
   private def evaluate(that: Value[_], op: CompareResult): Boolean = cmp(that) match {
     case Some(0) => (op == Equal) || (op == GreaterEqual) || (op == LessEqual)
@@ -190,7 +190,7 @@ object Value {
 case class BinaryValue(value: Array[Byte], codec: Codec[Array[Byte]] = BinaryCodec) extends Value[Array[Byte]] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Array[Byte]].map(ab => cmp(ab))
 
-  protected val ttag = typeTag[Array[Byte]]
+  protected def ttag = typeTag[Array[Byte]]
 }
 
 /** Companion object to `BinaryValue` case class. */
@@ -208,7 +208,7 @@ object BinaryValue {
 case class BooleanValue(value: Boolean, codec: Codec[Boolean] = BooleanCodec) extends Value[Boolean] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Boolean].map(b => cmp(b))
 
-  protected val ttag = typeTag[Boolean]
+  protected def ttag = typeTag[Boolean]
 }
 
 /** Companion object to `BooleanValue` case class. */
@@ -226,7 +226,7 @@ object BooleanValue {
 case class DateValue(value: Date, codec: Codec[Date] = DateCodec()) extends Value[Date] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Date].map(d => cmp(d))
 
-  protected val ttag = typeTag[Date]
+  protected def ttag = typeTag[Date]
 }
 
 /** Companion object to `DateValue` case class. */
@@ -247,7 +247,7 @@ object DateValue {
 case class DecimalValue(value: BigDecimal, codec: Codec[BigDecimal]) extends Value[BigDecimal] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[BigDecimal].map(bd => cmp(bd))
 
-  protected val ttag = typeTag[BigDecimal]
+  protected def ttag = typeTag[BigDecimal]
 }
 
 /** Companion object to `DecimalValue` case class. */
@@ -265,7 +265,7 @@ object DecimalValue {
 case class DoubleValue(value: Double, codec: Codec[Double] = DoubleCodec) extends Value[Double] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Double].map(d => cmp(d))
 
-  protected val ttag = typeTag[Double]
+  protected def ttag = typeTag[Double]
 }
 
 /** Companion object to `DoubleValue` case class. */
@@ -283,7 +283,7 @@ object DoubleValue {
 case class FloatValue(value: Float, codec: Codec[Float] = FloatCodec) extends Value[Float] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Float].map(d => cmp(d))
 
-  protected val ttag = typeTag[Float]
+  protected def ttag = typeTag[Float]
 }
 
 /** Companion object to `FloatValue` case class. */
@@ -305,7 +305,7 @@ case class IntValue(value: Int, codec: Codec[Int] = IntCodec) extends Value[Int]
     .orElse(that.as[Long].map(l => super.cmp(l.toInt)))
     .orElse(that.as[Double].map(d => super.cmp(if (d > value) math.ceil(d).toInt else math.floor(d).toInt)))
 
-  protected val ttag = typeTag[Int]
+  protected def ttag = typeTag[Int]
 }
 
 /** Companion object to `IntValue` case class. */
@@ -326,7 +326,7 @@ case class LongValue(value: Long, codec: Codec[Long] = LongCodec) extends Value[
     .map(l => super.cmp(l))
     .orElse(that.as[Double].map(d => super.cmp(if (d > value) math.ceil(d).toLong else math.floor(d).toLong)))
 
-  protected val ttag = typeTag[Long]
+  protected def ttag = typeTag[Long]
 }
 
 /** Companion object to `LongValue` case class. */
@@ -344,7 +344,7 @@ object LongValue {
 case class StringValue(value: String, codec: Codec[String] = StringCodec) extends Value[String] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[String].map(s => cmp(s))
 
-  protected val ttag = typeTag[String]
+  protected def ttag = typeTag[String]
 }
 
 /** Companion object to `StringValue` case class. */
@@ -362,7 +362,7 @@ object StringValue {
 case class TimestampValue(value: Timestamp, codec: Codec[Timestamp] = TimestampCodec) extends Value[Timestamp] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Timestamp].map(t => cmp(t))
 
-  protected val ttag = typeTag[Timestamp]
+  protected def ttag = typeTag[Timestamp]
 }
 
 /** Companion object to `TimestampValue` case class. */
@@ -380,7 +380,7 @@ object TimestampValue {
 case class TypeValue(value: Type, codec: Codec[Type] = TypeCodec) extends Value[Type] {
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[Type].map(t => cmp(t))
 
-  protected val ttag = typeTag[Type]
+  protected def ttag = typeTag[Type]
 }
 
 /** Companion object to `TypeValue` case class. */
