@@ -21,7 +21,6 @@ import java.text.{ ParsePosition, SimpleDateFormat }
 import java.util.Date
 
 import scala.math.BigDecimal
-import scala.reflect.runtime.universe.{ Type => RuntimeType, typeOf, TypeTag }
 import scala.util.{ Success, Try }
 
 import shapeless.{ :+:, CNil, Coproduct }
@@ -88,7 +87,7 @@ trait Codec[T] {
 /** Companion object to the `Codec` trait. */
 object Codec {
   /** Type to be return by a Convert function. */
-  type Conversion[X] = (X, RuntimeType)
+  type Conversion[X] = X
 
   /** Type for converting a T to a specific other type. */
   type Converter[T, X] = (T) => Conversion[X]
@@ -156,7 +155,7 @@ object Codec {
   }
 
   /** Return a conversion wrapped with its type in a tuple. */
-  def convert[X : TypeTag](v: X): Conversion[X] = (v, typeOf[X])
+  def convert[X](x: X): Conversion[X] = x
 
   /**
    * Parse a codec from a string.

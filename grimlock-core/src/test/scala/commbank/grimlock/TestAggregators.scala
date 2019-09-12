@@ -3792,7 +3792,7 @@ class TestConfusionMatrixAggregator extends TestAggregators {
   }
 
   "A ConfusionMatrix" should "prepare, reduce and present" in {
-    val obj = ConfusionMatrixAggregator(
+    val obj = ConfusionMatrix(
       map,
       accuracy,
       f1score,
@@ -3806,13 +3806,13 @@ class TestConfusionMatrixAggregator extends TestAggregators {
     )
 
     val t1 = obj.prepare(cell1)
-    t1 shouldBe Option(ConfusionMatrix(tp = 1))
+    t1 shouldBe Option(TableOfConfusion(tp = 1))
 
     val t2 = obj.prepare(cell2)
-    t2 shouldBe Option(ConfusionMatrix(fn = 1))
+    t2 shouldBe Option(TableOfConfusion(fn = 1))
 
     val r = obj.reduce(t1.get, t2.get)
-    r shouldBe ConfusionMatrix(tp = 1, fn = 1)
+    r shouldBe TableOfConfusion(tp = 1, fn = 1)
 
     val c = obj.present(pos, r).result
     c shouldBe List(
@@ -3829,7 +3829,7 @@ class TestConfusionMatrixAggregator extends TestAggregators {
   }
 
   it should "prepare, reduce and present expanded" in {
-    val obj = ConfusionMatrixAggregator(
+    val obj = ConfusionMatrix(
       map,
       accuracy,
       f1score,
@@ -3843,13 +3843,13 @@ class TestConfusionMatrixAggregator extends TestAggregators {
     ).andThenRelocate(_.position.prepend("baz").toOption)
 
     val t1 = obj.prepare(cell1)
-    t1 shouldBe Option(ConfusionMatrix(tp = 1))
+    t1 shouldBe Option(TableOfConfusion(tp = 1))
 
     val t2 = obj.prepare(cell2)
-    t2 shouldBe Option(ConfusionMatrix(fn = 1))
+    t2 shouldBe Option(TableOfConfusion(fn = 1))
 
     val r = obj.reduce(t1.get, t2.get)
-    r shouldBe ConfusionMatrix(tp = 1, fn = 1)
+    r shouldBe TableOfConfusion(tp = 1, fn = 1)
 
     val c = obj.present(pos, r).result.toList
     c.sortBy(_.position) shouldBe List(

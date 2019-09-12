@@ -35,7 +35,6 @@ import com.twitter.scalding.TDsl.sourceToTypedPipe
 import com.twitter.scalding.typed.TypedPipe
 
 import scala.collection.immutable.StringOps
-import scala.reflect.runtime.universe.typeTag
 
 import shapeless.{ HList, Nat }
 import shapeless.nat.{ _0, _1 }
@@ -76,8 +75,6 @@ case class ExampleEventValue(value: ExampleEvent) extends Value[ExampleEvent] {
   val codec = ExampleEventCodec
 
   def cmp[V <% Value[_]](that: V): Option[Int] = that.as[ExampleEvent].map(e => cmp(e))
-
-  protected def ttag = typeTag[ExampleEvent]
 }
 
 // Define a codec for dealing with the example event. Note that comparison, for this example, is simply comparison

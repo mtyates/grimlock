@@ -884,7 +884,7 @@ case class CountMapHistogram[
  * @param trueNegatives      The name for the number of true negatives.
  * @param truePositives      The name for the number of true positives.
  */
-case class ConfusionMatrixAggregator[
+case class ConfusionMatrix[
   P <: HList,
   S <: HList,
   Q <: HList
@@ -902,17 +902,17 @@ case class ConfusionMatrixAggregator[
 )(implicit
   ev: Value.Box[Double]
 ) extends Aggregator[P, S, Q] {
-  type T = ConfusionMatrix
+  type T = TableOfConfusion
   type O[A] = Multiple[A]
 
   val tTag = classTag[T]
   val oTag = classTag[O[_]]
 
   def prepare(cell: Cell[P]): Option[T] = outcome(cell).map {
-    case (true, true) => ConfusionMatrix(tp = 1)
-    case (false, true) => ConfusionMatrix(fp = 1)
-    case (true, false) => ConfusionMatrix(fn = 1)
-    case (false, false) => ConfusionMatrix(tn = 1)
+    case (true, true) => TableOfConfusion(tp = 1)
+    case (false, true) => TableOfConfusion(fp = 1)
+    case (true, false) => TableOfConfusion(fn = 1)
+    case (false, false) => TableOfConfusion(tn = 1)
   }
 
   def reduce(lt: T, rt: T): T = lt + rt
@@ -933,22 +933,24 @@ case class ConfusionMatrixAggregator[
 }
 
 /**
- * Case class for a confusion matrix.
+ * Case class for a confusion matrix table.
  *
  * @param tp number of true positives.
  * @param fp number of false positives.
  * @param fn number of false negatives.
  * @param tn number of true negatives.
  */
-case class ConfusionMatrix(tp: Int = 0, fp: Int = 0, fn: Int = 0, tn: Int = 0) {
+case class TableOfConfusion(tp: Int = 0, fp: Int = 0, fn: Int = 0, tn: Int = 0) {
   /**
-   * Add two confusion matrices together.
+   * Add two confusion tables together.
    *
-   * @param that The `ConfusionMatrix` to add.
+   * @param that The `TableOfConfusion` to add.
    *
-   * @return A `ConfusionMatrix` with the metrics (`tp`, `fp`, `fn` and `tn`) added together from this and `that`.
+   * @return A `TableOfConfusion` with the metrics (`tp`, `fp`, `fn` and `tn`) added together from this and `that`.
    */
-  def +(that: ConfusionMatrix): ConfusionMatrix = ConfusionMatrix(tp + that.tp, fp + that.fp, fn + that.fn, tn + that.tn)
+  def +(
+    that: TableOfConfusion
+  ): TableOfConfusion = TableOfConfusion(tp + that.tp, fp + that.fp, fn + that.fn, tn + that.tn)
 
   /** Calculate the accuracy. */
   def accuracy: Double = (tp + tn) / total.toDouble
