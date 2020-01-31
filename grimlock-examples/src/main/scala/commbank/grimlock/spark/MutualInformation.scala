@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,21 +14,22 @@
 
 package commbank.grimlock.spark.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ DateCodec, StringCodec }
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.extract._
-import commbank.grimlock.framework.metadata._
-import commbank.grimlock.framework.pairwise._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.transform._
+import commbank.grimlock.framework.extract.ExtractWithDimension
+import commbank.grimlock.framework.metadata.{ Dictionary, NominalSchema, NumericType }
+import commbank.grimlock.framework.pairwise.Upper
+import commbank.grimlock.framework.position.{ Along, Over, Coordinates2 }
+import commbank.grimlock.framework.transform.Transformer
 
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.library.pairwise._
-import commbank.grimlock.library.squash._
+import commbank.grimlock.library.aggregate.{ Entropy, Sums }
+import commbank.grimlock.library.pairwise.{ Concatenate, Plus }
+import commbank.grimlock.library.squash.PreservingMinimumPosition
 
-import commbank.grimlock.spark.environment._
+import commbank.grimlock.spark.Persist
+import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.implicits._
 
 import org.apache.spark.sql.SparkSession
@@ -56,6 +57,8 @@ object MutualInformation {
     // Define implicit context.
     implicit val ctx = Context(SparkSession.builder().master(args(0)).appName("Grimlock Spark Demo").getOrCreate())
 
+    import ctx.encoder
+
     // Path to data files, output folder
     val path = if (args.length > 1) args(1) else "../../data"
     val output = "spark"
@@ -70,8 +73,9 @@ object MutualInformation {
     //    (instance x feature).
     // 4/ Bucket all continuous variables by rounding them.
     val data = ctx
-      .loadText(
+      .read(
         s"${path}/exampleMutual.txt",
+        Persist.textLoader,
         Cell.shortStringParser(StringCodec :: StringCodec :: DateCodec() :: HNil, dictionary, _1, "|")
       )
       .data

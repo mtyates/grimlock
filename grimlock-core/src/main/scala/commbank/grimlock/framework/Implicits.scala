@@ -1,4 +1,4 @@
-// Copyright 2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,24 +47,22 @@ import commbank.grimlock.framework.position.{
   Positions
 }
 
-import scala.reflect.ClassTag
-
 import shapeless.{ ::, =:!=, HList, HNil }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8 }
 
 /** Defines standard functional operations for dealing with distributed lists. */
-trait NativeOperations[X, U[_]] {
+trait NativeOperations[X, C <: Context[C]] {
   /** Return the union of this `U` and `other`. */
-  def ++(other: U[X]): U[X]
+  def ++(other: C#U[X]): C#U[X]
 
   /** Keep only items that satisfy the predicate `f`. */
-  def filter(f: (X) => Boolean): U[X]
+  def filter(f: (X) => Boolean): C#U[X]
 
   /** Apply function `f`, then flatten the results. */
-  def flatMap[Y : ClassTag](f: (X) => TraversableOnce[Y]): U[Y]
+  def flatMap[Y : C#D](f: (X) => TraversableOnce[Y]): C#U[Y]
 
   /** Map each element using the function `f`. */
-  def map[Y : ClassTag](f: (X) => Y): U[Y]
+  def map[Y : C#D](f: (X) => Y): C#U[Y]
 }
 
 /** Defines operations for dealing with user defined values. */
@@ -100,13 +98,13 @@ trait EnvironmentImplicits[C <: Context[C]] {
   implicit def saveStringsAsText(data: C#U[String]): SaveStringsAsText[C]
 
   /** Make available native functions of `C#U`. */
-  implicit def nativeFunctions[X](data: C#U[X]): NativeOperations[X, C#U]
+  implicit def nativeFunctions[X](data: C#U[X]): NativeOperations[X, C]
 
   /** Make available functions of `C#E`. */
   implicit def valueFunctions[X](value: C#E[X]): ValueOperations[X, C#E]
 
   /** Convert an `C#E` to a `C#U`. */
-  implicit def eToU[X : ClassTag](value: C#E[X])(implicit ctx: C): C#U[X]
+  implicit def eToU[X : C#D](value: C#E[X])(implicit ctx: C): C#U[X]
 }
 
 /** Defines convenience implicits for dealing with matrices. */

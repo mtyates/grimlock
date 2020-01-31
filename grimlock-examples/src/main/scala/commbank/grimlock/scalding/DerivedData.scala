@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
 
 package commbank.grimlock.scalding.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ DateCodec, StringCodec, Value }
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.metadata._
-import commbank.grimlock.framework.position._
-import commbank.grimlock.framework.window._
+import commbank.grimlock.framework.metadata.ContinuousSchema
+import commbank.grimlock.framework.position.{ Along, Position }
+import commbank.grimlock.framework.window.Window
 
-import commbank.grimlock.scalding.environment._
+import commbank.grimlock.scalding.Persist
+import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.implicits._
 
 import com.twitter.scalding.{ Args, Job }
@@ -78,9 +79,10 @@ case class Gradient[
 }
 
 class DerivedData(args: Args) extends Job(args) {
-
   // Define implicit context.
   implicit val ctx = Context()
+
+  import ctx.encoder
 
   // Path to data files, output folder
   val path = args.getOrElse("path", "../../data")
@@ -94,8 +96,9 @@ class DerivedData(args: Args) extends Job(args) {
   //    feature.from.gradient)
   // 5/ Persist 2D gradient features.
   ctx
-    .loadText(
+    .read(
       s"${path}/exampleDerived.txt",
+      Persist.textLoader,
       Cell.shortStringParser(StringCodec :: StringCodec :: DateCodec() :: HNil, "|")
     )
     .data

@@ -1,4 +1,4 @@
-// Copyright 2019 Commonwealth Bank of Australia
+// Copyright 2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 package commbank.grimlock.scala.examples
 
-import commbank.grimlock.framework._
+import commbank.grimlock.framework.Cell
 import commbank.grimlock.framework.content._
 import commbank.grimlock.framework.encoding._
 import commbank.grimlock.framework.environment.implicits._

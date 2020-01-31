@@ -1,4 +1,4 @@
-// Copyright 2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,8 +59,6 @@ import commbank.grimlock.spark.content.{ Contents, IndexedContents }
 import commbank.grimlock.spark.partition.Partitions
 import commbank.grimlock.spark.position.Positions
 
-import scala.reflect.ClassTag
-
 import shapeless.{ ::, =:!=, HList, HNil }
 import shapeless.nat.{ _0, _1, _2, _3, _4, _5, _6, _7, _8 }
 
@@ -113,12 +111,17 @@ case object EnvironmentImplicits extends FwEnvironmentImplicits[Context]  {
   implicit def valueFunctions[X](value: Context.E[X]): ValueOperations[X] = ValueOperations(value)
 
   implicit def eToU[
-    X : ClassTag
+    X
   ](
     value: Context.E[X]
   )(implicit
+    enc: Context.D[X],
     ctx: Context
-  ): Context.U[X] = ctx.session.sparkContext.parallelize(Seq(value))
+  ): Context.U[X] = {
+    import enc.ct
+
+    ctx.session.sparkContext.parallelize(Seq(value))
+  }
 }
 
 /** Implements all matrix implicits. */
@@ -965,14 +968,22 @@ case object PositionImplicits extends FwPositionImplicits[Context] {
 }
 
 /** Implements all native operations. */
-case class NativeOperations[X](data: Context.U[X]) extends FwNativeOperations[X, Context.U] {
+case class NativeOperations[X](data: Context.U[X]) extends FwNativeOperations[X, Context] {
   def ++(other: Context.U[X]): Context.U[X] = data ++ other
 
   def filter(f: (X) => Boolean): Context.U[X] = data.filter(f)
 
-  def flatMap[Y : ClassTag](f: (X) => TraversableOnce[Y]): Context.U[Y] = data.flatMap(f)
+  def flatMap[Y](f: (X) => TraversableOnce[Y])(implicit enc: Context.D[Y]): Context.U[Y] = {
+    import enc.ct
 
-  def map[Y : ClassTag](f: (X) => Y): Context.U[Y] = data.map(f)
+    data.flatMap(f)
+  }
+
+  def map[Y](f: (X) => Y)(implicit enc: Context.D[Y]): Context.U[Y] = {
+    import enc.ct
+
+    data.map(f)
+  }
 }
 
 /** Implements all value operations. */

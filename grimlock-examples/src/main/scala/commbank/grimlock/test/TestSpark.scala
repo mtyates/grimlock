@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.metadata.{ ContinuousSchema, NominalSchema }
 import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
+import commbank.grimlock.spark.Persist
 import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.implicits._
 
@@ -67,7 +68,15 @@ object TestSpark1 {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
-    Shared.test1(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
+    import ctx.encoder
+
+    Shared.test1(
+      ctx,
+      TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+      path,
+      "spark",
+      Persist.textLoader
+    )
   }
 }
 
@@ -75,6 +84,8 @@ object TestSpark2 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
+
+    import ctx.encoder
 
     Shared.test2(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
@@ -84,6 +95,8 @@ object TestSpark3 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
+
+    import ctx.encoder
 
     Shared.test3(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
   }
@@ -130,7 +143,15 @@ object TestSpark8 {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
-    Shared.test8(ctx, TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "spark")
+    import ctx.encoder
+
+    Shared.test8(
+      ctx,
+      TestSparkReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+      path,
+      "spark",
+      Persist.textLoader
+    )
   }
 }
 
@@ -237,7 +258,9 @@ object TestSpark20 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test20(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test20(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -254,7 +277,9 @@ object TestSpark22 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test22(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test22(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -262,7 +287,9 @@ object TestSpark23 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test23(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test23(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -270,7 +297,9 @@ object TestSpark24 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test24(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test24(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -278,7 +307,9 @@ object TestSpark25 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test25(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test25(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -286,7 +317,9 @@ object TestSpark26 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test26(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test26(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -294,7 +327,9 @@ object TestSpark27 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test27(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test27(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -318,7 +353,9 @@ object TestSpark30 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
-    Shared.test30(ctx, args(1), "spark")
+    import ctx.encoder
+
+    Shared.test30(ctx, args(1), "spark", Persist.textLoader)
   }
 }
 
@@ -342,6 +379,8 @@ object TestSpark33 {
   def main(args: Array[String]) {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
 
+    import ctx.encoder
+
     Shared.test33(ctx, "spark", Redistribute(1))
   }
 }
@@ -351,9 +390,10 @@ object TestSpark34 {
     val ctx = Context(SparkSession.builder().master(args(0)).appName("Test Spark").getOrCreate())
     val path = args(1)
 
-    import ctx.session.sqlContext.sparkSession.implicits._
+    import ctx.encoder
+    import ctx.session.implicits._
 
-    Shared.test34(ctx, path, "spark")
+    Shared.test34(ctx, path, "spark", Persist.parquetLoader)
   }
 }
 

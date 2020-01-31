@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,19 +21,6 @@ import org.apache.hadoop.io.Writable
 
 import scala.util.Try
 
-/* Trait for parquet configuration */
-trait ParquetConfig[T, C <: Context[C]] extends java.io.Serializable {
-  /**
-   * Function to read parquet files.
-   *
-   * @param context The operating context
-   * @param file    Name of the output directory or file
-   *
-   * @return A `C#U[T]`; that is it returns distributed data of type `T`.
-   */
-  def load(context: C, file: String): C#U[T]
-}
-
 /** Trait for persisting data. */
 trait Persist[T, C <: Context[C]] extends java.io.Serializable {
   /**
@@ -47,17 +34,26 @@ trait Persist[T, C <: Context[C]] extends java.io.Serializable {
 
 /** Companion object to `Persist` with various types, implicits, etc. */
 object Persist {
-  /** Type for parsing Parquet data. */
-  type ParquetParser[X, T] = (X) => TraversableOnce[Try[T]]
+  trait Loader[X, C <: Context[C]] extends java.io.Serializable {
+    /**
+     * Function to load data.
+     *
+     * @param context     The operating context
+     * @param location    Name of the output directory or file, or `database.table` for tables.
+     *
+     * @return A `C#U[X]`; that is it returns distributed data of type `X`.
+     */
+    def load(context: C, location: String): C#U[X]
+  }
 
-  /** Type for parsing a key value tuple into either a `Cell[P]` or an error message. */
-  type SequenceParser[K <: Writable, V <: Writable, T] = (K, V) => TraversableOnce[Try[T]]
+  /** Type for general parsing. */
+  type Parser[X, T] = (X) => TraversableOnce[Try[T]]
 
   /** Shorthand type for converting a `T` to key value tuple. */
   type SequenceWriter[T, K <: Writable, V <: Writable] = (T) => TraversableOnce[(K, V)]
 
   /** Type for parsing a string to one or more `T`s or an error string. */
-  type TextParser[T] = (String) => TraversableOnce[Try[T]]
+  type TextParser[T] = Parser[String, T]
 
   /** Shorthand type for converting a `T` to string. */
   type TextWriter[T] = (T) => TraversableOnce[String]

@@ -1,4 +1,4 @@
-// Copyright 2019 Commonwealth Bank of Australia
+// Copyright 2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
 
 package commbank.grimlock.scala.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ StringCodec, Value }
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.extract._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.extract.{ ExtractWithDimension, ExtractWithDimensionAndKey }
+import commbank.grimlock.framework.position.{ Coordinates2, Over }
 
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.library.transform._
+import commbank.grimlock.library.aggregate.WeightedSums
+import commbank.grimlock.library.transform.{ Binarise, Clamp, Indicator, Standardise }
 
-import commbank.grimlock.scala.environment._
+import commbank.grimlock.scala.Persist
+import commbank.grimlock.scala.environment.Context
 import commbank.grimlock.scala.environment.implicits._
 
 import shapeless.HNil
@@ -35,23 +36,33 @@ object Scoring {
     // Define implicit context.
     implicit val ctx = Context()
 
+    import ctx.encoder
+
     // Path to data files, output folder
     val path = if (args.length > 0) args(0) else "../../data"
     val output = "scala"
 
     // Read the data (ignoring errors). This returns a 2D matrix (instance x feature).
     val (data, _) = ctx
-      .loadText(s"${path}/exampleInput.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(
+        s"${path}/exampleInput.txt",
+        Persist.textLoader,
+        Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
+      )
 
     // Read the statistics (ignoring errors) from the PipelineDataPreparation example.
     val stats = ctx
-      .loadText(s"./demo.${output}/stats.out", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(
+        s"./demo.${output}/stats.out",
+        Persist.textLoader,
+        Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
+      )
       .data
       .gatherByPosition(Over(_0))
 
     // Read externally learned weights (ignoring errors).
     val weights = ctx
-      .loadText(s"${path}/exampleWeights.txt", Cell.shortStringParser(StringCodec :: HNil, "|"))
+      .read(s"${path}/exampleWeights.txt", Persist.textLoader, Cell.shortStringParser(StringCodec :: HNil, "|"))
       .data
       .gatherByPosition(Over(_0))
 

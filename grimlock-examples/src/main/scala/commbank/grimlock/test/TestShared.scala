@@ -1,4 +1,4 @@
-// Copyright 2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,16 +45,18 @@ import shapeless.nat.{ _0, _1, _2, _3 }
 
 object Shared {
   def test1[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
     ev2: Matrix.SetTuner[C#U, Default[NoParameters]],
-    ev3: Matrix.SelectTuner[C#U, Default[NoParameters]]
+    ev3: Matrix.SelectTuner[C#U, Default[NoParameters]],
+    ev4: C#D[Cell[Coordinates3[String, String, Date]]]
   ): Unit = {
     import ctx.implicits.cell._
     import ctx.implicits.matrix._
@@ -81,8 +83,9 @@ object Shared {
       .toUnit
 
     ctx
-      .loadText(
+      .read(
         path + "/smallInputfile.txt",
+        textLoader,
         Cell.shortStringParser(StringCodec :: StringCodec :: DateCodec() :: HNil, "|")
       )
       .data
@@ -91,7 +94,7 @@ object Shared {
   }
 
   def test2[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -99,7 +102,8 @@ object Shared {
     tool: String
   )(implicit
     ev1: Positions.NamesTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: C#D[String]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -127,7 +131,7 @@ object Shared {
   }
 
   def test3[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -135,7 +139,8 @@ object Shared {
     tool: String
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
-    ev2: Matrix.TypesTuner[C#U, Default[NoParameters]]
+    ev2: Matrix.TypesTuner[C#U, Default[NoParameters]],
+    ev3: C#D[String]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -158,7 +163,7 @@ object Shared {
   }
 
   def test4[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -208,7 +213,7 @@ object Shared {
   }
 
   def test5[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -266,7 +271,7 @@ object Shared {
   }
 
   def test6[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -343,7 +348,7 @@ object Shared {
   }
 
   def test7[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -381,19 +386,21 @@ object Shared {
   }
 
   def test8[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Matrix.GetTuner[C#U, Default[NoParameters]],
     ev2: Matrix.SaveAsCSVTuner[C#U, Default[NoParameters]],
     ev3: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
     ev4: Matrix.SelectTuner[C#U, Default[NoParameters]],
     ev5: Matrix.SquashTuner[C#U, Default[NoParameters]],
-    ev6: Matrix.UniqueTuner[C#U, Default[NoParameters]]
+    ev6: Matrix.UniqueTuner[C#U, Default[NoParameters]],
+    ev7: C#D[Cell[Coordinates2[String, String]]]
   ): Unit = {
     import ctx.implicits.content._
     import ctx.implicits.matrix._
@@ -409,7 +416,7 @@ object Shared {
       .toUnit
 
     ctx
-      .loadText(path + "/mutualInputfile.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/mutualInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
       .data
       .uniqueByPosition(Over(_1), Default())
       .saveAsText(ctx, s"./tmp.${tool}/uni2.out", IndexedContents.toShortString(false, "|"), Default())
@@ -440,7 +447,7 @@ object Shared {
   }
 
   def test9[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -520,7 +527,7 @@ object Shared {
   }
 
   def test10[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -583,7 +590,7 @@ object Shared {
   }
 
   def test11[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -619,7 +626,7 @@ object Shared {
   }
 
   def test12[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -654,7 +661,7 @@ object Shared {
   }
 
   def test13[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -713,7 +720,7 @@ object Shared {
   }
 
   def test14[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -744,7 +751,7 @@ object Shared {
   }
 
   def test15[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -802,7 +809,7 @@ object Shared {
   }
 
   def test16[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -833,7 +840,7 @@ object Shared {
   }
 
   def test17[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -929,7 +936,7 @@ object Shared {
   }
 
   def test18[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -994,7 +1001,7 @@ object Shared {
   }
 
   def test19[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -1098,21 +1105,24 @@ object Shared {
   }
 
   def test20[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
-    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: C#D[Cell[Coordinates3[String, String, Date]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
     val (dictionary, _) = Dictionary.load(Source.fromFile(path + "/dict.txt"), "|")
 
     ctx
-      .loadText(
+      .read(
         path + "/ivoryInputfile1.txt",
+        textLoader,
         Cell.shortStringParser(StringCodec :: StringCodec :: DateCodec() :: HNil, dictionary, _1, "|")
       )
       .data
@@ -1121,7 +1131,7 @@ object Shared {
   }
 
   def test21[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     data: C#U[Cell[Coordinates3[String, String, Date]]],
@@ -1156,19 +1166,21 @@ object Shared {
   }
 
   def test22[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
-    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]]
+    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[String, String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
     val (data, _) = ctx
-      .loadText(path + "/numericInputfile.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/numericInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
 
     case class Diff[
       P <: HList,
@@ -1214,19 +1226,21 @@ object Shared {
   }
 
   def test23[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Matrix.PairTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[String, String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
     val (data, _) = ctx
-      .loadText(path + "/somePairwise.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/somePairwise.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
 
     case class DiffSquared[
       P <: HList,
@@ -1266,14 +1280,16 @@ object Shared {
   }
 
   def test24[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: PairwiseDistance.CorrelationTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[String, String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1285,7 +1301,7 @@ object Shared {
       ColumnDecoder(_2, "sales", Content.decoder(LongCodec, DiscreteSchema[Long]()))
     )
 
-    val (data, _) = ctx.loadText(path + "/somePairwise2.txt", Cell.tableParser(pkey, columns, "|"))
+    val (data, _) = ctx.read(path + "/somePairwise2.txt", textLoader, Cell.tableParser(pkey, columns, "|"))
 
     def locate[
       P <: HList
@@ -1298,7 +1314,7 @@ object Shared {
 
     val columns2 = columns + ColumnDecoder(_3, "neg.sales", Content.decoder(LongCodec, DiscreteSchema[Long]()))
 
-    val (data2, _) = ctx.loadText(path + "/somePairwise3.txt", Cell.tableParser(pkey, columns2, "|"))
+    val (data2, _) = ctx.read(path + "/somePairwise3.txt", textLoader, Cell.tableParser(pkey, columns2, "|"))
 
     data2
       .correlation(Over(_1), Default())(locate, true)
@@ -1307,14 +1323,16 @@ object Shared {
   }
 
   def test25[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: PairwiseDistance.MutualInformationTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[String, String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1325,14 +1343,14 @@ object Shared {
     ] = (l: Position[P], r: Position[P]) => Option(Position(s"${r.toShortString("|")},${l.toShortString("|")}"))
 
     ctx
-      .loadText(path + "/mutualInputfile.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/mutualInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
       .data
       .mutualInformation(Over(_1), Default())(locate, true)
       .saveAsText(ctx, s"./tmp.${tool}/mi.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     ctx
-      .loadText(path + "/mutualInputfile.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/mutualInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
       .data
       .mutualInformation(Along(_0), Default())(locate, true)
       .saveAsText(ctx, s"./tmp.${tool}/im.out", Cell.toShortString(true, "|"), Default())
@@ -1340,21 +1358,24 @@ object Shared {
   }
 
   def test26[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Matrix.PairTuner[C#U, Default[NoParameters]],
-    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[String, String]]],
+    ev4: C#D[Cell[Coordinates1[String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
     val (left, _) = ctx
-      .loadText(path + "/algebraInputfile1.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/algebraInputfile1.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
     val (right, _) = ctx
-      .loadText(path + "/algebraInputfile2.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/algebraInputfile2.txt", textLoader, Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
 
     left
       .pairBetween(Over(_0), Default())(
@@ -1367,49 +1388,52 @@ object Shared {
   }
 
   def test27[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
-    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]]
+    ev2: Matrix.SlideTuner[C#U, Default[NoParameters]],
+    ev3: C#D[Cell[Coordinates2[Long, String]]],
+    ev4: C#D[Cell[Coordinates1[String]]]
   ): Unit = {
     import ctx.implicits.matrix._
 
     // http://www.statisticshowto.com/moving-average/
 
     ctx
-      .loadText(path + "/simMovAvgInputfile.txt", Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/simMovAvgInputfile.txt", textLoader, Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
       .data
       .slide(Over(_1), Default())(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_0)))
       .saveAsText(ctx, s"./tmp.${tool}/sma1.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     ctx
-      .loadText(path + "/simMovAvgInputfile.txt", Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/simMovAvgInputfile.txt", textLoader, Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
       .data
       .slide(Over(_1), Default())(true, SimpleMovingAverage(5, Locate.AppendRemainderDimension(_0), all = true))
       .saveAsText(ctx, s"./tmp.${tool}/sma2.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     ctx
-      .loadText(path + "/simMovAvgInputfile.txt", Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/simMovAvgInputfile.txt", textLoader, Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
       .data
       .slide(Over(_1), Default())(true, CenteredMovingAverage(2, Locate.AppendRemainderDimension(_0)))
       .saveAsText(ctx, s"./tmp.${tool}/tma.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     ctx
-      .loadText(path + "/simMovAvgInputfile.txt", Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/simMovAvgInputfile.txt", textLoader, Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
       .data
       .slide(Over(_1), Default())(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_0)))
       .saveAsText(ctx, s"./tmp.${tool}/wma1.out", Cell.toShortString(true, "|"), Default())
       .toUnit
 
     ctx
-      .loadText(path + "/simMovAvgInputfile.txt", Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
+      .read(path + "/simMovAvgInputfile.txt", textLoader, Cell.shortStringParser(LongCodec :: StringCodec :: HNil, "|"))
       .data
       .slide(Over(_1), Default())(true, WeightedMovingAverage(5, Locate.AppendRemainderDimension(_0), all = true))
       .saveAsText(ctx, s"./tmp.${tool}/wma2.out", Cell.toShortString(true, "|"), Default())
@@ -1418,7 +1442,7 @@ object Shared {
     // http://stackoverflow.com/questions/11074665/how-to-calculate-the-cumulative-average-for-some-numbers
 
     ctx
-      .loadText(path + "/cumMovAvgInputfile.txt", Cell.shortStringParser(StringCodec :: HNil, "|"))
+      .read(path + "/cumMovAvgInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: HNil, "|"))
       .data
       .slide(Along(_0), Default())(true, CumulativeMovingAverage(Locate.AppendRemainderDimension(_0)))
       .saveAsText(ctx, s"./tmp.${tool}/cma.out", Cell.toShortString(true, "|"), Default())
@@ -1427,7 +1451,7 @@ object Shared {
     // http://www.incrediblecharts.com/indicators/exponential_moving_average.php
 
     ctx
-      .loadText(path + "/expMovAvgInputfile.txt", Cell.shortStringParser(StringCodec :: HNil, "|"))
+      .read(path + "/expMovAvgInputfile.txt", textLoader, Cell.shortStringParser(StringCodec :: HNil, "|"))
       .data
       .slide(Along(_0), Default())(true, ExponentialMovingAverage(0.33, Locate.AppendRemainderDimension(_0)))
       .saveAsText(ctx, s"./tmp.${tool}/ema.out", Cell.toShortString(true, "|"), Default())
@@ -1435,7 +1459,7 @@ object Shared {
   }
 
   def test28[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     tool: String
@@ -1528,7 +1552,7 @@ object Shared {
   }
 
   def test29[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     tool: String
@@ -1565,20 +1589,24 @@ object Shared {
   }
 
   def test30[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     path: String,
-    tool: String
+    tool: String,
+    textLoader: Persist.Loader[String, C]
   )(implicit
-    ev: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+    ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+    ev2: C#D[Cell[Coordinates3[String, String, Date]]],
+    ev3: C#D[String]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
 
     val (data, errors) = ctx
-      .loadText(
+      .read(
         path + "/badInputfile.txt",
+        textLoader,
         Cell.shortStringParser(StringCodec :: StringCodec :: DateCodec() :: HNil, "|")
       )
 
@@ -1593,7 +1621,7 @@ object Shared {
   }
 
   def test31[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     tool: String
@@ -1678,7 +1706,7 @@ object Shared {
   }
 
   def test32[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
     ctx: C,
     tool: String
@@ -1742,14 +1770,15 @@ object Shared {
   }
 
   def test33[
-    C <: Context[C],
+    C <: MatrixContext[C],
     T <: Tuner
   ](
     ctx: C,
     tool: String,
     tuner: T
   )(implicit
-    ev: Persist.SaveAsTextTuner[C#U, T]
+    ev1: Persist.SaveAsTextTuner[C#U, T],
+    ev2: C#D[String]
   ): Unit = {
     import ctx.implicits.environment._
     import ctx.implicits.matrix._
@@ -1792,14 +1821,15 @@ object Shared {
   case class ParquetSample(a: Option[String], b: Int, c: Boolean)
 
   def test34[
-    C <: Context[C]
+    C <: MatrixContext[C]
   ](
      ctx: C,
      path: String,
-     tool: String
+     tool: String,
+     parquetLoader: Persist.Loader[ParquetSample, C]
    )(implicit
-     ev1: ParquetConfig[ParquetSample, C],
-     ev2: Persist.SaveAsTextTuner[C#U, Default[NoParameters]]
+     ev1: Persist.SaveAsTextTuner[C#U, Default[NoParameters]],
+     ev2: C#D[Cell[Coordinates1[String]]]
    ): Unit = {
     import ctx.implicits.matrix._
 
@@ -1808,7 +1838,7 @@ object Shared {
     )
 
     ctx
-      .loadParquet[ParquetSample, Cell[Coordinates1[String]]](path + "/test.parquet", dummyParser)
+      .read[ParquetSample, Cell[Coordinates1[String]]](path + "/test.parquet", parquetLoader, dummyParser)
       .data
       .saveAsText(ctx, s"./tmp.${tool}/prq.out", Cell.toShortString(true, "|"), Default())
       .toUnit

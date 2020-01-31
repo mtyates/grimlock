@@ -1,4 +1,4 @@
-// Copyright 2019 Commonwealth Bank of Australia
+// Copyright 2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.metadata.{ ContinuousSchema, NominalSchema }
 import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
+import commbank.grimlock.scala.Persist
 import commbank.grimlock.scala.environment.Context
 import commbank.grimlock.scala.environment.implicits._
 
@@ -69,7 +70,15 @@ object TestScala1 {
     val ctx = Context()
     val path = args(0)
 
-    Shared.test1(ctx, TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scala")
+    import ctx.encoder
+
+    Shared.test1(
+      ctx,
+      TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+      path,
+      "scala",
+      Persist.textLoader
+    )
   }
 }
 
@@ -77,6 +86,8 @@ object TestScala2 {
   def main(args: Array[String]) {
     val ctx = Context()
     val path = args(0)
+
+    import ctx.encoder
 
     Shared.test2(ctx, TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scala")
   }
@@ -86,6 +97,8 @@ object TestScala3 {
   def main(args: Array[String]) {
     val ctx = Context()
     val path = args(0)
+
+    import ctx.encoder
 
     Shared.test3(ctx, TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scala")
   }
@@ -132,7 +145,15 @@ object TestScala8 {
     val ctx = Context()
     val path = args(0)
 
-    Shared.test8(ctx, TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scala")
+    import ctx.encoder
+
+    Shared.test8(
+      ctx,
+      TestScalaReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+      path,
+      "scala",
+      Persist.textLoader
+    )
   }
 }
 
@@ -239,7 +260,9 @@ object TestScala20 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test20(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test20(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -256,7 +279,9 @@ object TestScala22 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test22(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test22(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -264,7 +289,9 @@ object TestScala23 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test23(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test23(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -272,7 +299,9 @@ object TestScala24 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test24(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test24(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -280,7 +309,9 @@ object TestScala25 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test25(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test25(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -288,7 +319,9 @@ object TestScala26 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test26(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test26(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -296,7 +329,9 @@ object TestScala27 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test27(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test27(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -320,7 +355,9 @@ object TestScala30 {
   def main(args: Array[String]) {
     val ctx = Context()
 
-    Shared.test30(ctx, args(0), "scala")
+    import ctx.encoder
+
+    Shared.test30(ctx, args(0), "scala", Persist.textLoader)
   }
 }
 
@@ -344,6 +381,8 @@ object TestScala33 {
   def main(args: Array[String]) {
     val ctx = Context()
 
+    import ctx.encoder
+
     Shared.test33(ctx, "scala", Default())
   }
 }
@@ -352,13 +391,15 @@ object TestScala34 {
   def main(args: Array[String]) {
     val ctx = Context()
 
+    import ctx.encoder
+
     implicit def genericRecordToParquetSample(record: GenericRecord): Shared.ParquetSample = Shared.ParquetSample(
       Option(record.get("a")).map(_.toString),
       record.get("b").asInstanceOf[Int],
       record.get("c").asInstanceOf[Boolean]
     )
 
-    Shared.test34(ctx, args(0), "scala")
+    Shared.test34(ctx, args(0), "scala", Persist.parquetLoader)
   }
 }
 

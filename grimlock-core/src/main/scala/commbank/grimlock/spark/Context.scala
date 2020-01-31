@@ -1,4 +1,4 @@
-// Copyright 2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
 
 package commbank.grimlock.spark.environment
 
-import commbank.grimlock.framework.{ ParquetConfig, Persist }
-import commbank.grimlock.framework.environment.{ Context => FwContext }
-
-import org.apache.hadoop.io.Writable
+import commbank.grimlock.framework.Persist
+import commbank.grimlock.framework.environment.{ Encoder => FwEncoder, MatrixContext }
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ Encoder, Row, SparkSession }
+import org.apache.spark.sql.SparkSession
 
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
@@ -30,45 +28,29 @@ import scala.util.{ Failure, Success }
  *
  * @param session The Spark session.
  */
-case class Context(session: SparkSession) extends FwContext[Context] {
+case class Context(session: SparkSession) extends MatrixContext[Context] {
+  type D[T] = Context.D[T]
+
   type E[T] = Context.E[T]
 
   type U[T] = Context.U[T]
 
-  def loadText[
-    T : ClassTag
-  ](
-    file: String,
-    parser: Persist.TextParser[T]
-  ): (Context.U[T], Context.U[Throwable]) = {
-    val rdd = session.sparkContext.textFile(file).flatMap { case s => parser(s) }
+  /** Implicit Spark Encoder for `T` defined given a `ClassTag[T]`. */
+  implicit def encoder[T](implicit ev: ClassTag[T]): D[T] = Context.encoder
 
-    (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
-  }
-
-  def loadSequence[
-    K <: Writable : Manifest,
-    V <: Writable : Manifest,
-    T : ClassTag
-  ](
-    file: String,
-    parser: Persist.SequenceParser[K, V, T]
-  ): (Context.U[T], Context.U[Throwable]) = {
-    val rdd = session.sparkContext.sequenceFile[K, V](file).flatMap { case (k, v) => parser(k, v) }
-
-    (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
-  }
-
-  def loadParquet[
+  def read[
     X,
-    T : ClassTag
+    T
   ](
-    file: String,
-    parser: Persist.ParquetParser[X, T]
+    location: String,
+    loader: Persist.Loader[X, Context],
+    parser: Persist.Parser[X, T]
   )(implicit
-    cfg: ParquetConfig[X, Context]
-  ): (Context.U[T], Context.U[Throwable]) = {
-    val rdd = cfg.load(this, file).flatMap(v => parser(v))
+    enc: D[T]
+  ): (U[T], U[Throwable]) = {
+    import enc.ct
+
+    val rdd = loader.load(this, location).flatMap(parser)
 
     (rdd.collect { case Success(c) => c }, rdd.collect { case Failure(e) => e })
   }
@@ -77,38 +59,41 @@ case class Context(session: SparkSession) extends FwContext[Context] {
 
   val library = Library
 
-  def empty[T : ClassTag]: Context.U[T] = session.sparkContext.parallelize(List.empty[T])
+  def empty[T](implicit enc: Encoder[T]): Context.U[T] = {
+    import enc.ct
 
-  def from[T : ClassTag](seq: Seq[T]): Context.U[T] = session.sparkContext.parallelize(seq)
+    session.sparkContext.parallelize(List.empty[T])
+  }
+
+  def from[T](seq: Seq[T])(implicit enc: Encoder[T]): Context.U[T] = {
+    implicit val ct = enc.ct
+
+    session.sparkContext.parallelize(seq)
+  }
 
   def nop(): Unit = ()
 }
 
 /** Companion object to `Context` with additional constructors and implicits. */
 object Context {
+  /** Type class needed to encode data as a distributed list. */
+  type D[T] = Encoder[T]
+
   /** Type for user defined data. */
   type E[T] = T
 
   /** Type for distributed data. */
   type U[T] = RDD[T]
 
-  /**
-   * Implicit function that provides spark parquet reader implementation. The method uses
-   * `DataFrameReader` to read parquet.
-   */
-  implicit val toSparkRowParquet = new ParquetConfig[Row, Context] {
-    def load(context: Context, file: String): Context.U[Row] = context.session.sqlContext.read.parquet(file).rdd
+  /** Implicit Spark Encoder for `T` defined given a `ClassTag[T]`. */
+  implicit def encoder[T](implicit ev: ClassTag[T]): D[T] = new Encoder[T] {
+    implicit def ct: ClassTag[T] = ev
   }
+}
 
-  /**
-   * Implicit function that provides spark parquet reader implementation. The method uses
-   * `DataFrameReader` to read parquet.
-   */
-  implicit def toSparkParquet[T : ClassTag](implicit ev: Encoder[T]) = new ParquetConfig[T, Context] {
-    def load(
-      context: Context,
-      file: String
-    ): Context.U[T] = context.session.sqlContext.read.parquet(file).as[T].rdd
-  }
+/** Type class constraints for encoding a type `T` in a Spark `RDD[T]`. */
+trait Encoder[T] extends FwEncoder[T] {
+  /** `ClassTag` for `T`. */
+  implicit def ct: ClassTag[T]
 }
 

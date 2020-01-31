@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import commbank.grimlock.framework.environment.tuner._
 import commbank.grimlock.framework.metadata.{ ContinuousSchema, NominalSchema }
 import commbank.grimlock.framework.position.{ Coordinates3, Position }
 
+import commbank.grimlock.scalding.Persist
 import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.implicits._
 
@@ -63,12 +64,22 @@ class TestScalding1(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test1(ctx, TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
+  import ctx.encoder
+
+  Shared.test1(
+    ctx,
+    TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+    path,
+    "scalding",
+    Persist.textLoader
+  )
 }
 
 class TestScalding2(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
+
+  import ctx.encoder
 
   Shared.test2(ctx, TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
@@ -76,6 +87,8 @@ class TestScalding2(args : Args) extends Job(args) {
 class TestScalding3(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
+
+  import ctx.encoder
 
   Shared.test3(ctx, TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
 }
@@ -112,7 +125,15 @@ class TestScalding8(args : Args) extends Job(args) {
   val ctx = Context()
   val path = args("path")
 
-  Shared.test8(ctx, TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"), path, "scalding")
+  import ctx.encoder
+
+  Shared.test8(
+    ctx,
+    TestScaldingReader.load4TupleDataAddDate(ctx, path + "/someInputfile3.txt"),
+    path,
+    "scalding",
+    Persist.textLoader
+  )
 }
 
 class TestScalding9(args : Args) extends Job(args) {
@@ -195,7 +216,9 @@ class TestScalding19(args : Args) extends Job(args) {
 class TestScalding20(args : Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test20(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test20(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding21(args : Args) extends Job(args) {
@@ -208,37 +231,49 @@ class TestScalding21(args : Args) extends Job(args) {
 class TestScalding22(args : Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test22(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test22(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding23(args : Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test23(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test23(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding24(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test24(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test24(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding25(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test25(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test25(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding26(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test26(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test26(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding27(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test27(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test27(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding28(args: Args) extends Job(args) {
@@ -256,7 +291,9 @@ class TestScalding29(args: Args) extends Job(args) {
 class TestScalding30(args: Args) extends Job(args) {
   val ctx = Context()
 
-  Shared.test30(ctx, args("path"), "scalding")
+  import ctx.encoder
+
+  Shared.test30(ctx, args("path"), "scalding", Persist.textLoader)
 }
 
 class TestScalding31(args: Args) extends Job(args) {
@@ -274,6 +311,8 @@ class TestScalding32(args: Args) extends Job(args) {
 class TestScalding33(args: Args) extends Job(args) {
   val ctx = Context()
 
+  import ctx.encoder
+
   Shared.test33(ctx, "scalding", Redistribute(1))
 }
 
@@ -282,7 +321,8 @@ class TestScalding34(args: Args) extends Job(args) {
   val path = args("path")
 
   import com.twitter.scalding.parquet.tuple.macros.Macros._
+  import ctx.encoder
 
-  Shared.test34(ctx, path, "scalding")
+  Shared.test34(ctx, path, "scalding", Persist.typedParquetLoader)
 }
 

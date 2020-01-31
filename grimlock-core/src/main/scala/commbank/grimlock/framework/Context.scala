@@ -1,4 +1,4 @@
-// Copyright 2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
 
 package commbank.grimlock.framework.environment
 
-import commbank.grimlock.framework.{ ParquetConfig, Persist }
-
-import org.apache.hadoop.io.Writable
-
-import scala.reflect.ClassTag
+import commbank.grimlock.framework.Persist
 
 /** Trait for capturing all operating context related state. */
 trait Context[C <: Context[C]] {
+  /** Type class needed to encode data as a distributed list. */
+  type D[T] <: Encoder[T]
+
   /** Type for user defined data. */
   type E[T]
 
@@ -29,61 +28,29 @@ trait Context[C <: Context[C]] {
   type U[T]
 
   /**
-   * Load text data.
+   * Read data.
    *
-   * @param file   The text file to read from.
-   * @param parser The parser that converts a single line to a cell.
-   *
-   * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
-   */
-  def loadText[T : ClassTag](file: String, parser: Persist.TextParser[T]): (U[T], U[Throwable])
-
-  /**
-   * Load sequence (binary key-value) data.
-   *
-   * @param file   The text file to read from.
-   * @param parser The parser that converts a single key-value to a cell.
+   * @param location The location to read from.
+   * @param parser   The parser that converts the type that can be read to the result type.
    *
    * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
    */
-  def loadSequence[
-    K <: Writable : Manifest,
-    V <: Writable : Manifest,
-    T : ClassTag
-  ](
-    file: String,
-    parser: Persist.SequenceParser[K, V, T]
-  ): (U[T], U[Throwable])
-
-  /**
-   * Load Parquet data.
-   *
-   * @param file   File path.
-   * @param parser Parser that convers single Parquet structure to cells.
-   *
-   * @return A `U[T]` with successfully parsed rows together with a `U[Throwable]` of all parse errors.
-   */
-  def loadParquet[
+  def read[
     X,
-    T : ClassTag
+    T
   ](
-    file: String,
-    parser: Persist.ParquetParser[X, T]
+    location: String,
+    loader: Persist.Loader[X, C],
+    parser: Persist.Parser[X, T]
   )(implicit
-    cfg: ParquetConfig[X, C]
+    enc: C#D[T]
   ): (U[T], U[Throwable])
-
-  /** All implicits for this context. */
-  val implicits: Implicits[C]
-
-  /** All library data/functions for this context. */
-  val library: Library[C]
 
   /** Create empty instance of `U`. */
-  def empty[T : ClassTag]: U[T]
+  def empty[T : C#D]: U[T]
 
   /** Create an instance of `U` from `seq`. */
-  def from[T : ClassTag](seq: Seq[T]): U[T]
+  def from[T : C#D](seq: Seq[T]): U[T]
 
   /**
    * Create an empty instance of `U`, writes it but discards its output.
@@ -95,5 +62,17 @@ trait Context[C <: Context[C]] {
    * See https://github.com/twitter/scalding/wiki/Common-Exceptions-and-possible-reasons
    */
   def nop(): Unit
+}
+
+/** Trait for capturing type class constraints so that a type `T` can be stored in a distributed list. */
+trait Encoder[T] extends java.io.Serializable
+
+/** Trait for capturing an operating context which supports Matrix operations. */
+trait MatrixContext[C <: MatrixContext[C]] extends Context[C] {
+  /** All implicits for this context. */
+  val implicits: Implicits[C]
+
+  /** All library data/functions for this context. */
+  val library: Library[C]
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2014,2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2014,2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
 
 package commbank.grimlock.scalding.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.{ Cell, Locate }
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ StringCodec, Value }
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.extract._
-//import commbank.grimlock.framework.metadata._
-import commbank.grimlock.framework.partition._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.extract.{ ExtractWithDimension, ExtractWithDimensionAndKey }
+import commbank.grimlock.framework.partition.Partitioner
+import commbank.grimlock.framework.position.{ Along, Coordinates2, Over, Position }
 
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.library.transform._
+import commbank.grimlock.library.aggregate.{ Counts, Entropy, FrequencyRatio, Limits, MaximumAbsolute, Moments, Sums }
+import commbank.grimlock.library.transform.{ Binarise, Clamp, Indicator, Standardise }
 
-import commbank.grimlock.scalding.environment._
+import commbank.grimlock.scalding.Persist
+import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.implicits._
 
 import com.twitter.scalding.{ Args, Job }
@@ -55,9 +55,10 @@ case class CustomPartition[
 }
 
 class PipelineDataPreparation(args: Args) extends Job(args) {
-
   // Define implicit context.
   implicit val ctx = Context()
+
+  import ctx.encoder
 
   // Path to data files, output folder
   val path = args.getOrElse("path", "../../data")
@@ -65,7 +66,11 @@ class PipelineDataPreparation(args: Args) extends Job(args) {
 
   // Read the data (ignoring errors). This returns a 2D matrix (instance x feature).
   val (data, _) = ctx
-    .loadText(s"${path}/exampleInput.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil,  "|"))
+    .read(
+      s"${path}/exampleInput.txt",
+      Persist.textLoader,
+      Cell.shortStringParser(StringCodec :: StringCodec :: HNil,  "|")
+    )
 
   // Perform a split of the data into a training and test set.
   val parts = data

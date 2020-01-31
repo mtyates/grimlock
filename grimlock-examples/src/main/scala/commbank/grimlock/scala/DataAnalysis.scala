@@ -1,4 +1,4 @@
-// Copyright 2019 Commonwealth Bank of Australia
+// Copyright 2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
 
 package commbank.grimlock.scala.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.encoding.StringCodec
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.position.{ Along, Over }
 
 import commbank.grimlock.library.aggregate._
 
-import commbank.grimlock.scala.environment._
+import commbank.grimlock.scala.Persist
+import commbank.grimlock.scala.environment.Context
 import commbank.grimlock.scala.environment.implicits._
 
 import shapeless.HNil
@@ -32,13 +33,19 @@ object DataAnalysis {
     // Define implicit context.
     implicit val ctx = Context()
 
+    import ctx.encoder
+
     // Path to data files, output folder
     val path = if (args.length > 0) args(0) else "../../data"
     val output = "scala"
 
     // Read the data (ignoring errors). This returns a 2D matrix (instance x feature).
     val (data, _) = ctx
-      .loadText(s"${path}/exampleInput.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(
+        s"${path}/exampleInput.txt",
+        Persist.textLoader,
+        Cell.shortStringParser(StringCodec :: StringCodec :: HNil,"|")
+      )
 
     // For the instances:
     //  1/ Compute the number of features for each instance;

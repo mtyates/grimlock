@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,11 +14,23 @@
 
 package commbank.grimlock.scalding
 
+import com.twitter.scalding.{ TextLine, WritableSequenceFile }
+import com.twitter.scalding.parquet.scrooge.FixedPathParquetScrooge
+import com.twitter.scalding.parquet.tuple.scheme.ParquetReadSupport
+import com.twitter.scalding.parquet.tuple.TypedParquet
+import com.twitter.scalding.typed.TypedPipe
+
+import com.twitter.scrooge.ThriftStruct
+
 import commbank.grimlock.framework.{ Persist => FwPersist, SaveStringsAsText => FwSaveStringsAsText }
 import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 
 import commbank.grimlock.scalding.environment.Context
 import commbank.grimlock.scalding.environment.tuner.ScaldingImplicits._
+
+import org.apache.hadoop.io.Writable
+
+import shapeless.<:!<
 
 /** Trait for peristing a `TypedPipe`. */
 trait Persist[X] extends FwPersist[X, Context] {
@@ -38,6 +50,42 @@ trait Persist[X] extends FwPersist[X, Context] {
       .tunedSaveAsText(context, tuner, file)
 
     data
+  }
+}
+
+/** Companion object to `Persist` with additional methods. */
+object Persist {
+  /** Scalding text file loader implementation. */
+  val textLoader = new FwPersist.Loader[String, Context] {
+    def load(context: Context, file: String): Context.U[String] = TypedPipe.from(TextLine(file))
+  }
+
+  /**
+   * Function that provides a `ParquetScrooge` implementation, which uses a `ThriftStruct` for the parquet data
+   * definition.
+   */
+  def parquetScroogeLoader[
+    T <: ThriftStruct : Manifest
+  ]: FwPersist.Loader[T, Context] = new FwPersist.Loader[T, Context] {
+    def load(context: Context, file: String): Context.U[T] = TypedPipe.from(new FixedPathParquetScrooge[T](file))
+  }
+
+  /** Function that provides a `TypedParquet` implementation, which uses case class for the parquet data definition. */
+  def typedParquetLoader[
+    T
+  ](implicit
+    ev1: T <:!< ThriftStruct,
+    ev2: ParquetReadSupport[T]
+   ): FwPersist.Loader[T, Context] = new FwPersist.Loader[T, Context] {
+    def load(context: Context, file: String): Context.U[T] = TypedPipe.from(TypedParquet[T](file))
+  }
+
+  /** Function that provides scalding sequence file loader implementation.*/
+  def sequenceLoader[
+    K <: Writable : Manifest,
+    V <: Writable : Manifest
+  ] = new FwPersist.Loader[(K, V), Context] {
+    def load(context: Context, file: String): Context.U[(K, V)] = TypedPipe.from(WritableSequenceFile[K, V](file))
   }
 }
 

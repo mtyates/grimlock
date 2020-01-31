@@ -1,4 +1,4 @@
-// Copyright 2019 Commonwealth Bank of Australia
+// Copyright 2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@
 
 package commbank.grimlock.scala.examples
 
-import commbank.grimlock.framework._
-import commbank.grimlock.framework.content._
-import commbank.grimlock.framework.encoding._
+import commbank.grimlock.framework.Cell
+import commbank.grimlock.framework.content.Content
+import commbank.grimlock.framework.encoding.{ StringCodec, Value }
 import commbank.grimlock.framework.environment.implicits._
-import commbank.grimlock.framework.extract._
-import commbank.grimlock.framework.position._
+import commbank.grimlock.framework.extract.ExtractWithDimension
+import commbank.grimlock.framework.position.{ Along, Coordinates2, Position }
 
-import commbank.grimlock.library.aggregate._
-import commbank.grimlock.library.squash._
-import commbank.grimlock.library.transform._
+import commbank.grimlock.library.aggregate.Sums
+import commbank.grimlock.library.squash.PreservingMaximumPosition
+import commbank.grimlock.library.transform.Fraction
 
-import commbank.grimlock.scala.environment._
+import commbank.grimlock.scala.Persist
+import commbank.grimlock.scala.environment.Context
 import commbank.grimlock.scala.environment.implicits._
 
 import shapeless.{ HList, HNil }
@@ -36,6 +37,8 @@ object Conditional {
     // Define implicit context.
     implicit val ctx = Context()
 
+    import ctx.encoder
+
     // Path to data files, output folder
     val path = if (args.length > 0) args(0) else "../../data"
     val output = "scala"
@@ -43,7 +46,11 @@ object Conditional {
     // Read the data.
     // 1/ Read the data (ignoring errors), this returns a 2D matrix (row x feature).
     val (data, _) = ctx
-      .loadText(s"${path}/exampleConditional.txt", Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|"))
+      .read(
+        s"${path}/exampleConditional.txt",
+        Persist.textLoader,
+        Cell.shortStringParser(StringCodec :: StringCodec :: HNil, "|")
+      )
 
     // Define function that appends the value as a string, or "missing" if no value is available
     def cast[

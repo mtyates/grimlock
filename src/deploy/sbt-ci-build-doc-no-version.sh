@@ -1,5 +1,5 @@
 #!/bin/bash -x
-#   Copyright 2016,2017 Commonwealth Bank of Australia
+#   Copyright 2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.

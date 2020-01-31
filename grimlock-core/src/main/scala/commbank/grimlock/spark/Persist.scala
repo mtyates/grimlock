@@ -1,4 +1,4 @@
-// Copyright 2015,2016,2017,2018,2019 Commonwealth Bank of Australia
+// Copyright 2015,2016,2017,2018,2019,2020 Commonwealth Bank of Australia
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,12 @@ import commbank.grimlock.framework.environment.tuner.{ Default, Tuner }
 import commbank.grimlock.spark.environment.Context
 import commbank.grimlock.spark.environment.tuner.SparkImplicits._
 
+import org.apache.hadoop.io.Writable
+
+import org.apache.spark.sql.{ Encoder => SparkEncoder, Row }
+
+import scala.reflect.ClassTag
+
 /** Trait for peristing a `RDD`. */
 trait Persist[X] extends FwPersist[X, Context] {
   /** The underlying data. */
@@ -38,6 +44,38 @@ trait Persist[X] extends FwPersist[X, Context] {
       .tunedSaveAsText(context, tuner, file)
 
     data
+  }
+}
+
+/** Companion object to `Persist` with additional methods. */
+object Persist {
+  /** Spark parquet loader implementation using `DataFrameReader`. */
+  val parquetRowLoader = new FwPersist.Loader[Row, Context] {
+    def load(context: Context, file: String): Context.U[Row] = context.session.sqlContext.read.parquet(file).rdd
+  }
+
+  /** Spark text file loader implementation. */
+  val textLoader = new FwPersist.Loader[String, Context] {
+    def load(context: Context, file: String): Context.U[String] = context.session.sparkContext.textFile(file)
+  }
+
+  /** Function that provides spark parquet loader implementation. The method uses `DataFrameReader` to read parquet. */
+  def parquetLoader[T : ClassTag](implicit ev: SparkEncoder[T]) = new FwPersist.Loader[T, Context] {
+    def load(
+      context: Context,
+      file: String
+    ): Context.U[T] = context.session.sqlContext.read.parquet(file).as[T].rdd
+  }
+
+  /** Function that provides spark sequence file loader implementation. */
+  def sequenceLoader[
+    K <: Writable : ClassTag,
+    V <: Writable : ClassTag
+  ] = new FwPersist.Loader[(K, V), Context] {
+    def load(
+      context: Context,
+      file: String
+    ): Context.U[(K, V)] = context.session.sparkContext.sequenceFile[K, V](file)
   }
 }
 
